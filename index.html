@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Absolutely Nothing University (ANU) | 绝对虚无大学官方网站</title>
+  <meta name="description" content="Founded in ∞ B.C. Ranked NaN in World University Rankings. Where great minds gather to accomplish absolutely nothing." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&family=Noto+Serif+SC:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Emergency Academic Bulletin Bar -->
+  <div class="bulletin-bar" role="region" aria-label="教务紧急通知">
+    <div class="bulletin-content">
+      <span class="bulletin-badge">DEAN'S DECREE · 教务急电</span>
+      <span id="bulletin-text">原定于今日下午举行的《拖延症导论》期中考试，因出卷教授尚未起床，正式推迟至下个世纪举行。</span>
+    </div>
+    <button type="button" class="bulletin-next-btn" id="next-bulletin-btn">下一条通知</button>
+  </div>
+
+  <!-- Sticky University Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="#top" class="brand-identity">
+        <img src="favicon.svg" alt="Absolutely Nothing University Crest" class="brand-crest" />
+        <div class="brand-Titles">
+          <span class="brand-name-en">Absolutely Nothing University</span>
+          <span class="brand-name-zh">绝对虚无大学 · 创校于公元前 ∞ 年</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" aria-label="主导航">
+        <a href="#admissions" data-i18n="nav_admissions">极速录取与学位</a>
+        <a href="#academics" data-i18n="nav_academics">院系与荒诞课表</a>
+        <a href="#research" data-i18n="nav_research">空白论文档案馆</a>
+        <a href="#faculty" data-i18n="nav_faculty">终身不坐班名师</a>
+        <a href="#webcams" data-i18n="nav_webcams">校园实景监控</a>
+      </nav>
+
+      <div class="header-actions">
+        <button type="button" class="lang-toggle" id="tuition-btn" title="查看学费标准">学费：¥0.00</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero Portal -->
+    <section class="hero-section">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="hero-motto-banner">
+            <span>校训：Nihil Agere, Omnia Esse（什么都不做，即是一切）</span>
+          </div>
+          <h1 class="hero-headline">
+            在人类知识的边界之外，<br />我们选择原地躺平。
+          </h1>
+          <p class="hero-subtitle">
+            欢迎来到 <strong>Absolutely Nothing University (ANU)</strong>。自创校以来，我校始终坚守“零科研产出、零考勤要求、零内卷焦虑、零就业压力”的四零办学方针，连续三百年蝉联全球各大高校排行榜第 <code>NaN</code> 名。
+          </p>
+          <div class="hero-cta-group">
+            <a href="#admissions" class="btn-primary">3秒颁发荣誉博士学位</a>
+            <a href="#academics" class="btn-secondary">查阅本学期退堂鼓课表</a>
+          </div>
+          <blockquote class="chancellor-quote">
+            “很多大学教你如何改变世界，结果把世界改得乱七八糟。只有我校学子恪守本分，对宇宙熵增做出了零贡献。”
+            <cite>—— 第 404 任校长 阿尔伯特·摸鱼斯坦 (Prof. Albert Slackingstein)，写于午睡前</cite>
+          </blockquote>
+        </div>
+
+        <!-- Provost Live Ledger -->
+        <aside class="provost-ledger" aria-label="教务处实时虚无指数">
+          <div class="ledger-header">
+            <div>
+              <h2 class="ledger-title">教务处实时虚无账本</h2>
+              <p class="ledger-subtitle">Office of the Provost · Live Inactivity Telemetry</p>
+            </div>
+            <span class="live-indicator">
+              <span class="live-dot"></span>
+              LIVE
+            </span>
+          </div>
+
+          <div class="ledger-rows">
+            <div class="ledger-row">
+              <span class="ledger-label">全球 QS / U.S. News 综合排名</span>
+              <span class="ledger-value gold">NaN / Undefined</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-label">正在进行中的科研课题总数</span>
+              <span class="ledger-value">0.0000 项</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-label">本学期全校师生累计发呆时长</span>
+              <span class="ledger-value gold" id="idle-seconds-counter">9,482,104 秒</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-label">图书馆今日清醒人数</span>
+              <span class="ledger-value" id="awake-count">0 人（含1只橘猫）</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-label">今日因懒得开会节省的经费</span>
+              <span class="ledger-value" id="saved-budget">$4,290,810</span>
+            </div>
+          </div>
+
+          <div class="ledger-actions">
+            <button type="button" class="btn-contribute-nothing" id="contribute-idle-btn">
+              点此为母校贡献 +10 秒纯粹发呆
+            </button>
+            <p class="contribute-feedback" id="contribute-feedback">
+              每一次点击都将被永久载入我校《什么也没干年鉴》。
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Instant Admission & Honorary Ph.D. Generator -->
+    <section id="admissions" class="academic-section">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-latin">Admissio Sine Examine · 免试直录与学位授予处</p>
+          <h2 class="section-title">三秒极速录取与荣誉博士颁授系统</h2>
+          <p class="section-desc">
+            由于招生办老师觉得审阅简历过于劳累，我校自 1899 年起全面废除入学考试与论文答辩。只要您此刻正在呼吸（或假装思考），即可当场获颁加盖火漆大印的官方学位证书。
+          </p>
+        </div>
+
+        <div class="admissions-workbench">
+          <!-- Left Form -->
+          <div class="admission-form-panel">
+            <h3 class="form-panel-title">填写您的摸鱼档案</h3>
+            <p class="form-panel-note">免报名费 · 免推荐信 · 填完直接毕业</p>
+
+            <div class="form-group">
+              <label for="applicant-name">受颁人尊姓大名 (Recipient Name)</label>
+              <input
+                type="text"
+                id="applicant-name"
+                class="form-control"
+                value="首席退堂鼓演奏家"
+                maxlength="32"
+                placeholder="请输入您的姓名或代号"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="applicant-degree">申请学位等级 (Degree Title)</label>
+              <select id="applicant-degree" class="form-control">
+                <option value="Ph.D. in Pure Nothingness (绝对虚无哲学博士)">Ph.D. in Pure Nothingness (绝对虚无哲学博士)</option>
+                <option value="Doctor of Strategic Procrastination (战略拖延学理学博士)">Doctor of Strategic Procrastination (战略拖延学理学博士)</option>
+                <option value="Master of Fine Daydreaming (高级神游与白日梦硕士)">Master of Fine Daydreaming (高级神游与白日梦硕士)</option>
+                <option value="Fellow of Eternal Sabbatical (终身带薪休假荣誉院士)">Fellow of Eternal Sabbatical (终身带薪休假荣誉院士)</option>
+                <option value="Bachelor of Unread Messages (已读不回与糊弄学学士)">Bachelor of Unread Messages (已读不回与糊弄学学士)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="applicant-major">主修荒诞专业 (Department & Major)</label>
+              <select id="applicant-major" class="form-control">
+                <option value="死线前10分钟高能爆发力学">死线前10分钟高能爆发力学 (Last-Minute Panic Physics)</option>
+                <option value="退堂鼓古典打击乐与战略放弃">退堂鼓古典打击乐与战略放弃 (Classical Retreat Drumming)</option>
+                <option value="会议室眼神放空与点头工程学">会议室眼神放空与点头工程学 (Meeting Zoning-Out Engineering)</option>
+                <option value="量子态薛定谔考勤与床上办公">量子态薛定谔考勤与床上办公 (Quantum Bed-Working Studies)</option>
+                <option value="外卖满减凑单运筹学与午睡工程">外卖满减凑单运筹学与午睡工程 (Takeout Optimization & Nap Science)</option>
+                <option value="“下次一定”语言哲学与鸽子饲养">“下次一定”语言哲学与鸽子饲养 (Philosophy of Next Time For Sure)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="applicant-achievement">代表性学术不作为 (Citation of Inaction)</label>
+              <select id="applicant-achievement" class="form-control">
+                <option value="因成功把五分钟的工作拖延至三个月并最终顺其自然取消，特发此证。">把五分钟的工作拖延至三个月并最终顺其自然取消</option>
+                <option value="因在长达三小时的周会中保持睁眼睡眠且未被任何人察觉，特发此证。">在三小时周会中保持睁眼睡眠且未被察觉</option>
+                <option value="因新建了 84 个名为“最终版_打死不改_v9”的空文件夹，特发此证。">新建 84 个名为“最终版_打死不改”的空文件夹</option>
+                <option value="因连续一整天盯着屏幕思考中午吃什么而未敲下一行字，特发此证。">连续一整天盯着屏幕思考吃什么而未敲一行字</option>
+              </select>
+            </div>
+
+            <div class="form-button-row">
+              <button type="button" class="btn-primary" id="stamp-diploma-btn">
+                加盖校长火漆大印
+              </button>
+              <button type="button" class="btn-secondary" id="download-diploma-btn">
+                导出高清 PNG 学位证
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Certificate Preview -->
+          <div class="diploma-preview-wrapper">
+            <div class="diploma-certificate" id="diploma-card">
+              <img src="favicon.svg" alt="ANU Seal" class="diploma-crest" />
+              <div class="diploma-uni-title">ABSOLUTELY NOTHING UNIVERSITY</div>
+              <div class="diploma-latin-sub"> Universitas Rerum Nullarum · Sigillum Magnum </div>
+              <p class="diploma-proclamation">
+                经绝对虚无大学评议会全票弃权通过，兹郑重授予
+              </p>
+              <div class="diploma-recipient" id="cert-name">首席退堂鼓演奏家</div>
+              <div class="diploma-degree-line" id="cert-degree">
+                Ph.D. in Pure Nothingness (绝对虚无哲学博士)
+              </div>
+              <div class="diploma-major-line" id="cert-major">
+                专业方向：死线前10分钟高能爆发力学
+              </div>
+              <p class="diploma-citation" id="cert-citation">
+                “因成功把五分钟的工作拖延至三个月并最终顺其自然取消，特发此证，并享有在全球任何沙发上理直气壮躺平之特权。”
+              </p>
+
+              <div class="diploma-footer">
+                <div class="signature-block">
+                  <div class="signature-hand">Albert Slackingstein</div>
+                  <span>第 404 任校长（代签：他睡着了）</span>
+                </div>
+
+                <div class="wax-seal" id="wax-seal-badge">
+                  <span>OFFICIAL</span>
+                  <span>NIHIL</span>
+                  <span>100% VOID</span>
+                </div>
+
+                <div class="signature-block">
+                  <div class="signature-hand">橘座教授 (Meow)</div>
+                  <span>教务长兼图书馆首席呼噜官</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="diploma-toolbar">
+              <span class="diploma-serial" id="cert-serial">证书档案号：ANU-2026-VOID-00404</span>
+              <button type="button" class="bulletin-next-btn" style="color: var(--oxford-abyss); border-color: var(--oxford-abyss);" id="random-profile-btn">
+                随机生成一位摸鱼校友
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Academic Departments & Course Catalog -->
+    <section id="academics" class="academic-section alt-bg">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-latin">Index Lectionum · 四大王牌学院与课程目录</p>
+          <h2 class="section-title">2026 学年必修与选修翘课指南</h2>
+          <p class="section-desc">
+            我校所有课程均采用“薛定谔面授法”：只要老师和学生同时决定不去教室，这节课就算圆满完成。点击下方任意课程可查阅详细教学大纲与评分标准。
+          </p>
+        </div>
+
+        <div class="dept-filter-bar" role="tablist" aria-label="学院筛选">
+          <button type="button" class="dept-tab active" data-dept="all">全部王牌课程 (8)</button>
+          <button type="button" class="dept-tab" data-dept="retreat">退堂鼓与战略放弃学院</button>
+          <button type="button" class="dept-tab" data-dept="procrastination">量子拖延与死线实验室</button>
+          <button type="button" class="dept-tab" data-dept="perfunctory">高级糊弄与会议放空系</button>
+          <button type="button" class="dept-tab" data-dept="daydream">神游太虚与午睡工程学院</button>
+        </div>
+
+        <div class="catalog-layout">
+          <div class="course-table-wrap">
+            <table class="course-table">
+              <thead>
+                <tr>
+                  <th>课程代码</th>
+                  <th>课程名称与所属院系</th>
+                  <th>学分</th>
+                  <th>上课地点</th>
+                </tr>
+              </thead>
+              <tbody id="course-tbody">
+                <!-- Populated by app.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <aside class="syllabus-inspector" id="syllabus-panel" aria-live="polite">
+            <span class="syllabus-tag" id="syl-code">NTH-101</span>
+            <h3 class="syllabus-title" id="syl-title">如何把两分钟的活干成两个月</h3>
+            <div class="syllabus-meta">
+              <span id="syl-dept">院系：量子拖延与死线实验室</span>
+              <span id="syl-credits">学分：0.0 学分</span>
+              <span id="syl-prof">主讲：林明天 教授</span>
+              <span id="syl-room">教室：404 查无此室</span>
+            </div>
+
+            <div class="syllabus-section-label">课程简介 (Course Description)</div>
+            <p class="syllabus-text" id="syl-desc">
+              深入剖析“先泡杯茶、再清理桌面、顺便重装系统”的完整心理防御机制，手把手指导学生将一封三句话的邮件拖延至跨年。
+            </p>
+
+            <div class="syllabus-section-label">考核标准 (Grading Policy)</div>
+            <p class="syllabus-text" id="syl-grading">
+              按时交作业者直接挂科（违背本院宗旨）；死线后一周提交得 B；彻底忘记有这门课者获评 A+ 模范标兵。
+            </p>
+
+            <div class="syllabus-section-label">指定教材 (Required Textbook)</div>
+            <p class="syllabus-text" id="syl-book">
+              《从入门到放弃：全新未拆封空白笔记本》（第 17 版，买来垫显示器即可）
+            </p>
+
+            <button type="button" class="btn-primary" id="enroll-course-btn" style="width: 100%; justify-content: center;">
+              一键选课并立即翘课
+            </button>
+            <div class="enroll-status-box" id="enroll-feedback">
+              当前状态：尚未选课（其实选不选都没区别）。
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- Blank Paper Archive & High Impact Research -->
+    <section id="research" class="academic-section">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-latin">Acta Nihilologica · 镇校学术成果与空白期刊</p>
+          <h2 class="section-title">《Nature: Nothing》高被引空白论文阅览室</h2>
+          <p class="section-desc">
+            我校学者每年在国际顶刊发表数百篇零字数论文。以下为本年度引用率最高的三篇代表作，点击即可在线调阅全文手稿与同行评审意见。
+          </p>
+        </div>
+
+        <div class="research-grid">
+          <div class="paper-list" id="paper-list">
+            <!-- Populated by app.js -->
+          </div>
+
+          <div class="paper-reader" id="paper-reader">
+            <div class="reader-top-bar">
+              <span id="reader-doi">DOI: 10.0000/anu.void.2026.001</span>
+              <span id="reader-citations">被引次数：∞ 次（全靠作者梦里自引）</span>
+            </div>
+            <h3 class="reader-paper-title" id="reader-title">
+              论什么都不做对避免犯错的决定性贡献：一项为期十年的空白对照实验
+            </h3>
+            <p class="reader-paper-authors" id="reader-authors">
+              作者：张躺平¹, 李改天², 橘座(猫)³ · 绝对虚无大学高等摸鱼研究院
+            </p>
+
+            <div class="reader-body-box">
+              <p class="reader-body-content" id="reader-content">
+                [ 全文完 · 本论文正文共 0 字，耗资 0 元，未伤害任何脑细胞 ]
+              </p>
+              <span style="font-size: 0.8rem; color: var(--stone-dark);" id="reader-footnote">
+                注：作者原计划撰写三万字综述，后因下午茶太好吃而作罢。
+              </span>
+            </div>
+
+            <div class="reader-peer-review">
+              <strong>同行评审专家意见 (Peer Reviewer #2 Verdict)：</strong>
+              <p id="reader-review">
+                “这是我审稿生涯中读过最清爽的一篇论文！没有任何语法错误，没有任何数据造假，因为根本没有数据。建议直接颁发诺贝尔和平奖与最佳睡眠奖。”
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Distinguished Faculty -->
+    <section id="faculty" class="academic-section alt-bg">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-latin"> Ordo Professorum · 终身不坐班名师名录</p>
+          <h2 class="section-title">杰出师资与睡眠领军人物</h2>
+          <p class="section-desc">
+            我校教授全部实行“终身免坐班、免科研、免回复邮件”制度。如果您在校园里偶遇任何一位教授，说明他走错路了。
+          </p>
+        </div>
+
+        <div class="faculty-grid">
+          <article class="faculty-dossier">
+            <div>
+              <div class="faculty-avatar">橘</div>
+              <h3 class="faculty-name">橘座大主任 (Prof. Ginger)</h3>
+              <p class="faculty-role">图书馆首席呼噜官 · 终身荣誉馆长</p>
+              <p class="faculty-bio">
+                2018 年误入图书馆三楼阳光沙发后拒绝离开，遂被董事会破格聘为终身正教授。代表作《在学生的毕业论文草稿上踩梅花印》。
+              </p>
+            </div>
+            <div class="faculty-hours">
+              <strong>答疑时间：</strong> 每天 14:00–14:02（仅接受冻干贿赂，摸肚皮直接挂科）
+            </div>
+          </article>
+
+          <article class="faculty-dossier">
+            <div>
+              <div class="faculty-avatar">鸽</div>
+              <h3 class="faculty-name">司马改天 教授 (Prof. Tomorrow)</h3>
+              <p class="faculty-role">量子拖延实验室主任 · 鸽学博导</p>
+              <p class="faculty-bio">
+                曾连续 14 年向校方提交同一份《明年一定开工》研究计划书。其主持的“死线动力学”课题至今尚未建群。
+              </p>
+            </div>
+            <div class="faculty-hours">
+              <strong>答疑时间：</strong> 下周二（每逢周二自动顺延至下周二）
+            </div>
+          </article>
+
+          <article class="faculty-dossier">
+            <div>
+              <div class="faculty-avatar">糊</div>
+              <h3 class="faculty-name">伊丽莎白·行吧 (Dr. Whatever)</h3>
+              <p class="faculty-role">高级糊弄学系讲席教授</p>
+              <p class="faculty-bio">
+                精通“嗯嗯”“好的”“收到”“在看了”四大高频学术词汇，仅凭这四个词完成了与全校三千名研究生的全部毕业指导。
+              </p>
+            </div>
+            <div class="faculty-hours">
+              <strong>答疑时间：</strong> 已读不回即为最高指导
+            </div>
+          </article>
+
+          <article class="faculty-dossier">
+            <div>
+              <div class="faculty-avatar">退</div>
+              <h3 class="faculty-name">堂吉诃退 院士 (Prof. Quit)</h3>
+              <p class="faculty-role">退堂鼓国家重点实验室首席演奏家</p>
+              <p class="faculty-bio">
+                座右铭：“只要我放弃得够快，困难就追不上我。” 曾因觉得领奖台台阶太高，主动放弃三项国际学术大奖。
+              </p>
+            </div>
+            <div class="faculty-hours">
+              <strong>答疑时间：</strong> 2月30日 25:00 准时开放
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Campus Webcams -->
+    <section id="webcams" class="academic-section">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-latin">Speculum Campi · 校园 24 小时实景监控</p>
+          <h2 class="section-title">全校重点区域实时虚无监控网</h2>
+          <p class="section-desc">
+            为了向社会各界证明我校确实什么都没在干，保卫处特将校内四路高清摄像头画面向全球公开直播。
+          </p>
+        </div>
+
+        <div class="webcam-grid">
+          <div class="webcam-monitor">
+            <div class="webcam-screen">
+              <div class="webcam-overlay-top">
+                <span class="webcam-rec">● REC [CAM-01: 中央自习大厅]</span>
+                <span class="webcam-clock">--:--:--</span>
+              </div>
+              <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="#DFC16D" stroke-width="2">
+                <rect x="15" y="60" width="70" height="8" />
+                <line x1="25" y1="68" x2="25" y2="88" />
+                <line x1="75" y1="68" x2="75" y2="88" />
+                <path d="M42 42 Q50 32 58 42" stroke-dasharray="3 3" />
+              </svg>
+              <div class="webcam-scene-caption" id="cam-status-1">画面静止：空无一人（蜘蛛正在结第 4 张网）</div>
+              <div class="webcam-sub-caption">噪音分贝：0.0 dB · 翻书声：0 次/世纪</div>
+            </div>
+            <div class="webcam-bar">
+              <span>位置：不学无术楼 1F</span>
+              <button type="button" class="webcam-ping-btn" data-cam="1">刷新镜头</button>
+            </div>
+          </div>
+
+          <div class="webcam-monitor">
+            <div class="webcam-screen">
+              <div class="webcam-overlay-top">
+                <span class="webcam-rec">● REC [CAM-02: 校长办公桌]</span>
+                <span class="webcam-clock">--:--:--</span>
+              </div>
+              <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="#DFC16D" stroke-width="2">
+                <path d="M32 45 H62 V75 C62 82 32 82 32 75 Z" />
+                <path d="M62 52 H72 C76 52 76 66 72 66 H62" />
+                <path d="M42 35 Q45 25 42 18" stroke-dasharray="2 3" />
+                <path d="M52 35 Q55 25 52 18" stroke-dasharray="2 3" />
+              </svg>
+              <div class="webcam-scene-caption" id="cam-status-2">特写画面：一杯从周一泡到周五的枸杞保温杯</div>
+              <div class="webcam-sub-caption">水温：已凉透 · 待批阅文件：0 份</div>
+            </div>
+            <div class="webcam-bar">
+              <span>位置：行政摆烂楼 404 室</span>
+              <button type="button" class="webcam-ping-btn" data-cam="2">刷新镜头</button>
+            </div>
+          </div>
+
+          <div class="webcam-monitor">
+            <div class="webcam-screen">
+              <div class="webcam-overlay-top">
+                <span class="webcam-rec">● REC [CAM-03: 量子超算中心]</span>
+                <span class="webcam-clock">--:--:--</span>
+              </div>
+              <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="#DFC16D" stroke-width="2">
+                <rect x="28" y="20" width="44" height="62" />
+                <line x1="36" y1="34" x2="64" y2="34" />
+                <line x1="36" y1="48" x2="64" y2="48" />
+                <circle cx="40" cy="64" r="3" />
+              </svg>
+              <div class="webcam-scene-caption" id="cam-status-3">节能模式：插头已拔下，机箱正用于烘烤红薯</div>
+              <div class="webcam-sub-caption">算力负载：0.00 FLOPS · 红薯熟度：85%</div>
+            </div>
+            <div class="webcam-bar">
+              <span>位置：地下负一层锅炉房旁</span>
+              <button type="button" class="webcam-ping-btn" data-cam="3">刷新镜头</button>
+            </div>
+          </div>
+
+          <div class="webcam-monitor">
+            <div class="webcam-screen">
+              <div class="webcam-overlay-top">
+                <span class="webcam-rec">● REC [CAM-04: 毕业大草坪]</span>
+                <span class="webcam-clock">--:--:--</span>
+              </div>
+              <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="#DFC16D" stroke-width="2">
+                <path d="M10 75 Q50 65 90 75" />
+                <ellipse cx="50" cy="52" rx="18" ry="10" />
+              </svg>
+              <div class="webcam-scene-caption" id="cam-status-4">微风吹过一片落叶，全校师生一致认为不必扫地</div>
+              <div class="webcam-sub-caption">风速：微风 · 树叶归属：顺其自然</div>
+            </div>
+            <div class="webcam-bar">
+              <span>位置：南门晒太阳广场</span>
+              <button type="button" class="webcam-ping-btn" data-cam="4">刷新镜头</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- University Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h3 class="footer-title">Absolutely Nothing University (ANU)</h3>
+          <p style="font-size: 0.9rem; max-width: 44ch; margin-bottom: 1rem;">
+            地址：地球某处一张晒得到太阳的沙发上（邮编：000000）<br />
+            招生办热线：请勿拨打，没人会接。
+          </p>
+          <p style="font-size: 0.82rem; color: #8FA3B8;">
+            Accredited by the International Council of Daydreamers &amp; Procrastinators.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-title">校内快速通道</h4>
+          <ul class="footer-links">
+            <li><a href="#admissions">在线打印荣誉博士学位证</a></li>
+            <li><a href="#academics">本学期翘课与选课指南</a></li>
+            <li><a href="#research">《Nature: Nothing》空白期刊库</a></li>
+            <li><a href="#webcams">保卫处 24 小时静止监控</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title">教务规章制度</h4>
+          <ul class="footer-links">
+            <li><a href="#admissions" id="rule-attendance">《考勤清零条例》：严禁早八</a></li>
+            <li><a href="#research" id="rule-thesis">《毕业论文减负法》：封皮即全文</a></li>
+            <li><a href="#top" id="donate-nothing-link">向校友基金会捐赠 0 元</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© ∞ B.C. – 2026 Absolutely Nothing University. All Rights Reserved (Though We Too Lazy To Sue).</span>
+        <span>校训：Nihil Agere, Omnia Esse · 什么都不做，即是一切</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
