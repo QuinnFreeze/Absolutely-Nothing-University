@@ -123,13 +123,22 @@
       syl_lbl_book: "指定教材 (Required Textbook)",
       syl_btn_enroll: "一键选课并立即翘课",
       res_eyebrow: "Acta Nihilologica · 镇校学术成果与空白期刊",
-      res_title: "《Nature: Nothing》高被引空白论文阅览室",
-      res_desc: "我校学者每年在国际顶刊发表数百篇零字数论文。点击下方代表作可在线调阅全文手稿，您也可以在底部直接投递您的零字数大作。",
-      res_reviewer_label: "同行评审专家意见 (Peer Reviewer #2 Verdict)：",
-      sub_paper_title: "向《Nature: Nothing》在线投递零字数论文",
-      sub_paper_desc: "只需填写一个听起来很厉害的标题，正文系统会自动为您保持 0 字，并当场完成同行盲审与录用刊发。",
-      sub_paper_placeholder: "例如：论周日下午三点的绝望感与外卖配送延误的非线性关系",
-      sub_paper_btn: "一键投递空白手稿并秒录用",
+      res_title: "《Nature: Nothing》高被引空白论文阅览室与在线投稿工坊",
+      res_desc: "我校学者每年在国际顶刊发表数百篇零字数论文。点击左侧代表作可在线调阅手稿与盲审意见，也可在下方投稿工坊定制或随机抽选全新课题并一键导出录用通知书。",
+      res_reviewer_label: "同行评审专家委员会意见 (Peer Review Verdict)：",
+      reader_oa_note: "Open Access · 100% 零字数防查重保障",
+      reader_btn_export: "导出论文录用证明 PNG",
+      sub_paper_title: "向顶刊在线投递您的零字数手稿 (Manuscript Submission Studio)",
+      sub_paper_desc: "支持自定义或随机抽选奇葩课题、选择目标顶刊与空白方法论流派。系统将根据您的选择生成独一无二的零字数正文、奇葩致谢词与盲审专家评语！",
+      sub_lbl_title: "论文题目（留空则每次随机抽取全新奇葩课题）",
+      sub_lbl_author: "通讯作者署名 (Corresponding Author)",
+      sub_lbl_journal: "选择目标顶刊 (Target Journal)",
+      sub_lbl_style: "选择空白方法论流派 (Blank Methodology)",
+      sub_paper_placeholder: "留空自动随机抽选课题，或输入您的奇思妙想标题...",
+      sub_author_placeholder: "例如：张摸鱼 / 首席退堂鼓学者（留空默认匿名学者）",
+      sub_paper_btn: "一键投递手稿并秒获审稿意见",
+      sub_random_btn: "随机抽选一个奇葩课题并生成",
+      footer_disclaimer: "【虚构娱乐与合规声明】本网站（Absolutely Nothing University · 绝对虚无大学）系纯幽默讽刺创意项目（Satire & Parody Website），并非真实高等教育机构，亦与澳大利亚国立大学（Australian National University）或任何现实院校毫无关联。本站不收取任何费用、不收集任何个人隐私数据，站内生成的“学位证书”与“论文录用证明”仅供娱乐纪念，不具备任何现实学术或法律效力。",
       fac_eyebrow: "Ordo Professorum · 终身不坐班名师名录",
       fac_title: "杰出师资与睡眠领军人物",
       fac_desc: "我校教授全部实行“终身免坐班、免科研、免回复邮件”制度。如果您在校园里偶遇任何一位教授，说明他走错路了。",
@@ -261,13 +270,22 @@
       syl_lbl_book: "Required Textbook",
       syl_btn_enroll: "Enroll & Skip Entire Semester Now",
       res_eyebrow: "Acta Nihilologica · High-Impact Blank Scholarship",
-      res_title: "Nature: Nothing — Blank Manuscript Reading Room",
-      res_desc: "Our scholars publish hundreds of zero-word papers in top journals every year. Select any manuscript below to inspect the full text, or submit your own zero-word paper at the bottom.",
-      res_reviewer_label: "Peer Reviewer #2 Official Verdict:",
-      sub_paper_title: "Submit a Zero-Word Manuscript to Nature: Nothing",
-      sub_paper_desc: "Simply enter an impressive-sounding title. Our editorial system will automatically keep the body at 0 words and grant instant peer-reviewed publication.",
-      sub_paper_placeholder: "e.g., Non-Linear Correlations Between Sunday Evening Dread and Takeout Delays",
-      sub_paper_btn: "Submit Blank Manuscript & Publish Instantly",
+      res_title: "Nature: Nothing — Blank Manuscript Archive & Submission Studio",
+      res_desc: "Our scholars publish hundreds of zero-word papers in top journals every year. Select any manuscript on the left to inspect its full text, or use the Submission Studio below to customize and generate unique blank papers.",
+      res_reviewer_label: "Peer Review Committee Verdict:",
+      reader_oa_note: "Open Access · 100% Zero-Word Plagiarism-Free Guarantee",
+      reader_btn_export: "Export Acceptance Letter PNG",
+      sub_paper_title: "Submit Your Zero-Word Manuscript (Manuscript Submission Studio)",
+      sub_paper_desc: "Enter a custom title or draw a random absurd topic, pick a target journal and blank methodology school, and receive a unique zero-word body, acknowledgments, and referee report!",
+      sub_lbl_title: "Manuscript Title (Leave blank to draw a fresh random topic each time)",
+      sub_lbl_author: "Corresponding Author Name",
+      sub_lbl_journal: "Target Top-Tier Journal",
+      sub_lbl_style: "Blank Methodology School",
+      sub_paper_placeholder: "Leave blank for a random topic, or type your own title...",
+      sub_author_placeholder: "e.g., Dr. Slacker (Leave blank for Anonymous Fellow)",
+      sub_paper_btn: "Submit Manuscript & Get Instant Referee Report",
+      sub_random_btn: "Draw Random Topic & Publish Instantly",
+      footer_disclaimer: "[Satire & Parody Disclaimer] Absolutely Nothing University (freeze.edu.kg) is a fictional humor and satire creative project. It is NOT a real higher-education institution and has no affiliation with The Australian National University or any accredited university. Zero fees are charged, zero personal data is collected, and all generated diplomas or certificates are strictly for entertainment.", 
       fac_eyebrow: "Ordo Professorum · Tenured Absentee Faculty",
       fac_title: "Distinguished Faculty & Sleep Pioneers",
       fac_desc: "All ANU faculty enjoy lifetime immunity from office hours, grant writing, and replying to emails. If you ever spot a professor on campus, they are lost.",
@@ -468,7 +486,7 @@
         credits: "0.0",
         room: "Zoom 静音房",
         prof: "伊丽莎白·行吧 教授",
-        desc: "训练学生在长达四小时的汇报中保持每分钟 4.2 次微幅点头、眉头微蹙若有所思，同时大脑完整重温《甄嬛传》全集。",
+        desc: "训练学生在长达四小时的汇报中保持每分钟 4.2 次微幅点头、眉头微蹙若有所思，同时大脑完整重温八十集经典古装连续剧。",
         grading: "期末考核为连续回复十句“确实”“有道理”“回去对齐一下”而不露破绽。",
         book: "《糊弄学大辞典：从“收到”到“下次一定”》"
       },
@@ -643,6 +661,7 @@
         citations: "被引次数：∞ 次（全靠作者梦里自引）",
         content: "[ 全文完 · 本论文正文共 0 字，耗资 0 元，未伤害任何脑细胞 ]",
         footnote: "注：作者原计划撰写三万字综述，后因下午茶太好吃而作罢。",
+        reviewerHeader: "同行评审专家意见 (Reviewer #1 · 诺贝尔睡眠奖得主)：",
         review: "“这是我审稿生涯中读过最清爽的一篇论文！没有任何语法错误，没有任何数据造假，因为根本没有数据。建议直接颁发诺贝尔和平奖与最佳睡眠奖。”"
       },
       {
@@ -651,8 +670,9 @@
         title: "基于“下次一定”算法的无限期任务推迟模型及其在周报中的应用",
         authors: "司马改天¹, 王算了² · 量子拖延与死线实验室",
         citations: "被引次数：0 次（审稿人说改天再看）",
-        content: "摘要：待补充。引言：明天写。实验结果：略。结论：算了吧。",
+        content: "摘要：待补充…… 引言：明天写…… 实验结果：略…… 结论：算了吧……",
         footnote: "致谢：感谢外卖小哥在截稿前送来的炸鸡，使作者彻底放弃了写作。",
+        reviewerHeader: "同行评审专家意见 (Reviewer #2 · 资深鸽学博导)：",
         review: "“作者将拖延主义贯彻到了论文排版本身，连页码都懒得标，展现了极高的知行合一水准，原则上同意无条件发表。”"
       },
       {
@@ -663,7 +683,30 @@
         citations: "被引次数：8,920 罐金枪鱼罐头",
         content: "喵。呼噜噜噜噜噜噜。喵。（附三枚沾有猫毛的肉垫印章）",
         footnote: "基金支持：本课题受“全校师生自发投喂小鱼干基金”全额资助。",
+        reviewerHeader: "同行评审专家意见 (Reviewer #3 · 猫奴编辑部全体)：",
         review: "“虽然看不懂正文，但通讯作者实在太可爱了，谁敢拒稿谁就是猫猫的敌人。Accept as is!”"
+      },
+      {
+        doi: "DOI: 10.0000/anu.void.2026.004",
+        journal: "The Lancet: Bedrest · Vol. 12",
+        title: "被窝局部强引力场对人类周一早晨起立动作的引力透镜阻尼效应",
+        authors: "陈不起¹, 赖床博士² · 神游太虚与午睡工程学院",
+        citations: "被引次数：104,857 次（均在被窝中用手机转发）",
+        content: "[ 数据缺失：实验员在测试羽绒被热力学耦合时全员睡着，未能记录任何读数 ]",
+        footnote: "伦理声明：本实验全程在 26°C 恒温空调房及加厚鹅绒被中进行，受试者极其舒适。",
+        reviewerHeader: "同行评审专家意见 (Reviewer #1 · 临床赖床医学专家)：",
+        review: "“实验设计极其人道！审稿人在复现实验第 2 分钟时也不慎睡着，醒来已是周三下午，有力证实了作者的核心论点！”"
+      },
+      {
+        doi: "DOI: 10.0000/anu.void.2026.005",
+        journal: "IEEE Transactions on Ctrl+C · Issue 404",
+        title: "新建 100 个“最终版_打死不改”空文件夹对缓解死线焦虑的安慰剂效应",
+        authors: "伊丽莎白·行吧¹, 赵收到² · 高级糊弄与会议放空系",
+        citations: "被引次数：65,535 次（复制粘贴自引）",
+        content: "📁 新建文件夹 (1) / 📁 终版_v2 / 📁 真的是最后一版_v9 / [ 0 字节 · 空空如也 ]",
+        footnote: "利益冲突声明：作者在创建完上述文件夹后就去吃烧烤了，不存在任何利益或工作产出。",
+        reviewerHeader: "同行评审专家意见 (Reviewer #2 · 形式主义架构师)：",
+        review: "“目录层级优美、命名极具情绪张力，虽然文件夹里一个字节都没有，但已经完整传达了当代学者的精神风貌！”"
       }
     ],
     en: [
@@ -675,6 +718,7 @@
         citations: "Citations: ∞ (Self-cited in the authors' dreams)",
         content: "[ END OF MANUSCRIPT · Total Word Count: 0 · Budget Spent: $0 · Brain Cells Harmed: 0 ]",
         footnote: "Note: The authors originally planned a 30,000-word review, but abandoned it after discovering afternoon pastries.",
+        reviewerHeader: "Peer Review Verdict (Reviewer #1 · Nobel Laureate in Napping):",
         review: "“The cleanest manuscript I have ever peer-reviewed! Zero typographical errors, zero p-hacking, and zero methodological flaws—because there is no text. Nominate immediately for the Nobel Peace Prize.”"
       },
       {
@@ -683,8 +727,9 @@
         title: "An Infinite Task-Deferral Model Based on the 'Next Time For Sure' Heuristic",
         authors: "Prof. Tomorrow¹, S. Wang² · Quantum Procrastination Lab",
         citations: "Citations: 0 (Referees promised to read it next week)",
-        content: "Abstract: TBD. Introduction: Will write tomorrow. Results: Omitted. Conclusion: Whatever.",
+        content: "Abstract: TBD... Introduction: Will write tomorrow... Results: Omitted... Conclusion: Whatever...",
         footnote: "Acknowledgments: We thank the delivery driver whose fried chicken convinced us to stop writing.",
+        reviewerHeader: "Peer Review Verdict (Reviewer #2 · Senior Chair of Procrastination):",
         review: "“The authors embodied procrastination in the manuscript itself, not even bothering to number the pages. A triumph of theory and practice. Unconditional Accept.”"
       },
       {
@@ -695,8 +740,241 @@
         citations: "Citations: 8,920 Cans of Prime Tuna",
         content: "Meow. Purrrrrrrrrrrrrrr. Meow. (Signed with three muddy paw prints)",
         footnote: "Funding: Fully supported by the Spontaneous Campus Dried-Minnow Endowment.",
+        reviewerHeader: "Peer Review Verdict (Reviewer #3 · Feline Editorial Board):",
         review: "“We cannot decipher a single word of the methodology, but the corresponding author is Fluffy and Supreme. Anyone who rejects this paper is an enemy of cats. Accept as is!”"
+      },
+      {
+        doi: "DOI: 10.0000/anu.void.2026.004",
+        journal: "The Lancet: Bedrest · Vol. 12",
+        title: "Gravitational Lensing and Damping Effects of Warm Duvets on Monday Morning Upright Posture",
+        authors: "B. Chen¹, Dr. Snooze² · Institute of Nap Engineering",
+        citations: "Citations: 104,857 (Forwarded from under the covers)",
+        content: "[ DATA MISSING: All researchers fell into deep REM sleep within 90 seconds of entering the duvet test chamber ]",
+        footnote: "Ethics Statement: Conducted in a 24°C climate-controlled bedroom with goose-down pillows; zero discomfort occurred.",
+        reviewerHeader: "Peer Review Verdict (Reviewer #1 · Clinical Somnology Chair):",
+        review: "“Remarkably humane experimental design! While attempting to replicate the protocol, this reviewer also fell asleep and woke up on Wednesday afternoon. Hypothesis overwhelmingly confirmed!”"
+      },
+      {
+        doi: "DOI: 10.0000/anu.void.2026.005",
+        journal: "IEEE Transactions on Ctrl+C · Issue 404",
+        title: "Placebo Efficacy of Creating 100 Empty Folders Named 'Final_v9_Real' on Pre-Deadline Panic",
+        authors: "Dr. E. Whatever¹, R. Gotcha² · Dept. of Meeting Zoning-Out",
+        citations: "Citations: 65,535 (Copy-pasted self-citations)",
+        content: "📁 New Folder (1) / 📁 Final_v2 / 📁 Actually_Final_v9 / [ 0 Bytes · Completely Empty ]",
+        footnote: "Conflict of Interest: The authors went out for barbecue immediately after creating the folders.",
+        reviewerHeader: "Peer Review Verdict (Reviewer #2 · Chief Folder Architect):",
+        review: "“Exquisite directory hierarchy and emotionally resonant naming conventions. Even with 0 bytes inside, it captures the zeitgeist of modern scholarship!”"
       }
+    ]
+  };
+
+  // Multi-Dimensional Blank Paper Generator Pools (12 topics, 5 journals, 5 methodologies, 10 reviews)
+  let randomTopicCursor = 0;
+
+  const journalOptionsByLang = {
+    zh: [
+      "Nature: Nothing · 虚无自然主刊",
+      "Science of Slacking · 摸鱼科学周刊",
+      "The Lancet: Bedrest · 柳叶刀赖床分刊",
+      "Physical Review Zzz · 呼噜物理评论",
+      "IEEE Transactions on Ctrl+C · 复制粘贴工程汇刊"
+    ],
+    en: [
+      "Nature: Nothing · Flagship Edition",
+      "Science of Slacking · Weekly",
+      "The Lancet: Bedrest · Clinical Sleep",
+      "Physical Review Zzz · Letters",
+      "IEEE Transactions on Ctrl+C"
+    ]
+  };
+
+  const methodologyOptionsByLang = {
+    zh: [
+      {
+        key: "pure_void",
+        label: "纯零字留白流（0字正文 · 极致禅意）",
+        content: "[ 全文完 · 本手稿采用绝对虚无主义留白法，正文精确保持 0.00 字，查重率 0.00% ]",
+        footnote: "方法论说明：作者盯着空白文档发呆了四十五分钟后认为此时无声胜有声，遂直接点击投稿。"
+      },
+      {
+        key: "ellipsis",
+        label: "无限省略号拖延流（下次一定写完）",
+        content: "1. 引言：略……  2. 文献综述：改天补……  3. 实验设计与数据：算了吧……  4. 结论：下次一定……",
+        footnote: "致谢：感谢截稿死线本身的仁慈顺延，以及作者在放弃写作瞬间获得的巨大内心平静。"
+      },
+      {
+        key: "coffee_stain",
+        label: "下午茶咖啡渍手稿流（物理留痕）",
+        content: "☕ [ 此处仅有一圈冰美式咖啡杯底水渍与两粒薯片碎屑，未发现任何文字字符 ] 🥐",
+        footnote: "实验记录：手稿原本可能打算写点什么，但下午三点的牛角包配冰美式实在太香了。"
+      },
+      {
+        key: "cat_paws",
+        label: "橘猫踩键盘乱码流（神圣猫语加密）",
+        content: "🐾 mmmmnnnnnnnnnjjjjkkkkk;;;;;;;  呼噜噜噜  🐾 [ 橘座主任认证肉垫印章 × 3 ]",
+        footnote: "通讯作者声明：本段乱码系橘座大主任在午睡翻身时亲自踩出，蕴含深邃的宇宙热力学真理。"
+      },
+      {
+        key: "budget_gone",
+        label: "经费吃光了结题流（烧烤摊田野调查）",
+        content: "[ 结题报告：本课题全部预算已用于课题组深夜烧烤与奶茶团建，因吃得太饱无法开展后续实验，特此结题 ]",
+        footnote: "基金致谢：特别鸣谢学校后勤处报销了三串烤面筋与两杯杨枝甘露。"
+      }
+    ],
+    en: [
+      {
+        key: "pure_void",
+        label: "Pure Zero-Word Zen School (0 Words · Minimalist Void)",
+        content: "[ END OF PAPER · Composed via Absolute Minimalist Blankness: 0.00 Words, 0.00% Similarity Index ]",
+        footnote: "Methodology Note: After staring at the blinking cursor for 45 minutes, the author realized silence speaks louder than words."
+      },
+      {
+        key: "ellipsis",
+        label: "Infinite Ellipsis Deferral School (Will Finish Next Century)",
+        content: "1. Intro: Omitted...  2. Literature Review: Next week...  3. Data & Results: Meh...  4. Conclusion: Whatever...",
+        footnote: "Acknowledgments: We thank the deadline for passing peacefully while we ordered takeout."
+      },
+      {
+        key: "coffee_stain",
+        label: "Afternoon Pastry & Coffee Ring Artifact School",
+        content: "☕ [ Only a circular iced-latte condensation ring and two potato chip crumbs appear on this page ] 🥐",
+        footnote: "Lab Log: A hypothesis was briefly considered at 3:15 PM, then superseded by freshly baked croissants."
+      },
+      {
+        key: "cat_paws",
+        label: "Feline Keyboard-Walk Cipher School (Peer-Purred)",
+        content: "🐾 mmmmnnnnnnnnnjjjjkkkkk;;;;;;;  purrrrrr  🐾 [ Authenticated by 3 Ginger Paw Prints ]",
+        footnote: "Author Contribution: Typed entirely by Prof. Ginger rolling across the mechanical keyboard during a sunbeam nap."
+      },
+      {
+        key: "budget_gone",
+        label: "Grant Spent on Barbecue Fieldwork School",
+        content: "[ FINAL REPORT: 100% of grant funding was allocated to late-night barbecue and boba tea; researchers too full to proceed ]",
+        footnote: "Funding Note: Supported by the Campus Midnight Skewer & Milk Tea Fellowship."
+      }
+    ]
+  };
+
+  const randomPaperTopicsPool = [
+    {
+      zh: "论把闹钟按掉后那五分钟的相对论时间膨胀与多重宇宙坍缩效应",
+      en: "Relativistic Time Dilation and Multiverse Collapse During the 5 Minutes After Hitting Snooze"
+    },
+    {
+      zh: "周日下午四点半的宇宙级绝望感与外卖配送延误的非线性耦合模型",
+      en: "Non-Linear Coupling Between Sunday 4:30 PM Existential Dread and Takeout Delivery Delays"
+    },
+    {
+      zh: "当老板在群里发“收到请回复”时保持量子隐身态的流体力学边界条件",
+      en: "Hydrodynamic Boundary Conditions for Remaining Quantum-Invisible When Tagged in Group Chats"
+    },
+    {
+      zh: "“在做了（进度0%）”话术在跨部门周会中的热力学稳定性与抗催促极限",
+      en: "Thermodynamic Stability of Saying 'Almost Done (0% Progress)' Across Cross-Functional Syncs"
+    },
+    {
+      zh: "为什么一打开专业文献就会立刻产生困意：基于纸张催眠波长的实证研究",
+      en: "Why Opening a PDF Textbook Induces Immediate Narcolepsy: A Wavelength Hypnosis Analysis"
+    },
+    {
+      zh: "耳机戴上但没放音乐：构建个人工位结界对阻断同事闲聊的声学屏蔽效率",
+      en: "Wearing Unplugged Headphones as an Acoustic Force-Field Against Office Small Talk"
+    },
+    {
+      zh: "从“今晚一定早睡”到“怎么又凌晨三点了”的时空曲率跃迁机制研究",
+      en: "Spacetime Curvature Warping Between 'I Will Sleep Early Tonight' and 'How Is It 3 AM Again'"
+    },
+    {
+      zh: "将收藏夹命名为“深度学习必看”后永不点开的知识渗透压守恒定律",
+      en: "Osmotic Knowledge Conservation in Bookmarking 500 Tutorials Without Ever Watching One"
+    },
+    {
+      zh: "会议室最后一排靠门座位的光学隐身特性与提前溜走轨迹最优化",
+      en: "Optical Cloaking Properties of the Back-Row Seat Closest to the Exit Door in Town Halls"
+    },
+    {
+      zh: "论洗完澡后躺在床上刷手机时手机砸脸概率与仰角的函数关系",
+      en: "Gravitational Trajectory Modeling of Dropping Your Phone on Your Face While Lying in Bed"
+    },
+    {
+      zh: "外卖满 30 减 15 凑单过程中多买三包纸巾的博弈论纳什均衡解",
+      en: "Nash Equilibrium of Adding Three Packs of Napkins to Hit the Delivery Discount Threshold"
+    },
+    {
+      zh: "带薪如厕时长与灵感迸发率（想通今晚吃什么）的量子纠缠实证分析",
+      en: "Empirical Quantum Entanglement Between Paid Restroom Breaks and Deciding What to Eat for Dinner"
+    }
+  ];
+
+  const peerReviewPoolByLang = {
+    zh: [
+      {
+        header: "同行评审专家意见 (Reviewer #1 · 终身免坐班院士)：",
+        text: "“震撼学界！标题极富哲学张力，而正文的彻底留白更是对当代学术灌水的无声解构，一字不改直接录用！”"
+      },
+      {
+        header: "同行评审专家意见 (Reviewer #2 · 挑剔的匿名审稿人)：",
+        text: "“我原本准备了三页尖锐的拒稿意见，但看到作者正文一个字都没写，我突然意识到自己也没必要审了，遂决定跟作者一起去喝奶茶。Strong Accept！”"
+      },
+      {
+        header: "同行评审专家意见 (Reviewer #3 · 橘座大主任)：",
+        text: "“喵呜！呼噜噜噜！（译：这篇论文排版极其舒适，打印出来铺在阳光下正好够本喵睡个午觉，特批封面文章发表！）”"
+      },
+      {
+        header: "同行评审专家意见 (编辑部特快专递裁决)：",
+        text: "“零公式、零图表、零废话！本刊创刊三百年来审阅速度最快的一篇杰作，从投稿到录用耗时 0.002 秒！”"
+      },
+      {
+        header: "同行评审专家意见 (Reviewer #2 · 退堂鼓学会会长)：",
+        text: "“作者在写完标题后就果断敲响退堂鼓，这种及时止损的学术勇气令评审委员会全体起立鼓掌（随后坐下继续睡）！”"
+      },
+      {
+        header: "同行评审专家意见 (Reviewer #1 · 量子拖延实验室主任)：",
+        text: "“由于没有任何实验数据，因此完全不存在可重复性危机——任何人在家躺着都能 100% 完美复现本研究！”"
+      }
+    ],
+    en: [
+      {
+        header: "Peer Review Verdict (Reviewer #1 · Tenured Absentee Fellow):",
+        text: "“Breathtaking! A bold title followed by absolute silence—a masterful deconstruction of academic verbosity. Accepted without a single revision!”"
+      },
+      {
+        header: "Peer Review Verdict (Reviewer #2 · Notoriously Harsh Referee):",
+        text: "“I had prepared three pages of ruthless critique, but seeing that the author wrote 0 words, I realized I could also stop working and go get boba. Strong Accept!”"
+      },
+      {
+        header: "Peer Review Verdict (Reviewer #3 · Prof. Ginger Cat):",
+        text: "“Meow! Purrrrrr! (Translation: When printed on A4 paper and placed in a sunbeam, this blank manuscript makes an exceptionally cozy nap mat. Featured Cover Article!)”"
+      },
+      {
+        header: "Peer Review Verdict (Editorial Board Fast-Track):",
+        text: "“Zero equations, zero charts, zero filler! The fastest peer review in our journal's 300-year history—accepted in 0.002 seconds!”"
+      },
+      {
+        header: "Peer Review Verdict (Reviewer #2 · President of the Retreat Society):",
+        text: "“The author's courage to stop immediately after typing the title moved the entire committee to tears of joy before we went back to sleep.”"
+      },
+      {
+        header: "Peer Review Verdict (Reviewer #1 · Chair of Reproducibility):",
+        text: "“Because no experiment was conducted, this paper is 100% immune to the replication crisis—anyone lying on a sofa can reproduce these exact results!”"
+      }
+    ]
+  };
+
+  const citationsPoolByLang = {
+    zh: [
+      "被引次数：9,999+ 次（发表即被全校师生梦境索引）",
+      "被引次数：∞ 次（已入选《摸鱼大典》镇馆馆藏）",
+      "被引次数：404 次（审稿人纷纷在周报中悄悄引用）",
+      "被引次数：88,888 次（连续霸榜睡眠科学热搜榜首）",
+      "被引次数：1,024 盒小鱼干（获橘座主任特别嘉奖）"
+    ],
+    en: [
+      "Citations: 9,999+ (Indexed immediately in campus-wide REM sleep)",
+      "Citations: ∞ (Inducted into the Hall of Eternal Slacking)",
+      "Citations: 404 (Quietly cited in weekly status reports worldwide)",
+      "Citations: 88,888 (Top trending manuscript in Somnology)",
+      "Citations: 1,024 Salmon Treats (Endorsed by Prof. Ginger)"
     ]
   };
 
@@ -782,7 +1060,7 @@
       { name: "'Whatever, Anything Is Fine' Rice Bowl", desc: "Exists in a quantum superposition of ingredients until you open the lid", price: "$0.00" },
       { name: "Deadline-Eve Iced Americano (Hold the Coffee)", desc: "0% caffeine, 100% placebo panic energy", price: "$0.00" },
       { name: "Zero-Guilt Fried Chicken with Decorative Lettuce", desc: "Placing one lettuce leaf beside fried chicken cancels all calories by symmetry", price: "$0.00" },
-      { name: "TheAdvisor's Grand Pie-in-the-Sky", desc: "Freshly baked empty promises; extremely filling yet zero nutrition", price: "$0.00" }
+      { name: "The Advisor's Grand Pie-in-the-Sky", desc: "Freshly baked empty promises; extremely filling yet zero nutrition", price: "$0.00" }
     ]
   };
 
@@ -947,9 +1225,16 @@
   const readerAuthors = document.getElementById("reader-authors");
   const readerContent = document.getElementById("reader-content");
   const readerFootnote = document.getElementById("reader-footnote");
+  const readerReviewerHeader = document.getElementById("reader-reviewer-header");
   const readerReview = document.getElementById("reader-review");
+  const downloadPaperCertBtn = document.getElementById("download-paper-cert-btn");
   const newPaperInput = document.getElementById("new-paper-title-input");
+  const newPaperAuthorInput = document.getElementById("new-paper-author-input");
+  const newPaperJournalSelect = document.getElementById("new-paper-journal-select");
+  const newPaperStyleSelect = document.getElementById("new-paper-style-select");
   const submitBlankPaperBtn = document.getElementById("submit-blank-paper-btn");
+  const randomPaperTopicBtn = document.getElementById("random-paper-topic-btn");
+  const submitPaperStatusEl = document.getElementById("submit-paper-status");
 
   const facultyGridEl = document.getElementById("faculty-grid");
   const emailProfSelect = document.getElementById("email-prof-select");
@@ -1113,9 +1398,36 @@
     }
   }
 
+  function populatePaperStudioSelects(preserveIndices) {
+    const jIdx = preserveIndices && newPaperJournalSelect ? Math.max(0, newPaperJournalSelect.selectedIndex) : 0;
+    const sIdx = preserveIndices && newPaperStyleSelect ? Math.max(0, newPaperStyleSelect.selectedIndex) : 0;
+
+    if (newPaperJournalSelect) {
+      newPaperJournalSelect.textContent = "";
+      journalOptionsByLang[currentLang].forEach((jName, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = jName;
+        newPaperJournalSelect.appendChild(opt);
+      });
+      newPaperJournalSelect.selectedIndex = Math.min(jIdx, journalOptionsByLang[currentLang].length - 1);
+    }
+
+    if (newPaperStyleSelect) {
+      newPaperStyleSelect.textContent = "";
+      methodologyOptionsByLang[currentLang].forEach((mObj, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = mObj.label;
+        newPaperStyleSelect.appendChild(opt);
+      });
+      newPaperStyleSelect.selectedIndex = Math.min(sIdx, methodologyOptionsByLang[currentLang].length - 1);
+    }
+  }
+
   function renderCourseTable(filterDept) {
     if (!courseTbody) return;
-    courseTbody.innerHTML = "";
+    courseTbody.textContent = "";
     const list = coursesByLang[currentLang];
     const filtered = filterDept === "all"
       ? list
@@ -1125,15 +1437,31 @@
     filtered.forEach((course) => {
       const tr = document.createElement("tr");
       tr.className = "course-row" + (course.code === selectedCourseCode ? " selected" : "");
-      tr.innerHTML = `
-        <td class="course-code">${course.code}</td>
-        <td class="course-title-cell">
-          <strong>${course.title}</strong>
-          <span>${course.deptName} · ${profLabel}${course.prof}</span>
-        </td>
-        <td>${course.credits}</td>
-        <td>${course.room}</td>
-      `;
+
+      const tdCode = document.createElement("td");
+      tdCode.className = "course-code";
+      tdCode.textContent = course.code;
+
+      const tdTitle = document.createElement("td");
+      tdTitle.className = "course-title-cell";
+      const strongEl = document.createElement("strong");
+      strongEl.textContent = course.title;
+      const spanEl = document.createElement("span");
+      spanEl.textContent = `${course.deptName} · ${profLabel}${course.prof}`;
+      tdTitle.appendChild(strongEl);
+      tdTitle.appendChild(spanEl);
+
+      const tdCredits = document.createElement("td");
+      tdCredits.textContent = course.credits;
+
+      const tdRoom = document.createElement("td");
+      tdRoom.textContent = course.room;
+
+      tr.appendChild(tdCode);
+      tr.appendChild(tdTitle);
+      tr.appendChild(tdCredits);
+      tr.appendChild(tdRoom);
+
       tr.addEventListener("click", () => {
         renderInspector(course);
         renderCourseTable(filterDept);
@@ -1144,7 +1472,7 @@
 
   function renderPaperList() {
     if (!paperListEl) return;
-    paperListEl.innerHTML = "";
+    paperListEl.textContent = "";
     const list = papersByLang[currentLang];
     const activePaper = list[activePaperIdx] || list[0];
 
@@ -1155,17 +1483,32 @@
       if (readerAuthors) readerAuthors.textContent = activePaper.authors;
       if (readerContent) readerContent.textContent = activePaper.content;
       if (readerFootnote) readerFootnote.textContent = activePaper.footnote;
+      if (readerReviewerHeader) {
+        readerReviewerHeader.textContent = activePaper.reviewerHeader || i18nDict[currentLang].res_reviewer_label;
+      }
       if (readerReview) readerReview.textContent = activePaper.review;
     }
 
     list.forEach((p, idx) => {
       const card = document.createElement("div");
       card.className = "paper-entry" + (idx === activePaperIdx ? " active" : "");
-      card.innerHTML = `
-        <div class="paper-journal">${p.journal}</div>
-        <h3 class="paper-entry-title">${p.title}</h3>
-        <div class="paper-authors">${p.authors}</div>
-      `;
+
+      const jDiv = document.createElement("div");
+      jDiv.className = "paper-journal";
+      jDiv.textContent = p.journal;
+
+      const tH3 = document.createElement("h3");
+      tH3.className = "paper-entry-title";
+      tH3.textContent = p.title;
+
+      const aDiv = document.createElement("div");
+      aDiv.className = "paper-authors";
+      aDiv.textContent = p.authors;
+
+      card.appendChild(jDiv);
+      card.appendChild(tH3);
+      card.appendChild(aDiv);
+
       card.addEventListener("click", () => {
         activePaperIdx = idx;
         renderPaperList();
@@ -1176,13 +1519,13 @@
 
   function renderFaculty() {
     if (!facultyGridEl) return;
-    facultyGridEl.innerHTML = "";
+    facultyGridEl.textContent = "";
     const hoursLabel = i18nDict[currentLang].fac_hours_label;
     const list = facultyByLang[currentLang];
 
     if (emailProfSelect) {
       const prevIdx = Math.max(0, emailProfSelect.selectedIndex);
-      emailProfSelect.innerHTML = "";
+      emailProfSelect.textContent = "";
       list.forEach((f, idx) => {
         const opt = document.createElement("option");
         opt.value = String(idx);
@@ -1195,17 +1538,40 @@
     list.forEach((f) => {
       const article = document.createElement("article");
       article.className = "faculty-dossier";
-      article.innerHTML = `
-        <div>
-          <div class="faculty-avatar">${f.avatar}</div>
-          <h3 class="faculty-name">${f.name}</h3>
-          <p class="faculty-role">${f.role}</p>
-          <p class="faculty-bio">${f.bio}</p>
-        </div>
-        <div class="faculty-hours">
-          <span><strong>${hoursLabel}</strong>${f.hours}</span>
-        </div>
-      `;
+
+      const topDiv = document.createElement("div");
+      const avDiv = document.createElement("div");
+      avDiv.className = "faculty-avatar";
+      avDiv.textContent = f.avatar;
+
+      const nameH3 = document.createElement("h3");
+      nameH3.className = "faculty-name";
+      nameH3.textContent = f.name;
+
+      const roleP = document.createElement("p");
+      roleP.className = "faculty-role";
+      roleP.textContent = f.role;
+
+      const bioP = document.createElement("p");
+      bioP.className = "faculty-bio";
+      bioP.textContent = f.bio;
+
+      topDiv.appendChild(avDiv);
+      topDiv.appendChild(nameH3);
+      topDiv.appendChild(roleP);
+      topDiv.appendChild(bioP);
+
+      const hoursDiv = document.createElement("div");
+      hoursDiv.className = "faculty-hours";
+      const spanEl = document.createElement("span");
+      const strongEl = document.createElement("strong");
+      strongEl.textContent = hoursLabel;
+      spanEl.appendChild(strongEl);
+      spanEl.appendChild(document.createTextNode(f.hours));
+      hoursDiv.appendChild(spanEl);
+
+      article.appendChild(topDiv);
+      article.appendChild(hoursDiv);
       facultyGridEl.appendChild(article);
     });
   }
@@ -1315,6 +1681,10 @@
     if (newPaperInput) {
       newPaperInput.placeholder = dict.sub_paper_placeholder;
     }
+    if (newPaperAuthorInput) {
+      newPaperAuthorInput.placeholder = dict.sub_author_placeholder;
+    }
+    populatePaperStudioSelects(!isInitial);
 
     if (emailQuestionInput) {
       emailQuestionInput.placeholder = dict.email_prof_placeholder;
@@ -1442,51 +1812,236 @@
     });
   }
 
-  // Submit Zero-Word Paper
+  // Multi-Dimensional Zero-Word Paper Submission Generator
+  let submissionCounter = 106;
+
+  function generateAndPublishPaper(forceRandomTopic) {
+    const customTitle = !forceRandomTopic && newPaperInput ? newPaperInput.value.trim() : "";
+    let zhTitle = customTitle;
+    let enTitle = customTitle;
+
+    if (!customTitle) {
+      const topicObj = randomPaperTopicsPool[randomTopicCursor % randomPaperTopicsPool.length];
+      randomTopicCursor += 1;
+      zhTitle = topicObj.zh;
+      enTitle = topicObj.en;
+    }
+
+    const rawAuthor = newPaperAuthorInput ? newPaperAuthorInput.value.trim() : "";
+    const zhAuthor = rawAuthor
+      ? `${rawAuthor}¹ · 绝对虚无大学特聘摸鱼客座学者`
+      : "匿名摸鱼学者¹ · 绝对虚无大学访问研究员";
+    const enAuthor = rawAuthor
+      ? `${rawAuthor}¹ · Distinguished Visiting Slacker at ANU`
+      : "Anonymous Slacker¹ · Visiting Fellow at ANU";
+
+    const jIdx = newPaperJournalSelect ? (parseInt(newPaperJournalSelect.value, 10) || 0) : 0;
+    const sIdx = newPaperStyleSelect ? (parseInt(newPaperStyleSelect.value, 10) || 0) : 0;
+
+    const zhJournal = journalOptionsByLang.zh[jIdx] || journalOptionsByLang.zh[0];
+    const enJournal = journalOptionsByLang.en[jIdx] || journalOptionsByLang.en[0];
+
+    const zhMethod = methodologyOptionsByLang.zh[sIdx] || methodologyOptionsByLang.zh[0];
+    const enMethod = methodologyOptionsByLang.en[sIdx] || methodologyOptionsByLang.en[0];
+
+    const reviewIdx = (submissionCounter + sIdx + jIdx) % peerReviewPoolByLang.zh.length;
+    const citIdx = (submissionCounter + jIdx) % citationsPoolByLang.zh.length;
+
+    const doiStr = `DOI: 10.0000/anu.void.2026.${submissionCounter}`;
+    submissionCounter += 1;
+
+    const zhEntry = {
+      doi: doiStr,
+      journal: zhJournal,
+      title: zhTitle,
+      authors: zhAuthor,
+      citations: citationsPoolByLang.zh[citIdx],
+      content: zhMethod.content,
+      footnote: zhMethod.footnote,
+      reviewerHeader: peerReviewPoolByLang.zh[reviewIdx].header,
+      review: peerReviewPoolByLang.zh[reviewIdx].text
+    };
+
+    const enEntry = {
+      doi: doiStr,
+      journal: enJournal,
+      title: enTitle,
+      authors: enAuthor,
+      citations: citationsPoolByLang.en[citIdx],
+      content: enMethod.content,
+      footnote: enMethod.footnote,
+      reviewerHeader: peerReviewPoolByLang.en[reviewIdx].header,
+      review: peerReviewPoolByLang.en[reviewIdx].text
+    };
+
+    papersByLang.zh.unshift(zhEntry);
+    papersByLang.en.unshift(enEntry);
+    activePaperIdx = 0;
+    if (newPaperInput) newPaperInput.value = "";
+    renderPaperList();
+
+    if (submitPaperStatusEl) {
+      submitPaperStatusEl.textContent = currentLang === "zh"
+        ? `🎉 秒录用成功！已刊发于《${zhJournal}》（${doiStr}），请查看上方阅览室！`
+        : `🎉 Instant Accept! Published in "${enJournal}" (${doiStr}) — see reading room above!`;
+    }
+  }
+
   if (submitBlankPaperBtn) {
     submitBlankPaperBtn.addEventListener("click", () => {
-      const rawTitle = (newPaperInput && newPaperInput.value.trim()) ||
-        (currentLang === "zh"
-          ? "论把闹钟按掉后那五分钟的相对论时间膨胀效应"
-          : "Relativistic Time Dilation During the 5 Minutes After Hitting Snooze");
-
-      const serialNum = Math.floor(100 + Math.random() * 899);
-      const zhEntry = {
-        doi: `DOI: 10.0000/anu.void.2026.${serialNum}`,
-        journal: "Nature: Nothing · Express Letter",
-        title: rawTitle,
-        authors: "匿名摸鱼学者¹ · 绝对虚无大学访问研究员",
-        citations: "被引次数：999+ 次（刚刚发表即被梦境索引）",
-        content: "[ 0 字正文 · 作者仅提交了一个标题便去喝下午茶了 ]",
-        footnote: "致谢：感谢自己没有写任何一个字，从而避免了所有潜在的学术争议。",
-        review: "“震撼学界！标题极富哲学张力，而正文的彻底留白更是对当代学术灌水的无声解构，免审直接录用！”"
-      };
-      const enEntry = {
-        doi: `DOI: 10.0000/anu.void.2026.${serialNum}`,
-        journal: "Nature: Nothing · Express Letter",
-        title: rawTitle,
-        authors: "Anonymous Slacker¹ · Visiting Fellow at ANU",
-        citations: "Citations: 999+ (Indexed immediately in REM sleep)",
-        content: "[ 0-WORD MANUSCRIPT · The author submitted only a title and went for boba tea ]",
-        footnote: "Acknowledgments: The author thanks themselves for writing nothing and avoiding all peer disputes.",
-        review: "“Breathtaking! A bold title followed by absolute silence—a masterful deconstruction of academic verbosity. Accepted without revisions!”"
-      };
-
-      papersByLang.zh.unshift(zhEntry);
-      papersByLang.en.unshift(enEntry);
-      activePaperIdx = 0;
-      if (newPaperInput) newPaperInput.value = "";
-      renderPaperList();
+      generateAndPublishPaper(false);
     });
   }
 
-  // Send Email to Absentee Professor
+  if (randomPaperTopicBtn) {
+    randomPaperTopicBtn.addEventListener("click", () => {
+      generateAndPublishPaper(true);
+    });
+  }
+
+  // Export Official Blank Paper Acceptance Certificate PNG
+  if (downloadPaperCertBtn) {
+    downloadPaperCertBtn.addEventListener("click", () => {
+      const list = papersByLang[currentLang];
+      const activePaper = list[activePaperIdx] || list[0];
+      if (!activePaper) return;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 1200;
+      canvas.height = 840;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#F7FAFF";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#0B2E59";
+      ctx.lineWidth = 10;
+      ctx.strokeRect(32, 32, canvas.width - 64, canvas.height - 64);
+
+      ctx.strokeStyle = "#2563EB";
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(50, 50, canvas.width - 100, canvas.height - 100);
+
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#0B2E59";
+      ctx.font = "bold 34px Georgia, serif";
+      ctx.fillText("ABSOLUTELY NOTHING UNIVERSITY PRESS", 600, 120);
+
+      ctx.fillStyle = "#1D4ED8";
+      ctx.font = "bold 22px Georgia, 'PingFang SC', serif";
+      ctx.fillText(
+        currentLang === "zh"
+          ? "零字数顶刊论文无条件录用通知书 · CERTIFICATE OF PUBLICATION"
+          : "OFFICIAL CERTIFICATE OF ZERO-WORD MANUSCRIPT ACCEPTANCE",
+        600,
+        162
+      );
+
+      ctx.fillStyle = "#4A6583";
+      ctx.font = "16px monospace";
+      ctx.fillText(`${activePaper.journal}   |   ${activePaper.doi}`, 600, 200);
+
+      ctx.strokeStyle = "#BFDBFE";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(120, 224);
+      ctx.lineTo(1080, 224);
+      ctx.stroke();
+
+      ctx.fillStyle = "#0F2540";
+      const titleStr = `《${activePaper.title}》`;
+      ctx.font = titleStr.length > 28
+        ? "bold 24px Georgia, 'Songti SC', serif"
+        : "bold 30px Georgia, 'Songti SC', serif";
+      ctx.fillText(titleStr.slice(0, 46), 600, 285);
+      if (titleStr.length > 46) {
+        ctx.fillText(titleStr.slice(46, 92), 600, 322);
+      }
+
+      ctx.fillStyle = "#1D4ED8";
+      ctx.font = "19px Georgia, 'PingFang SC', sans-serif";
+      ctx.fillText(activePaper.authors, 600, 365);
+
+      ctx.fillStyle = "#EFF6FF";
+      ctx.fillRect(110, 400, 980, 130);
+      ctx.strokeStyle = "#93C5FD";
+      ctx.strokeRect(110, 400, 980, 130);
+
+      ctx.fillStyle = "#0B2E59";
+      ctx.font = "italic 18px Georgia, 'PingFang SC', serif";
+      ctx.fillText(activePaper.content.slice(0, 62), 600, 455);
+      ctx.fillStyle = "#4A6583";
+      ctx.font = "15px Georgia, 'PingFang SC', sans-serif";
+      ctx.fillText(activePaper.footnote.slice(0, 70), 600, 495);
+
+      ctx.fillStyle = "#0F2540";
+      ctx.font = "bold 17px Georgia, 'PingFang SC', sans-serif";
+      ctx.fillText(activePaper.reviewerHeader || "Peer Review Verdict:", 600, 578);
+
+      ctx.fillStyle = "#1E3A5F";
+      ctx.font = "italic 16px Georgia, 'PingFang SC', serif";
+      const revClean = activePaper.review;
+      ctx.fillText(revClean.slice(0, 64), 600, 612);
+      if (revClean.length > 64) {
+        ctx.fillText(revClean.slice(64, 128), 600, 640);
+      }
+
+      ctx.save();
+      ctx.translate(600, 718);
+      ctx.rotate(-0.1);
+      ctx.fillStyle = "#1D4ED8";
+      ctx.beginPath();
+      ctx.arc(0, 0, 42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 12px Georgia, serif";
+      ctx.fillText("ACCEPTED", 0, -6);
+      ctx.fillText("0 WORDS", 0, 12);
+      ctx.restore();
+
+      ctx.fillStyle = "#64748B";
+      ctx.font = "13px monospace";
+      ctx.fillText(
+        "PARODY & HUMOR CERTIFICATE ONLY · NOT A REAL ACADEMIC PUBLICATION · FREEZE.EDU.KG",
+        600,
+        785
+      );
+
+      const link = document.createElement("a");
+      link.download = `ANU-Blank-Paper-${activePaper.doi.replace(/[^a-zA-Z0-9.-]/g, "_")}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    });
+  }
+
+  // Send Email to Absentee Professor (Multi-Reply + Context-Aware)
+  let emailTicketCounter = 4040;
+  const extraRepliesByLang = {
+    zh: [
+      "（系统补充：教授的邮箱自动转发规则已把您的邮件归档至【下辈子再看】文件夹。）",
+      "（系统补充：检测到您的邮件包含学术词汇，已触发教授的防加班防火墙并自动静音。）",
+      "（系统补充：此时教授正在食堂纠结吃什么，精神上与您同在。）"
+    ],
+    en: [
+      "(System Note: A filter rule automatically moved your message to the 'Read in Next Reincarnation' folder.)",
+      "(System Note: Academic keywords detected; Professor's anti-overtime firewall muted this thread.)",
+      "(System Note: The professor is currently daydreaming at the cafeteria in spiritual solidarity with you.)"
+    ]
+  };
+
   if (sendProfEmailBtn) {
     sendProfEmailBtn.addEventListener("click", () => {
       const idx = emailProfSelect ? parseInt(emailProfSelect.value, 10) || 0 : 0;
       const prof = facultyByLang[currentLang][idx] || facultyByLang[currentLang][0];
+      const qVal = emailQuestionInput ? emailQuestionInput.value.trim() : "";
+      emailTicketCounter += 1;
+      const extraPool = extraRepliesByLang[currentLang];
+      const extraNote = extraPool[emailTicketCounter % extraPool.length];
       if (emailReplyOutput && prof) {
-        emailReplyOutput.textContent = prof.reply;
+        const prefix = qVal
+          ? (currentLang === "zh" ? `[回执 #${emailTicketCounter} · 针对“${qVal.slice(0, 24)}”] ` : `[Ticket #${emailTicketCounter} · Re: "${qVal.slice(0, 28)}"] `)
+          : `[Ticket #${emailTicketCounter}] `;
+        emailReplyOutput.textContent = `${prefix}${prof.reply} ${extraNote}`;
       }
     });
   }
@@ -1625,10 +2180,15 @@
 
       ctx.fillStyle = "#4A6583";
       ctx.font = "15px monospace";
-      ctx.fillText(`Serial: ${currentSerial}  |  Issued by Absolutely Nothing University`, 600, 772);
+      ctx.fillText(`Serial: ${currentSerial}  |  Issued by Absolutely Nothing University`, 600, 764);
 
+      ctx.fillStyle = "#64748B";
+      ctx.font = "12px monospace";
+      ctx.fillText("FOR HUMOR & ENTERTAINMENT ONLY · PARODY DIPLOMA · NOT AN ACCREDITED INSTITUTION", 600, 788);
+
+      const safeFileRecipient = recipient.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, "_").slice(0, 30) || "Alumni";
       const link = document.createElement("a");
-      link.download = `ANU-Diploma-${recipient}.png`;
+      link.download = `ANU-Diploma-${safeFileRecipient}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     });

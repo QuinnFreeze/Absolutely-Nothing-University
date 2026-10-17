@@ -1462,3 +1462,45 @@ body {
     gap: 1.15rem;
   }
 }
+
+/* Enhanced Blank Paper Submission Studio & Parody Compliance Banner */
+.submission-studio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.submission-studio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+  align-items: center;
+}
+
+.parody-disclaimer-bar {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #BFDBFE;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  line-height: 1.55;
+}
+
+.reader-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--stone-border);
+}
+
+@media (max-width: 768px) {
+  .submission-studio-grid {
+    grid-template-columns: 1fr;
+  }
+}
