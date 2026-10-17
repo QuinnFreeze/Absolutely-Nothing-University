@@ -96,7 +96,7 @@
       form_lbl_degree: "申请学位等级 (Degree Title)",
       form_lbl_major: "主修荒诞专业 (Department & Major)",
       form_lbl_citation: "代表性学术不作为 (Citation of Inaction)",
-      form_btn_stamp: "加盖校长火漆大印",
+      form_btn_stamp: "加盖校长蓝晶大印",
       form_btn_download: "导出高清 PNG 学位证",
       cert_proclamation: "经绝对虚无大学评议会全票弃权通过，兹郑重授予",
       cert_major_prefix: "专业方向：",
@@ -104,7 +104,7 @@
       cert_sig_left: "第 404 任校长（代签：他睡着了）",
       cert_sig_right: "教务长兼图书馆首席呼噜官",
       cert_serial_prefix: "证书档案号：",
-      cert_serial_stamped: "（已加盖火漆大印）",
+      cert_serial_stamped: "（已加盖官方蓝印）",
       cert_btn_random: "随机生成一位摸鱼校友",
       acad_eyebrow: "Index Lectionum · 四大王牌学院与课程目录",
       acad_title: "2026 学年必修与选修翘课指南",
@@ -234,7 +234,7 @@
       form_lbl_degree: "Degree Title to Confer",
       form_lbl_major: "Department & Absurd Major",
       form_lbl_citation: "Distinguished Citation of Inaction",
-      form_btn_stamp: "Stamp Official Crimson Wax Seal",
+      form_btn_stamp: "Stamp Official Cobalt Blue Seal",
       form_btn_download: "Export High-Res PNG Diploma",
       cert_proclamation: "By unanimous abstention of the Senate of Absolutely Nothing University, we hereby confer upon",
       cert_major_prefix: "Majoring in: ",
@@ -242,7 +242,7 @@
       cert_sig_left: "404th Chancellor (Signed by proxy while napping)",
       cert_sig_right: "Provost & Chief Library Purring Officer",
       cert_serial_prefix: "Archive Serial: ",
-      cert_serial_stamped: " (Crimson Seal Verified)",
+      cert_serial_stamped: " (Cobalt Seal Verified)",
       cert_btn_random: "Generate Random Slacker Alumni",
       acad_eyebrow: "Index Lectionum · Faculties & Course Catalog",
       acad_title: "2026 Academic Year Guide to Strategic Truancy",
@@ -1509,33 +1509,33 @@
       canvas.height = 840;
       const ctx = canvas.getContext("2d");
 
-      ctx.fillStyle = "#FCF8EE";
+      ctx.fillStyle = "#F7FAFF";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.strokeStyle = "#0D1B2A";
+      ctx.strokeStyle = "#0B2E59";
       ctx.lineWidth = 10;
       ctx.strokeRect(32, 32, canvas.width - 64, canvas.height - 64);
 
-      ctx.strokeStyle = "#B8860B";
+      ctx.strokeStyle = "#2563EB";
       ctx.lineWidth = 3;
       ctx.strokeRect(50, 50, canvas.width - 100, canvas.height - 100);
 
       ctx.save();
       ctx.translate(600, 125);
-      ctx.fillStyle = "#0D1B2A";
+      ctx.fillStyle = "#0B2E59";
       ctx.beginPath();
       ctx.arc(0, 0, 42, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = "#B8860B";
+      ctx.strokeStyle = "#2563EB";
       ctx.lineWidth = 4;
       ctx.stroke();
 
-      ctx.strokeStyle = "#DFC16D";
+      ctx.strokeStyle = "#93C5FD";
       ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.arc(0, 0, 18, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.strokeStyle = "#8C1D40";
+      ctx.strokeStyle = "#3B82F6";
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(-16, 16);
@@ -1544,24 +1544,24 @@
       ctx.restore();
 
       ctx.textAlign = "center";
-      ctx.fillStyle = "#0D1B2A";
+      ctx.fillStyle = "#0B2E59";
       ctx.font = "bold 38px Georgia, serif";
       ctx.fillText("ABSOLUTELY NOTHING UNIVERSITY", 600, 215);
 
-      ctx.fillStyle = "#8C8577";
+      ctx.fillStyle = "#4A6583";
       ctx.font = "italic 20px Georgia, serif";
       ctx.fillText("Universitas Rerum Nullarum · Sigillum Magnum", 600, 248);
 
-      ctx.fillStyle = "#525B66";
+      ctx.fillStyle = "#4A6583";
       ctx.font = "20px Georgia, 'PingFang SC', sans-serif";
       ctx.fillText(dict.cert_proclamation, 600, 305);
 
       const recipient = (nameInput && nameInput.value.trim()) || dict.form_default_name;
-      ctx.fillStyle = "#8C1D40";
+      ctx.fillStyle = "#1D4ED8";
       ctx.font = "bold 46px Georgia, 'Songti SC', serif";
       ctx.fillText(recipient, 600, 375);
 
-      ctx.strokeStyle = "#B8860B";
+      ctx.strokeStyle = "#2563EB";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(300, 392);
@@ -1572,20 +1572,20 @@
       const major = (majorSelect && majorSelect.value) || "";
       const citation = (achievementSelect && achievementSelect.value) || "";
 
-      ctx.fillStyle = "#0D1B2A";
+      ctx.fillStyle = "#0B2E59";
       ctx.font = "bold 28px Georgia, 'PingFang SC', serif";
       ctx.fillText(degree, 600, 448);
 
-      ctx.fillStyle = "#1B2430";
+      ctx.fillStyle = "#0F2540";
       ctx.font = "bold 22px Georgia, 'PingFang SC', sans-serif";
       ctx.fillText(dict.cert_major_prefix + major, 600, 492);
 
-      ctx.fillStyle = "#525B66";
+      ctx.fillStyle = "#4A6583";
       ctx.font = "italic 18px Georgia, 'PingFang SC', serif";
       ctx.fillText("“" + citation + "”", 600, 545);
       ctx.fillText(dict.cert_privilege_suffix, 600, 576);
 
-      ctx.strokeStyle = "#0D1B2A";
+      ctx.strokeStyle = "#0B2E59";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(120, 700);
@@ -1594,12 +1594,12 @@
       ctx.lineTo(1080, 700);
       ctx.stroke();
 
-      ctx.fillStyle = "#0D1B2A";
+      ctx.fillStyle = "#0B2E59";
       ctx.font = "italic 24px Georgia, serif";
       ctx.fillText("Albert Slackingstein", 270, 685);
       ctx.fillText("Prof. Ginger (Meow)", 930, 685);
 
-      ctx.fillStyle = "#525B66";
+      ctx.fillStyle = "#4A6583";
       ctx.font = "15px Georgia, 'PingFang SC', sans-serif";
       ctx.fillText(dict.cert_sig_left, 270, 728);
       ctx.fillText(dict.cert_sig_right, 930, 728);
@@ -1607,23 +1607,23 @@
       ctx.save();
       ctx.translate(600, 688);
       ctx.rotate(-0.12);
-      ctx.fillStyle = "#8C1D40";
+      ctx.fillStyle = "#1D4ED8";
       ctx.beginPath();
       ctx.arc(0, 0, 54, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = "#DFC16D";
+      ctx.strokeStyle = "#93C5FD";
       ctx.lineWidth = 2.5;
       ctx.setLineDash([6, 4]);
       ctx.stroke();
 
-      ctx.fillStyle = "#FAF6EE";
+      ctx.fillStyle = "#FFFFFF";
       ctx.font = "bold 14px Georgia, serif";
       ctx.fillText("OFFICIAL SEAL", 0, -14);
       ctx.fillText("NIHIL AGERE", 0, 5);
       ctx.fillText("100% VOID", 0, 24);
       ctx.restore();
 
-      ctx.fillStyle = "#8C8577";
+      ctx.fillStyle = "#4A6583";
       ctx.font = "15px monospace";
       ctx.fillText(`Serial: ${currentSerial}  |  Issued by Absolutely Nothing University`, 600, 772);
 
