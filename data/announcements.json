@@ -1,0 +1,179 @@
+{
+  "chancellor": {
+    "id": "ANU-CHANCELLOR-404",
+    "term": "1899 – ∞",
+    "officeRoom": "Room 404, Hall of Strategic Slacking",
+    "zh": {
+      "name": "阿尔伯特·摸鱼斯坦 爵士 (Prof. Sir Albert Slackingstein)",
+      "title": "绝对虚无大学第 404 任终身荣誉校长 · 皇家退堂鼓学会首席院士",
+      "degrees": "Ph.D. (Pure Void), D.S.P. (Honoris Causa), F.R.S. (Fellow of Royal Snoozing)",
+      "motto": "“凡事只要拖到明天，就有 50% 的概率永远不需要做了。”",
+      "bio": "摸鱼斯坦校长于 1899 年因在就任典礼上睡过头而全票当选。执掌 ANU 百余年来，他成功取消了全校所有早八课程、废除了期末绩效考核，并将行政楼改造为恒温午睡保护区。他的学术代表作《论什么都不做的宇宙热力学优越性》至今仍未动笔。",
+      "schedule": [
+        { "time": "09:00 – 11:30", "activity": "深度 REM 睡眠与被窝引力场观测" },
+        { "time": "11:30 – 13:30", "activity": "思考中午吃什么及带薪午休" },
+        { "time": "13:30 – 17:00", "activity": "在办公桌前凝视枸杞保温杯发呆" },
+        { "time": "17:00 – 次日", "activity": "准时下班并开启全校邮件免打扰模式" }
+      ]
+    },
+    "en": {
+      "name": "Prof. Sir Albert Slackingstein",
+      "title": "404th Tenured Chancellor of ANU · Fellow of the Royal Snoozing Society",
+      "degrees": "Ph.D. (Pure Void), D.S.P. (Honoris Causa), F.R.S. (Fellow of Royal Snoozing)",
+      "motto": "“Any task postponed until tomorrow has a 50% chance of never needing to be done at all.”",
+      "bio": "Elected unanimously in 1899 after oversleeping his own inauguration ceremony, Chancellor Slackingstein has spent over a century abolishing 8:00 AM lectures, dismantling faculty KPIs, and converting the Administration Building into a climate-controlled nap sanctuary. His magnum opus, 'On the Thermodynamic Superiority of Doing Nothing,' remains unwritten.",
+      "schedule": [
+        { "time": "09:00 – 11:30", "activity": "Deep REM Sleep & Duvet Gravity Observation" },
+        { "time": "11:30 – 13:30", "activity": "Contemplating Lunch & Compensatory Nap" },
+        { "time": "13:30 – 17:00", "activity": "Staring Pensively at a Cold Goji-Berry Thermos" },
+        { "time": "17:00 – Next Day", "activity": "Punctual Departure & Campus-Wide Email Mute" }
+      ]
+    }
+  },
+  "announcements": [
+    {
+      "id": "DECREE-2026-001",
+      "category": "decree",
+      "date": "2026-10-15",
+      "pinned": true,
+      "zh": {
+        "categoryLabel": "校长令",
+        "dept": "校长办公室 · 第 404 号法令",
+        "title": "关于全面取缔周一上午一切清醒活动的紧急校长令",
+        "summary": "鉴于周一上午人类大脑皮层普遍处于量子坍缩态，即日起全校周一 12:00 前禁止开展任何形式的思考、开会、早读或定闹钟行为。违者将被强制罚睡午觉两小时。"
+      },
+      "en": {
+        "categoryLabel": "Chancellor's Decree",
+        "dept": "Office of the Chancellor · Decree No. 404",
+        "title": "Executive Order Abolishing All Conscious Activity on Monday Mornings",
+        "summary": "Whereas the human cerebral cortex remains in quantum collapse on Monday mornings, all thinking, meetings, lectures, and alarm clocks before 12:00 PM on Mondays are hereby prohibited. Violators shall be sentenced to a mandatory two-hour nap."
+      }
+    },
+    {
+      "id": "DECREE-2026-002",
+      "category": "decree",
+      "date": "2026-10-08",
+      "pinned": true,
+      "zh": {
+        "categoryLabel": "校长令",
+        "dept": "校长办公室 · 评议会联署",
+        "title": "关于将“下次一定”确立为本校唯一法定结题标准的决议",
+        "summary": "经校评议会全票弃权通过，今后凡校内科研立项、教学评估及行政汇报，只需在报告封面写明“下次一定”四个字，即视同满分结题，无需补充任何正文。"
+      },
+      "en": {
+        "categoryLabel": "Chancellor's Decree",
+        "dept": "Office of the Chancellor · Senate Resolution",
+        "title": "Resolution Establishing 'Next Time For Sure' as Official Grant Completion Standard",
+        "summary": "By unanimous abstention of the University Senate, all research grants, course evaluations, and administrative audits may now be fulfilled in full simply by writing 'Next Time For Sure' on the cover page."
+      }
+    },
+    {
+      "id": "ACAD-2026-019",
+      "category": "academic",
+      "date": "2026-10-12",
+      "pinned": false,
+      "zh": {
+        "categoryLabel": "教务通知",
+        "dept": "教务处与退堂鼓学院",
+        "title": "2026 秋季学期《拖延症导论》期中考试无限期顺延通知",
+        "summary": "原定于本周举行的期中考试，因命题教授尚未想好第一题写什么，且监考老师忘记考场在哪，经研究决定正式推迟至 2099 年春季学期举行。请各位同学不必复习。"
+      },
+      "en": {
+        "categoryLabel": "Academic Notice",
+        "dept": "Office of the Provost & College of Retreat",
+        "title": "Indefinite Postponement of 'Intro to Procrastination' Midterm Examination",
+        "summary": "Because the instructor has not yet started drafting Question 1 and the proctors forgot where the classroom is, this week's midterm is officially rescheduled to Spring 2099. Please refrain from studying."
+      }
+    },
+    {
+      "id": "ACAD-2026-024",
+      "category": "academic",
+      "date": "2026-09-29",
+      "pinned": false,
+      "zh": {
+        "categoryLabel": "教务通知",
+        "dept": "学位评定委员会",
+        "title": "关于严禁毕业论文出现实质性文字内容的合规提醒",
+        "summary": "近期查重系统发现个别同学的毕业论文中竟然包含 3 个以上完整句子，严重背离我校“零字数留白”学术传统。请相关同学立即删减至 0 字后重新提交。"
+      },
+      "en": {
+        "categoryLabel": "Academic Notice",
+        "dept": "Degree Conferral Committee",
+        "title": "Compliance Reminder: Strict Prohibition of Actual Words in Dissertations",
+        "summary": "Our plagiarism scanner recently flagged a student thesis containing more than three complete sentences—a grave violation of ANU's zero-word scholarly tradition. Please delete all text prior to resubmission."
+      }
+    },
+    {
+      "id": "LIFE-2026-033",
+      "category": "campus",
+      "date": "2026-10-16",
+      "pinned": false,
+      "zh": {
+        "categoryLabel": "校园行政",
+        "dept": "图书馆与猫咪福利委员会",
+        "title": "三楼靠窗 1–8 号绒布沙发永久划归橘座主任午睡领地的公告",
+        "summary": "为保障我校首席呼噜官橘座大主任的日照睡眠质量，图书馆三楼南侧绒布沙发区自即日起列为特级安静保护区。途经师生请放轻脚步，严禁只看不喂冻干。"
+      },
+      "en": {
+        "categoryLabel": "Campus Admin",
+        "dept": "Library & Feline Welfare Committee",
+        "title": "Permanent Requisition of 3F Sunlit Velvet Sofas by Prof. Ginger Cat",
+        "summary": "To safeguard the afternoon nap quality of Chief Purring Officer Prof. Ginger, Sofas 1–8 by the third-floor south window are designated a Sacred Quiet Zone. Passing students must tiptoe and offer freeze-dried salmon."
+      }
+    },
+    {
+      "id": "LIFE-2026-041",
+      "category": "campus",
+      "date": "2026-10-04",
+      "pinned": false,
+      "zh": {
+        "categoryLabel": "校园行政",
+        "dept": "后勤保障处 · 膳食科",
+        "title": "关于“是否召开讨论食堂加菜预备会”提案的搁置通报",
+        "summary": "经过三年零八个月的书面传阅，后勤处全体委员一致认为开会讨论太消耗热量，决定无限期搁置该预备会，并直接给每位师生发放精神烤肉券一张。"
+      },
+      "en": {
+        "categoryLabel": "Campus Admin",
+        "dept": "Facilities & Culinary Mysticism Dept.",
+        "title": "Tabling of Proposal to Schedule a Pre-Meeting on Cafeteria Menu Expansion",
+        "summary": "After three years and eight months of deliberation, the committee concluded that holding a meeting burns too many calories. The motion is tabled indefinitely; spiritual barbecue vouchers have been issued instead."
+      }
+    },
+    {
+      "id": "DECREE-2026-009",
+      "category": "decree",
+      "date": "2026-09-18",
+      "pinned": false,
+      "zh": {
+        "categoryLabel": "校长令",
+        "dept": "校长办公室 · 外事公报",
+        "title": "关于拒绝参加本年度全球大学内卷排行榜的严正声明",
+        "summary": "针对某排行榜机构擅自将我校列为第 NaN 名的行为，摸鱼斯坦校长表示强烈赞赏：只要我们没有排名，就没有人能超越我们。"
+      },
+      "en": {
+        "categoryLabel": "Chancellor's Decree",
+        "dept": "Office of the Chancellor · External Affairs",
+        "title": "Solemn Declaration Declining Participation in Global University Hustle Rankings",
+        "summary": "In response to ranking agencies assigning ANU a global rank of NaN, Chancellor Slackingstein expressed warm approval: as long as our rank is Not-a-Number, no institution can ever surpass us."
+      }
+    },
+    {
+      "id": "ACAD-2026-052",
+      "category": "academic",
+      "date": "2026-10-17",
+      "pinned": false,
+      "zh": {
+        "categoryLabel": "教务通知",
+        "dept": "量子超算与烤红薯中心",
+        "title": "地下一楼量子超算机房冬季烤红薯预约通道开启通知",
+        "summary": "鉴于我校超算中心全年算力负载保持为 0.00 FLOPS，为充分利用机箱余温，即日起向全校师生开放红薯、板栗及橘子烘烤预约服务。"
+      },
+      "en": {
+        "categoryLabel": "Academic Notice",
+        "dept": "Quantum Supercomputing & Sweet Potato Center",
+        "title": "Winter Sweet-Potato Roasting Reservations Now Open at Basement Server Room",
+        "summary": "With campus supercomputer utilization steady at 0.00 FLOPS year-round, server chassis bays are now open for student sweet potato, chestnut, and tangerine roasting reservations."
+      }
+    }
+  ]
+}

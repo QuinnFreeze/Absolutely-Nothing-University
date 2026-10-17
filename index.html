@@ -1,25 +1,48 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Absolutely Nothing University (ANU) | 绝对虚无大学官方网站</title>
-  <meta name="description" content="A fictional parody & satire university website. Founded in ∞ B.C., ranked NaN worldwide. Where great minds gather to accomplish absolutely nothing." />
+  <meta name="description" content="Official satirical website of Absolutely Nothing University (ANU · 绝对虚无大学). Founded in ∞ B.C., ranked NaN worldwide. Instant honorary Ph.D. generator, truancy syllabus, and zero-word journal." />
+  <meta name="keywords" content="Absolutely Nothing University, ANU, 绝对虚无大学, 摸鱼大学, 虚构大学, Satirical University, Parody Diploma, Nature Nothing" />
+  <meta name="theme-color" content="#0B2E59" />
+  <link rel="canonical" href="https://freeze.edu.kg/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Absolutely Nothing University (ANU)" />
+  <meta property="og:title" content="Absolutely Nothing University (ANU) | 绝对虚无大学官方网站" />
+  <meta property="og:description" content="Nihil Agere, Omnia Esse — 什么都不做，即是一切。Founded in ∞ B.C., proudly ranked NaN across all global rankings." />
+  <meta property="og:url" content="https://freeze.edu.kg/" />
+  <meta property="og:image" content="https://freeze.edu.kg/favicon.svg" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Absolutely Nothing University (ANU) | 绝对虚无大学" />
+  <meta name="twitter:description" content="Founded in ∞ B.C., ranked NaN worldwide. Claim your honorary Ph.D. in Pure Nothingness in 3 seconds." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&family=Noto+Serif+SC:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Absolutely Nothing University (绝对虚无大学)",
+    "alternateName": "ANU Parody University",
+    "url": "https://freeze.edu.kg/",
+    "description": "A fictional satirical university website celebrating the art of doing nothing."
+  }
+  </script>
 </head>
 <body>
+  <a href="#top" class="skip-link" data-i18n="skip_to_content">跳至主要内容</a>
 
-  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
 
   <div class="app-shell">
     <!-- Persistent Academic Sidebar -->
     <aside class="uni-sidebar" id="uni-sidebar" aria-label="University Sidebar Navigation">
-      <a href="#overview" class="sidebar-brand" data-page-link="overview">
-        <img src="favicon.svg" alt="Absolutely Nothing University Crest" class="sidebar-crest" />
+      <a href="#overview" class="sidebar-brand" data-page-link="overview" id="sidebar-crest-trigger">
+        <img src="favicon.svg" alt="Absolutely Nothing University Crest" class="sidebar-crest" width="48" height="48" />
         <div class="sidebar-brand-text">
           <span class="sidebar-uni-en">Absolutely Nothing University</span>
           <span class="sidebar-uni-sub" data-i18n="brand_sub">绝对虚无大学 · 公元前 ∞ 年</span>
@@ -34,10 +57,10 @@
       <nav class="sidebar-nav" aria-label="Main Portal Pages">
         <div class="sidebar-nav-section-label" data-i18n="sidebar_sec_main">核心门户 · PORTALS</div>
 
-        <button type="button" class="nav-item-btn active" data-page-target="overview">
+        <button type="button" class="nav-item-btn active" data-page-target="overview" aria-current="page">
           <span class="nav-item-left">
             <span class="nav-item-code">I.</span>
-            <span data-i18n="nav_overview">创校门户与虚无账本</span>
+            <span data-i18n="nav_overview">创校门户与校长办公厅</span>
           </span>
           <span class="nav-item-badge">HOME</span>
         </button>
@@ -53,7 +76,7 @@
         <button type="button" class="nav-item-btn" data-page-target="academics">
           <span class="nav-item-left">
             <span class="nav-item-code">III.</span>
-            <span data-i18n="nav_academics">院系与荒诞选课中心</span>
+            <span data-i18n="nav_academics">院系大纲与模拟统考</span>
           </span>
           <span class="nav-item-badge">0.0 CR</span>
         </button>
@@ -80,27 +103,28 @@
             <span class="nav-item-code">VI.</span>
             <span data-i18n="nav_campus">薛定谔食堂与摸鱼社团</span>
           </span>
-          <span class="nav-item-badge">NEW</span>
+          <span class="nav-item-badge">LIFE</span>
         </button>
 
         <button type="button" class="nav-item-btn" data-page-target="webcams">
           <span class="nav-item-left">
             <span class="nav-item-code">VII.</span>
-            <span data-i18n="nav_webcams">保卫处 24h 实景监控</span>
+            <span data-i18n="nav_webcams">保卫处 24h 模拟监控</span>
           </span>
-          <span class="nav-item-badge">LIVE</span>
+          <span class="nav-item-badge">SIM</span>
         </button>
       </nav>
 
       <div class="sidebar-footer">
         <div class="sidebar-ctrl-row">
-          <button type="button" class="sidebar-btn" id="lang-switch-btn">English</button>
-          <button type="button" class="sidebar-btn" id="tuition-btn">学费：¥0.00</button>
+          <button type="button" class="sidebar-btn" id="lang-switch-btn" aria-label="Switch Language">English</button>
+          <button type="button" class="sidebar-btn" id="theme-switch-btn" aria-label="Toggle Dark Mode">🌙 学院夜读</button>
         </div>
-        <button type="button" class="sidebar-btn" id="excuse-gen-btn" data-i18n="sidebar_btn_excuse">
-          生成今日请假理由
-        </button>
-        <div class="sidebar-excuse-box" id="sidebar-excuse-text" data-i18n="sidebar_excuse_default">
+        <div class="sidebar-ctrl-row">
+          <button type="button" class="sidebar-btn" id="tuition-btn">学费：¥0.00</button>
+          <button type="button" class="sidebar-btn" id="excuse-gen-btn" data-i18n="sidebar_btn_excuse">生成今日请假理由</button>
+        </div>
+        <div class="sidebar-excuse-box" id="sidebar-excuse-text" aria-live="polite" data-i18n="sidebar_excuse_default">
           今日官方请假条：由于被窝产生局部强引力场，特批全天免起床。
         </div>
       </div>
@@ -110,23 +134,27 @@
     <div class="main-stage">
       <div class="top-bar-wrapper">
         <div class="mobile-topbar">
-          <button type="button" class="mobile-menu-btn" id="mobile-menu-toggle" data-i18n="mobile_menu_btn">
-            ☰ 校务侧边栏 (Menu)
+          <button type="button" class="mobile-menu-btn" id="mobile-menu-toggle" aria-expanded="false" aria-controls="uni-sidebar" data-i18n="mobile_menu_btn">
+            ☰ 校务导航
           </button>
-          <span style="font-family: var(--serif-font); font-weight: 700;">ANU · 绝对虚无大学</span>
+          <span class="mobile-topbar-title">ANU · 绝对虚无大学</span>
+          <div class="mobile-quick-actions">
+            <button type="button" class="mobile-quick-btn" id="mobile-lang-btn" aria-label="Switch Language">EN</button>
+            <button type="button" class="mobile-quick-btn" id="mobile-theme-btn" aria-label="Toggle Theme">🌙</button>
+          </div>
         </div>
 
         <div class="bulletin-bar" role="region" aria-label="Academic Bulletin">
           <div class="bulletin-content">
             <span class="bulletin-badge" data-i18n="bulletin_badge">DEAN'S DECREE · 教务急电</span>
-            <span id="bulletin-text"></span>
+            <span id="bulletin-text" aria-live="polite"></span>
           </div>
           <button type="button" class="bulletin-next-btn" id="next-bulletin-btn" data-i18n="bulletin_next">下一条通知</button>
         </div>
       </div>
 
-      <main class="page-views-Host" id="top">
-        <!-- PAGE 1: OVERVIEW / CAMPUS PORTAL -->
+      <main class="page-views-Host" id="top" tabindex="-1">
+        <!-- PAGE 1: OVERVIEW, PROVOST LEDGER & CHANCELLOR'S OFFICE -->
         <section class="page-view active" id="page-overview" data-page="overview">
           <div class="hero-section">
             <div class="container hero-grid">
@@ -192,9 +220,63 @@
                   <button type="button" class="btn-contribute-nothing" id="contribute-idle-btn" data-i18n="ledger_btn">
                     点此为母校贡献 +10 秒纯粹发呆
                   </button>
-                  <p class="contribute-feedback" id="contribute-feedback" data-i18n="ledger_feedback_init"></p>
+                  <p class="contribute-feedback" id="contribute-feedback" aria-live="polite" data-i18n="ledger_feedback_init"></p>
                 </div>
               </aside>
+            </div>
+          </div>
+
+          <!-- NEW SECTION: CHANCELLOR'S OFFICE & OFFICIAL ANNOUNCEMENTS SYSTEM -->
+          <div class="academic-section" id="chancellor-office-section">
+            <div class="container">
+              <div class="section-header">
+                <p class="section-latin" data-i18n="chancellor_eyebrow">Aula Cancellarii · 校长办公室与校务公告系统</p>
+                <h2 class="section-title" data-i18n="chancellor_sec_title">第 404 任校长公署与荒诞法令公报</h2>
+                <p class="section-desc" data-i18n="chancellor_sec_desc"></p>
+              </div>
+
+              <div class="chancellor-office-grid">
+                <!-- Left: Chancellor Personal Dossier -->
+                <article class="chancellor-dossier-card" aria-label="Chancellor Profile">
+                  <div class="chancellor-profile-top">
+                    <div class="chancellor-monogram" aria-hidden="true">AS</div>
+                    <div>
+                      <h3 class="chancellor-name" id="chancellor-name"></h3>
+                      <p class="chancellor-title-line" id="chancellor-title"></p>
+                      <p style="font-size: 0.76rem; color: var(--ink-muted); margin-top: 0.15rem;" id="chancellor-degrees"></p>
+                    </div>
+                  </div>
+
+                  <p class="chancellor-bio-text" id="chancellor-bio"></p>
+
+                  <blockquote class="chancellor-quote" style="margin-bottom: 1rem;">
+                    <span id="chancellor-motto"></span>
+                  </blockquote>
+
+                  <div class="chancellor-schedule-box">
+                    <strong style="font-size: 0.85rem; color: var(--oxford-abyss);" data-i18n="chancellor_schedule_title">
+                      校长每日标准摸鱼作息表
+                    </strong>
+                    <ul class="chancellor-schedule-list" id="chancellor-schedule-list"></ul>
+                  </div>
+                </article>
+
+                <!-- Right: Campus Announcements & Decrees from JSON -->
+                <div class="announcements-board-card" aria-label="Campus Announcements Board">
+                  <h3 class="form-panel-title" data-i18n="ann_board_title">校务公告与荒诞校长令归档</h3>
+                  <div class="ann-toolbar">
+                    <div class="ann-filter-group" role="tablist" aria-label="Announcement Categories">
+                      <button type="button" class="ann-filter-btn active" data-ann-cat="all" data-i18n="ann_filter_all">全部公报</button>
+                      <button type="button" class="ann-filter-btn" data-ann-cat="decree" data-i18n="ann_filter_decree">校长令</button>
+                      <button type="button" class="ann-filter-btn" data-ann-cat="academic" data-i18n="ann_filter_academic">教务通知</button>
+                      <button type="button" class="ann-filter-btn" data-ann-cat="campus" data-i18n="ann_filter_campus">校园行政</button>
+                    </div>
+                    <button type="button" class="bulletin-next-btn" id="random-ann-btn" data-i18n="ann_btn_random">随机抽阅一条校务法令</button>
+                  </div>
+
+                  <div class="ann-list" id="announcements-list" aria-live="polite"></div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -204,16 +286,14 @@
               <div class="section-header">
                 <p class="section-latin" data-i18n="home_dir_eyebrow">Porta Academica · 校内各大职能部门直达</p>
                 <h2 class="section-title" data-i18n="home_dir_title">探索绝对虚无大学的六大核心殿堂</h2>
-                <p class="section-desc" data-i18n="home_dir_desc">
-                  您可通过左侧常驻学院导航栏或下方快捷入口，随时前往学位授予处、荒诞选课中心、空白期刊库或薛定谔食堂。
-                </p>
+                <p class="section-desc" data-i18n="home_dir_desc"></p>
               </div>
 
               <div class="portal-cards-grid">
                 <div class="portal-card">
                   <div>
                     <h3 data-i18n="pcard1_title">免试直录与博士颁授</h3>
-                    <p data-i18n="pcard1_desc">无需考试与答辩，自定义您的荒诞专业，加盖蓝晶大印并导出高清 PNG 博士学位证。</p>
+                    <p data-i18n="pcard1_desc"></p>
                   </div>
                   <button type="button" class="portal-card-btn" data-goto-page="admissions" data-i18n="pcard_enter">进入该殿堂</button>
                 </div>
@@ -221,7 +301,7 @@
                 <div class="portal-card">
                   <div>
                     <h3 data-i18n="pcard2_title">四大院系与翘课指南</h3>
-                    <p data-i18n="pcard2_desc">涵盖退堂鼓演奏、死线前爆发力学、会议放空工程等 8 门王牌课程，选课即自动翘课。</p>
+                    <p data-i18n="pcard2_desc"></p>
                   </div>
                   <button type="button" class="portal-card-btn" data-goto-page="academics" data-i18n="pcard_enter">进入该殿堂</button>
                 </div>
@@ -229,7 +309,7 @@
                 <div class="portal-card">
                   <div>
                     <h3 data-i18n="pcard3_title">《Nature: Nothing》期刊</h3>
-                    <p data-i18n="pcard3_desc">查阅零字数高被引镇校论文，或在线定制投递您的空白手稿，获取多流派同行盲审盛赞。</p>
+                    <p data-i18n="pcard3_desc"></p>
                   </div>
                   <button type="button" class="portal-card-btn" data-goto-page="research" data-i18n="pcard_enter">进入该殿堂</button>
                 </div>
@@ -237,7 +317,7 @@
                 <div class="portal-card">
                   <div>
                     <h3 data-i18n="pcard4_title">不坐班名师与自动回信</h3>
-                    <p data-i18n="pcard4_desc">认识图书馆首席呼噜官橘座主任与司马改天教授，体验向教授发邮件秒收敷衍回信。</p>
+                    <p data-i18n="pcard4_desc"></p>
                   </div>
                   <button type="button" class="portal-card-btn" data-goto-page="faculty" data-i18n="pcard_enter">进入该殿堂</button>
                 </div>
@@ -245,15 +325,15 @@
                 <div class="portal-card">
                   <div>
                     <h3 data-i18n="pcard5_title">薛定谔食堂与摸鱼社团</h3>
-                    <p data-i18n="pcard5_desc">解决人类终极难题“中午吃什么”，报名加入退堂鼓交响乐团与发呆竞技队。</p>
+                    <p data-i18n="pcard5_desc"></p>
                   </div>
                   <button type="button" class="portal-card-btn" data-goto-page="campus" data-i18n="pcard_enter">进入该殿堂</button>
                 </div>
 
                 <div class="portal-card">
                   <div>
-                    <h3 data-i18n="pcard6_title">保卫处 24h 静止监控</h3>
-                    <p data-i18n="pcard6_desc">实时监看空无一人的自习大厅、凉透的校长枸杞茶与正在烤红薯的超算机箱。</p>
+                    <h3 data-i18n="pcard6_title">保卫处 24h 模拟监控</h3>
+                    <p data-i18n="pcard6_desc"></p>
                   </div>
                   <button type="button" class="portal-card-btn" data-goto-page="webcams" data-i18n="pcard_enter">进入该殿堂</button>
                 </div>
@@ -299,6 +379,28 @@
                   </div>
 
                   <div class="form-group">
+                    <label for="applicant-honor" data-i18n="form_lbl_honor">随机学术荣誉称号 (Latin / Academic Honor)</label>
+                    <select id="applicant-honor" class="form-control"></select>
+                  </div>
+
+                  <div class="form-row-two">
+                    <div class="form-group">
+                      <label for="applicant-template" data-i18n="form_lbl_template">证书装帧模板风格</label>
+                      <select id="applicant-template" class="form-control"></select>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="applicant-cert-lang" data-i18n="form_lbl_cert_lang">证书票面语言</label>
+                      <select id="applicant-cert-lang" class="form-control">
+                        <option value="auto" data-i18n="cert_lang_auto">跟随当前网站语言 (Follow Site)</option>
+                        <option value="zh" data-i18n="cert_lang_zh">中文荣誉证书 (Chinese)</option>
+                        <option value="en" data-i18n="cert_lang_en">英文国际证书 (English)</option>
+                        <option value="bilingual" data-i18n="cert_lang_bilingual">中英双语典藏版 (Bilingual)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
                     <label for="applicant-achievement" data-i18n="form_lbl_citation">代表性学术不作为 (Citation of Inaction)</label>
                     <select id="applicant-achievement" class="form-control"></select>
                   </div>
@@ -314,20 +416,21 @@
                 </div>
 
                 <div class="diploma-preview-wrapper">
-                  <div class="diploma-certificate" id="diploma-card">
-                    <img src="favicon.svg" alt="ANU Seal" class="diploma-crest" />
+                  <div class="diploma-certificate template-oxford" id="diploma-card">
+                    <img src="favicon.svg" alt="ANU Seal" class="diploma-crest" width="54" height="54" />
                     <div class="diploma-uni-title">ABSOLUTELY NOTHING UNIVERSITY</div>
-                    <div class="diploma-latin-sub">Universitas Rerum Nullarum · Sigillum Magnum</div>
-                    <p class="diploma-proclamation" data-i18n="cert_proclamation"></p>
+                    <div class="diploma-latin-sub" id="cert-sub-header">Universitas Rerum Nullarum · Sigillum Magnum</div>
+                    <p class="diploma-proclamation" id="cert-proclamation"></p>
                     <div class="diploma-recipient" id="cert-name"></div>
                     <div class="diploma-degree-line" id="cert-degree"></div>
                     <div class="diploma-major-line" id="cert-major"></div>
+                    <div class="diploma-honor-badge" id="cert-honor"></div>
                     <p class="diploma-citation" id="cert-citation"></p>
 
                     <div class="diploma-footer">
                       <div class="signature-block">
                         <div class="signature-hand">Albert Slackingstein</div>
-                        <span data-i18n="cert_sig_left"></span>
+                        <span id="cert-sig-left"></span>
                       </div>
 
                       <div class="wax-seal" id="wax-seal-badge">
@@ -338,14 +441,20 @@
 
                       <div class="signature-block">
                         <div class="signature-hand">Prof. Ginger (Meow)</div>
-                        <span data-i18n="cert_sig_right"></span>
+                        <span id="cert-sig-right"></span>
                       </div>
                     </div>
+
+                    <div class="diploma-meta-strip">
+                      <span id="cert-serial"></span>
+                      <span id="cert-date"></span>
+                    </div>
+                    <p class="diploma-fictional-tag" id="cert-fictional-notice" data-i18n="cert_fictional_notice"></p>
                   </div>
 
                   <div class="diploma-toolbar">
-                    <span class="diploma-serial" id="cert-serial"></span>
-                    <button type="button" class="bulletin-next-btn" id="random-profile-btn" data-i18n="cert_btn_random"></button>
+                    <button type="button" class="bulletin-next-btn" id="random-profile-btn" data-i18n="cert_btn_random">随机生成一位摸鱼校友</button>
+                    <button type="button" class="bulletin-next-btn" id="random-honor-btn" data-i18n="cert_btn_honor">随机刷新荣誉头衔</button>
                   </div>
                 </div>
               </div>
@@ -353,7 +462,7 @@
           </div>
         </section>
 
-        <!-- PAGE 3: ACADEMICS & COURSE CATALOG -->
+        <!-- PAGE 3: ACADEMICS, FULL SYLLABUS & MOCK EXAM -->
         <section class="page-view" id="page-academics" data-page="academics">
           <div class="academic-section">
             <div class="container">
@@ -399,15 +508,52 @@
                   <div class="syllabus-section-label" data-i18n="syl_lbl_desc"></div>
                   <p class="syllabus-text" id="syl-desc"></p>
 
+                  <div class="syllabus-section-label" data-i18n="syl_lbl_prof_bio"></div>
+                  <p class="syllabus-text" id="syl-prof-bio"></p>
+
+                  <div class="syllabus-section-label" data-i18n="syl_lbl_weeks"></div>
+                  <ul class="syllabus-week-list" id="syl-weeks-list"></ul>
+
                   <div class="syllabus-section-label" data-i18n="syl_lbl_grading"></div>
                   <p class="syllabus-text" id="syl-grading"></p>
 
                   <div class="syllabus-section-label" data-i18n="syl_lbl_book"></div>
                   <p class="syllabus-text" id="syl-book"></p>
 
-                  <button type="button" class="btn-primary" id="enroll-course-btn" style="width: 100%; justify-content: center;" data-i18n="syl_btn_enroll"></button>
+                  <div class="syllabus-btn-row">
+                    <button type="button" class="btn-primary" id="enroll-course-btn" data-i18n="syl_btn_enroll"></button>
+                    <button type="button" class="btn-secondary" id="scroll-exam-btn" data-i18n="syl_btn_exam"></button>
+                  </div>
                   <div class="enroll-status-box" id="enroll-feedback"></div>
                 </aside>
+              </div>
+
+              <!-- Local In-Browser Satirical Mock Exam -->
+              <div class="mock-exam-panel" id="mock-exam-section">
+                <div class="ledger-header">
+                  <div>
+                    <h3 class="form-panel-title" id="exam-panel-heading"></h3>
+                    <p style="font-size: 0.84rem; color: var(--ink-muted);" data-i18n="exam_subtitle"></p>
+                  </div>
+                  <span class="syllabus-tag" id="exam-course-badge">NTH-101</span>
+                </div>
+
+                <div class="exam-questions-grid" id="exam-questions-container"></div>
+
+                <div class="form-button-row">
+                  <button type="button" class="btn-primary" id="submit-exam-btn" data-i18n="exam_btn_submit">
+                    立即交卷并生成幽默成绩单
+                  </button>
+                  <button type="button" class="btn-secondary" id="reset-exam-btn" data-i18n="exam_btn_reset">
+                    重新抽题再考一次
+                  </button>
+                </div>
+
+                <div class="exam-transcript-box" id="exam-transcript-box" aria-live="polite">
+                  <h4 style="font-family: var(--serif-font); font-size: 1.25rem; color: var(--oxford-abyss); margin-bottom: 0.4rem;" data-i18n="exam_transcript_title"></h4>
+                  <p id="exam-transcript-grade" style="font-weight: 700; color: var(--crimson-seal); font-size: 1.05rem; margin-bottom: 0.35rem;"></p>
+                  <p id="exam-transcript-comment" style="font-size: 0.88rem; color: var(--ink);"></p>
+                </div>
               </div>
             </div>
           </div>
@@ -426,7 +572,7 @@
               <div class="research-grid">
                 <div class="paper-list" id="paper-list"></div>
 
-                <div class="paper-reader" id="paper-reader">
+                <div class="paper-reader" id="paper-reader" aria-live="polite">
                   <div class="reader-top-bar">
                     <span id="reader-doi"></span>
                     <span id="reader-citations"></span>
@@ -445,11 +591,9 @@
                   </div>
 
                   <div class="reader-actions-bar">
-                    <span style="font-size: 0.78rem; color: var(--ink-muted);" data-i18n="reader_oa_note">
-                      Open Access · 100% Zero-Word Guarantee
-                    </span>
+                    <span style="font-size: 0.78rem; color: var(--ink-muted);" data-i18n="reader_oa_note"></span>
                     <button type="button" class="bulletin-next-btn" id="download-paper-cert-btn" data-i18n="reader_btn_export">
-                      导出论文录用证明 PNG
+                      导出论文录用通知书 PNG
                     </button>
                   </div>
                 </div>
@@ -457,39 +601,35 @@
 
               <!-- Upgraded Multi-Dimensional Zero-Word Paper Submission Studio -->
               <div class="submit-paper-box">
-                <h3 class="form-panel-title" data-i18n="sub_paper_title">向顶刊在线投递您的零字数手稿 (Manuscript Submission Studio)</h3>
+                <h3 class="form-panel-title" data-i18n="sub_paper_title"></h3>
                 <p style="font-size: 0.88rem; color: var(--ink-muted);" data-i18n="sub_paper_desc"></p>
 
                 <div class="submission-studio-grid">
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label for="new-paper-title-input" data-i18n="sub_lbl_title">论文题目（留空则每次随机抽取全新奇葩课题）</label>
+                    <label for="new-paper-title-input" data-i18n="sub_lbl_title"></label>
                     <input type="text" id="new-paper-title-input" class="form-control" maxlength="90" />
                   </div>
 
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label for="new-paper-author-input" data-i18n="sub_lbl_author">通讯作者署名 (Corresponding Author)</label>
+                    <label for="new-paper-author-input" data-i18n="sub_lbl_author"></label>
                     <input type="text" id="new-paper-author-input" class="form-control" maxlength="40" />
                   </div>
 
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label for="new-paper-journal-select" data-i18n="sub_lbl_journal">选择目标顶刊 (Target Journal)</label>
+                    <label for="new-paper-journal-select" data-i18n="sub_lbl_journal"></label>
                     <select id="new-paper-journal-select" class="form-control"></select>
                   </div>
 
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label for="new-paper-style-select" data-i18n="sub_lbl_style">选择空白方法论流派 (Blank Methodology)</label>
+                    <label for="new-paper-style-select" data-i18n="sub_lbl_style"></label>
                     <select id="new-paper-style-select" class="form-control"></select>
                   </div>
                 </div>
 
                 <div class="submission-studio-actions">
-                  <button type="button" class="btn-primary" id="submit-blank-paper-btn" data-i18n="sub_paper_btn">
-                    一键投递手稿并秒获审稿意见
-                  </button>
-                  <button type="button" class="btn-secondary" id="random-paper-topic-btn" data-i18n="sub_random_btn">
-                    随机抽选一个奇葩课题并生成
-                  </button>
-                  <span id="submit-paper-status" style="font-size: 0.84rem; color: var(--crimson-seal); font-weight: 600;"></span>
+                  <button type="button" class="btn-primary" id="submit-blank-paper-btn" data-i18n="sub_paper_btn"></button>
+                  <button type="button" class="btn-secondary" id="random-paper-topic-btn" data-i18n="sub_random_btn"></button>
+                  <span id="submit-paper-status" aria-live="polite" style="font-size: 0.84rem; color: var(--crimson-seal); font-weight: 600;"></span>
                 </div>
               </div>
             </div>
@@ -513,13 +653,13 @@
                 <h3 class="form-panel-title" data-i18n="email_prof_title">给不坐班教授发送学术咨询邮件</h3>
                 <p style="font-size: 0.88rem; color: var(--ink-muted); margin-bottom: 1rem;" data-i18n="email_prof_desc"></p>
                 <div class="submit-paper-row">
-                  <select id="email-prof-select" class="form-control" style="max-width: 260px;"></select>
-                  <input type="text" id="email-question-input" class="form-control" maxlength="100" />
+                  <select id="email-prof-select" class="form-control" style="max-width: 280px;" aria-label="Select Professor"></select>
+                  <input type="text" id="email-question-input" class="form-control" maxlength="100" aria-label="Email Inquiry" />
                   <button type="button" class="btn-primary" id="send-prof-email-btn" data-i18n="email_prof_btn">
                     发送邮件
                   </button>
                 </div>
-                <div class="enroll-status-box" id="email-reply-output" style="margin-top: 1rem;"></div>
+                <div class="enroll-status-box" id="email-reply-output" aria-live="polite" style="margin-top: 1rem;"></div>
               </div>
             </div>
           </div>
@@ -538,53 +678,62 @@
               <div class="campus-life-grid">
                 <!-- Left: Cafeteria & Lunch Oracle -->
                 <div class="cafeteria-panel">
-                  <h3 class="form-panel-title" data-i18n="cafe_title">第一薛定谔食堂 · 今日菜单</h3>
+                  <h3 class="form-panel-title" data-i18n="cafe_title">第一薛定谔食堂 · 今日扩展菜单</h3>
                   <p class="form-panel-note" data-i18n="cafe_note">营业时间：看厨师心情（通常在午睡）</p>
+
+                  <div class="cafe-filter-row" role="tablist" aria-label="Cafeteria Menu Categories">
+                    <button type="button" class="ann-filter-btn active" data-cafe-cat="all" data-i18n="cafe_cat_all">全部菜品</button>
+                    <button type="button" class="ann-filter-btn" data-cafe-cat="entree" data-i18n="cafe_cat_entree">量子主食</button>
+                    <button type="button" class="ann-filter-btn" data-cafe-cat="drink" data-i18n="cafe_cat_drink">死线特饮</button>
+                    <button type="button" class="ann-filter-btn" data-cafe-cat="dessert" data-i18n="cafe_cat_dessert">导师画饼</button>
+                  </div>
 
                   <div class="menu-list" id="cafe-menu-list"></div>
 
                   <div class="lunch-oracle-box">
-                    <strong style="display: block; color: var(--oxford-abyss); margin-bottom: 0.4rem;" data-i18n="oracle_title">
-                      人类终极难题解答器：今天中午到底吃什么？
-                    </strong>
-                    <p id="oracle-result" style="font-size: 0.92rem; color: var(--crimson-seal); font-weight: 600; margin-bottom: 0.75rem;"></p>
-                    <button type="button" class="btn-primary" id="spin-lunch-btn" data-i18n="oracle_btn">
-                      求食堂大勺指点迷津
-                    </button>
+                    <strong style="display: block; color: var(--oxford-abyss); margin-bottom: 0.4rem;" data-i18n="oracle_title"></strong>
+                    <p id="oracle-result" aria-live="polite" style="font-size: 0.9rem; color: var(--crimson-seal); font-weight: 600; margin-bottom: 0.75rem;"></p>
+                    <button type="button" class="btn-primary" id="spin-lunch-btn" data-i18n="oracle_btn"></button>
                   </div>
                 </div>
 
                 <!-- Right: Student Clubs -->
                 <div class="clubs-panel">
-                  <h3 class="form-panel-title" data-i18n="clubs_title">学生摸鱼社团招新（共 3 个社团）</h3>
+                  <h3 class="form-panel-title" data-i18n="clubs_title">学生摸鱼社团招新（共 5 个注册社团）</h3>
                   <p class="form-panel-note" data-i18n="clubs_note">零社费 · 零活动 · 加群即永久免打扰</p>
 
                   <div id="clubs-list"></div>
-                  <div class="enroll-status-box" id="club-join-feedback"></div>
+                  <div class="enroll-status-box" id="club-join-feedback" aria-live="polite"></div>
+                  <p style="font-size: 0.76rem; color: var(--ink-muted); margin-top: 0.85rem;" data-i18n="easter_hint"></p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- PAGE 7: 24/7 LIVE CAMPUS WEBCAMS -->
+        <!-- PAGE 7: 24/7 SIMULATED CAMPUS WEBCAMS -->
         <section class="page-view" id="page-webcams" data-page="webcams">
           <div class="academic-section">
             <div class="container">
               <div class="section-header">
-                <p class="section-latin" data-i18n="cam_eyebrow">Speculum Campi · 校园 24 小时实景监控</p>
-                <h2 class="section-title" data-i18n="cam_title">全校重点区域实时虚无监控网</h2>
+                <p class="section-latin" data-i18n="cam_eyebrow">Speculum Campi · 校园 24 小时模拟监控画面</p>
+                <h2 class="section-title" data-i18n="cam_title">全校重点区域虚无模拟观测网</h2>
                 <p class="section-desc" data-i18n="cam_desc"></p>
               </div>
 
-              <div class="webcam-grid">
+              <div class="sim-warning-banner" role="note">
+                <span data-i18n="cam_sim_banner"></span>
+                <button type="button" class="bulletin-next-btn" id="toggle-night-vision-btn" data-i18n="cam_night_vision">切换夜视模式</button>
+              </div>
+
+              <div class="webcam-grid" id="webcam-grid">
                 <div class="webcam-monitor">
                   <div class="webcam-screen">
                     <div class="webcam-overlay-top">
-                      <span class="webcam-rec" data-i18n="cam1_rec">● REC [CAM-01: 中央自习大厅]</span>
+                      <span class="webcam-rec" data-i18n="cam1_rec">◉ SIMULATED [CAM-01: 中央自习大厅]</span>
                       <span class="webcam-clock">--:--:--</span>
                     </div>
-                    <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="#0B2E59" stroke-width="2">
+                    <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <rect x="15" y="60" width="70" height="8" />
                       <line x1="25" y1="68" x2="25" y2="88" />
                       <line x1="75" y1="68" x2="75" y2="88" />
@@ -602,10 +751,10 @@
                 <div class="webcam-monitor">
                   <div class="webcam-screen">
                     <div class="webcam-overlay-top">
-                      <span class="webcam-rec" data-i18n="cam2_rec">● REC [CAM-02: 校长办公桌]</span>
+                      <span class="webcam-rec" data-i18n="cam2_rec">◉ SIMULATED [CAM-02: 校长办公桌]</span>
                       <span class="webcam-clock">--:--:--</span>
                     </div>
-                    <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="#0B2E59" stroke-width="2">
+                    <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <path d="M32 45 H62 V75 C62 82 32 82 32 75 Z" />
                       <path d="M62 52 H72 C76 52 76 66 72 66 H62" />
                       <path d="M42 35 Q45 25 42 18" stroke-dasharray="2 3" />
@@ -623,10 +772,10 @@
                 <div class="webcam-monitor">
                   <div class="webcam-screen">
                     <div class="webcam-overlay-top">
-                      <span class="webcam-rec" data-i18n="cam3_rec">● REC [CAM-03: 量子超算中心]</span>
+                      <span class="webcam-rec" data-i18n="cam3_rec">◉ SIMULATED [CAM-03: 量子超算中心]</span>
                       <span class="webcam-clock">--:--:--</span>
                     </div>
-                    <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="#0B2E59" stroke-width="2">
+                    <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <rect x="28" y="20" width="44" height="62" />
                       <line x1="36" y1="34" x2="64" y2="34" />
                       <line x1="36" y1="48" x2="64" y2="48" />
@@ -644,10 +793,10 @@
                 <div class="webcam-monitor">
                   <div class="webcam-screen">
                     <div class="webcam-overlay-top">
-                      <span class="webcam-rec" data-i18n="cam4_rec">● REC [CAM-04: 毕业大草坪]</span>
+                      <span class="webcam-rec" data-i18n="cam4_rec">◉ SIMULATED [CAM-04: 毕业大草坪]</span>
                       <span class="webcam-clock">--:--:--</span>
                     </div>
-                    <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="#0B2E59" stroke-width="2">
+                    <svg class="webcam-scene-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <path d="M10 75 Q50 65 90 75" />
                       <ellipse cx="50" cy="52" rx="18" ry="10" />
                     </svg>
@@ -665,18 +814,27 @@
         </section>
       </main>
 
-      <!-- University Footer with Explicit Satire & Compliance Disclaimer -->
+      <!-- Hidden Easter Egg Toast -->
+      <div class="easter-egg-toast" id="easter-egg-toast" role="status" aria-live="polite">
+        <strong id="easter-egg-title" style="display: block; font-family: var(--serif-font); font-size: 1.1rem; margin-bottom: 0.25rem;"></strong>
+        <p id="easter-egg-body" style="font-size: 0.84rem; color: #DBEAFE;"></p>
+      </div>
+
+      <!-- University Footer -->
       <footer class="site-footer">
         <div class="container">
           <div class="footer-bottom">
             <span>© ∞ B.C. – 2026 Absolutely Nothing University (freeze.edu.kg). All Rights Reserved.</span>
             <span data-i18n="footer_motto">校训：Nihil Agere, Omnia Esse · 什么都不做，即是一切</span>
           </div>
+          <p class="footer-disclaimer" data-i18n="footer_disclaimer"></p>
         </div>
       </footer>
     </div>
   </div>
 
+  <script src="js/i18n.js"></script>
+  <script src="js/canvas-export.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
