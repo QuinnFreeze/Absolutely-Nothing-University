@@ -1,5 +1,5 @@
 (function () {
-  // Detect browser language: if primary browser language starts with 'zh', default to 'zh', else 'en'
+  // 1. Detect initial browser language ('zh' vs 'en')
   function detectInitialLang() {
     try {
       const saved = localStorage.getItem("anu_lang");
@@ -18,18 +18,38 @@
   }
 
   let currentLang = detectInitialLang();
+  let currentPage = "overview";
+
+  const validPages = [
+    "overview",
+    "admissions",
+    "academics",
+    "research",
+    "faculty",
+    "campus",
+    "webcams"
+  ];
 
   const i18nDict = {
     zh: {
       page_title: "Absolutely Nothing University (ANU) | 绝对虚无大学官方网站",
+      brand_sub: "绝对虚无大学 · 公元前 ∞ 年",
+      sidebar_term_title: "2026 躺平学年 · 第 NaN 周",
+      sidebar_term_status: "教学状态：全校无限期放假中",
+      sidebar_sec_main: "核心门户 · PORTALS",
+      sidebar_sec_campus: "校园生态 · CAMPUS",
+      nav_overview: "创校门户与虚无账本",
+      nav_admissions: "极速录取与博士学位",
+      nav_academics: "院系与荒诞选课中心",
+      nav_research: "空白论文库与在线投稿",
+      nav_faculty: "不坐班名师与自动回信",
+      nav_campus: "薛定谔食堂与摸鱼社团",
+      nav_webcams: "保卫处 24h 实景监控",
+      sidebar_btn_excuse: "生成今日请假理由",
+      sidebar_excuse_default: "今日官方请假条：由于被窝产生局部强引力场，特批全天免起床。",
+      mobile_menu_btn: "☰ 校务侧边栏 (Menu)",
       bulletin_badge: "DEAN'S DECREE · 教务急电",
       bulletin_next: "下一条通知",
-      brand_sub: "绝对虚无大学 · 创校于公元前 ∞ 年",
-      nav_admissions: "极速录取与学位",
-      nav_academics: "院系与荒诞课表",
-      nav_research: "空白论文档案馆",
-      nav_faculty: "终身不坐班名师",
-      nav_webcams: "校园实景监控",
       lang_btn: "English",
       hero_motto: "校训：Nihil Agere, Omnia Esse（什么都不做，即是一切）",
       hero_headline: "在人类知识的边界之外，<br />我们选择原地躺平。",
@@ -49,6 +69,22 @@
       ledger_lbl_saved: "今日因懒得开会节省的经费",
       ledger_btn: "点此为母校贡献 +10 秒纯粹发呆",
       ledger_feedback_init: "每一次点击都将被永久载入我校《什么也没干年鉴》。",
+      home_dir_eyebrow: "Porta Academica · 校内各大职能部门直达",
+      home_dir_title: "探索绝对虚无大学的六大核心殿堂",
+      home_dir_desc: "您可通过左侧常驻学院导航栏或下方快捷入口，随时前往学位授予处、荒诞选课中心、空白期刊库或薛定谔食堂。",
+      pcard1_title: "免试直录与博士颁授",
+      pcard1_desc: "无需考试与答辩，自定义您的荒诞专业，加盖火漆大印并导出高清 PNG 博士学位证。",
+      pcard2_title: "四大院系与翘课指南",
+      pcard2_desc: "涵盖退堂鼓演奏、死线前爆发力学、会议放空工程等 8 门王牌课程，选课即自动翘课。",
+      pcard3_title: "《Nature: Nothing》期刊",
+      pcard3_desc: "查阅零字数高被引镇校论文，或在线提交您的空白手稿，当场获取同行评审盛赞。",
+      pcard4_title: "不坐班名师与自动回信",
+      pcard4_desc: "认识图书馆首席呼噜官橘座主任与司马改天教授，体验向教授发邮件秒收敷衍回信。",
+      pcard5_title: "薛定谔食堂与摸鱼社团",
+      pcard5_desc: "解决人类终极难题“中午吃什么”，报名加入退堂鼓交响乐团与发呆竞技队。",
+      pcard6_title: "保卫处 24h 静止监控",
+      pcard6_desc: "实时监看空无一人的自习大厅、凉透的校长枸杞茶与正在烤红薯的超算机箱。",
+      pcard_enter: "进入该殿堂",
       adm_eyebrow: "Admissio Sine Examine · 免试直录与学位授予处",
       adm_title: "三秒极速录取与荣誉博士颁授系统",
       adm_desc: "由于招生办老师觉得审阅简历过于劳累，我校自 1899 年起全面废除入学考试与论文答辩。只要您此刻正在呼吸（或假装思考），即可当场获颁加盖火漆大印的官方学位证书。",
@@ -88,12 +124,33 @@
       syl_btn_enroll: "一键选课并立即翘课",
       res_eyebrow: "Acta Nihilologica · 镇校学术成果与空白期刊",
       res_title: "《Nature: Nothing》高被引空白论文阅览室",
-      res_desc: "我校学者每年在国际顶刊发表数百篇零字数论文。以下为本年度引用率最高的三篇代表作，点击即可在线调阅全文手稿与同行评审意见。",
+      res_desc: "我校学者每年在国际顶刊发表数百篇零字数论文。点击下方代表作可在线调阅全文手稿，您也可以在底部直接投递您的零字数大作。",
       res_reviewer_label: "同行评审专家意见 (Peer Reviewer #2 Verdict)：",
+      sub_paper_title: "向《Nature: Nothing》在线投递零字数论文",
+      sub_paper_desc: "只需填写一个听起来很厉害的标题，正文系统会自动为您保持 0 字，并当场完成同行盲审与录用刊发。",
+      sub_paper_placeholder: "例如：论周日下午三点的绝望感与外卖配送延误的非线性关系",
+      sub_paper_btn: "一键投递空白手稿并秒录用",
       fac_eyebrow: "Ordo Professorum · 终身不坐班名师名录",
       fac_title: "杰出师资与睡眠领军人物",
       fac_desc: "我校教授全部实行“终身免坐班、免科研、免回复邮件”制度。如果您在校园里偶遇任何一位教授，说明他走错路了。",
       fac_hours_label: "答疑时间：",
+      email_prof_title: "给不坐班教授发送学术咨询邮件",
+      email_prof_desc: "体验我校研发的“0秒自动敷衍回信系统 (Auto-Perfunctory Responder)”。无论您问什么，教授都不会看。",
+      email_prof_placeholder: "输入您想请教的问题（例如：老师我的毕业论文还没开题怎么办？）",
+      email_prof_btn: "发送邮件",
+      email_prof_init: "自动回信箱待命中：请选择一位教授并发送邮件。",
+      life_eyebrow: "Vita Scholastica · 薛定谔食堂与摸鱼社团联合会",
+      life_title: "校园生活、餐饮玄学与课外躺平指南",
+      life_desc: "在绝对虚无大学，我们不仅在学术上毫无建树，在课余生活上也做到了极致的随遇而安。",
+      cafe_title: "第一薛定谔食堂 · 今日菜单",
+      cafe_note: "营业时间：看厨师心情（通常在午睡）",
+      oracle_title: "人类终极难题解答器：今天中午到底吃什么？",
+      oracle_init: "点击下方按钮，由食堂首席颠勺大师为您钦定今日菜单。",
+      oracle_btn: "求食堂大勺指点迷津",
+      clubs_title: "学生摸鱼社团招新（共 3 个社团）",
+      clubs_note: "零社费 · 零活动 · 加群即永久免打扰",
+      club_join_btn: "一键入团并开启免打扰",
+      club_feedback_init: "当前状态：您尚未加入任何社团（其实加了也从来不办活动）。",
       cam_eyebrow: "Speculum Campi · 校园 24 小时实景监控",
       cam_title: "全校重点区域实时虚无监控网",
       cam_desc: "为了向社会各界证明我校确实什么都没在干，保卫处特将校内四路高清摄像头画面向全球公开直播。",
@@ -110,29 +167,27 @@
       cam4_sub: "风速：微风 · 树叶归属：顺其自然",
       cam4_loc: "位置：南门晒太阳广场",
       cam_refresh: "刷新镜头",
-      footer_addr: "地址：地球某处一张晒得到太阳的沙发上（邮编：000000）<br />招生办热线：请勿拨打，没人会接。",
-      footer_col1_title: "校内快速通道",
-      footer_link_adm: "在线打印荣誉博士学位证",
-      footer_link_acad: "本学期翘课与选课指南",
-      footer_link_res: "《Nature: Nothing》空白期刊库",
-      footer_link_cam: "保卫处 24 小时静止监控",
-      footer_col2_title: "教务规章制度",
-      footer_rule1: "《考勤清零条例》：严禁早八",
-      footer_rule2: "《毕业论文减负法》：封皮即全文",
-      footer_donate: "向校友基金会捐赠 0 元",
-      footer_motto: "校训：Nihil Agere, Omnia Esse · 什么都不做，即是一切",
-      donate_alert: "捐赠成功！您向绝对虚无大学校友基金会慷慨捐赠了 ¥0.00 元，财务处决定懒得给您开发票。"
+      footer_motto: "校训：Nihil Agere, Omnia Esse · 什么都不做，即是一切"
     },
     en: {
       page_title: "Absolutely Nothing University (ANU) | Official Website",
-      bulletin_badge: "DEAN'S DECREE · URGENT NOTICE",
-      bulletin_next: "Next Bulletin",
-      brand_sub: "Founded in ∞ B.C. · Ranked NaN Worldwide",
+      brand_sub: "Founded in ∞ B.C. · Ranked NaN",
+      sidebar_term_title: "2026 Slacking Term · Week NaN",
+      sidebar_term_status: "Status: Campus-Wide Infinite Vacation",
+      sidebar_sec_main: "ACADEMIC PORTALS",
+      sidebar_sec_campus: "CAMPUS ECOSYSTEM",
+      nav_overview: "Campus Portal & Live Ledger",
       nav_admissions: "Instant Ph.D. & Admissions",
       nav_academics: "Departments & Truancy Catalog",
-      nav_research: "Blank Paper Archive",
-      nav_faculty: "Absentee Faculty",
-      nav_webcams: "Live Campus Webcams",
+      nav_research: "Blank Papers & Submission",
+      nav_faculty: "Absentee Faculty & Auto-Reply",
+      nav_campus: "Schrödinger Dining & Clubs",
+      nav_webcams: "24/7 Inactivity Webcams",
+      sidebar_btn_excuse: "Generate Official Excuse",
+      sidebar_excuse_default: "Official Excuse Slip: Due to localized strong gravitational fields inside my duvet, I am excused from waking up today.",
+      mobile_menu_btn: "☰ Campus Sidebar (Menu)",
+      bulletin_badge: "DEAN'S DECREE · URGENT NOTICE",
+      bulletin_next: "Next Bulletin",
       lang_btn: "中文",
       hero_motto: "Motto: Nihil Agere, Omnia Esse (Doing Nothing, Being Everything)",
       hero_headline: "Beyond the frontiers of human knowledge,<br />we choose to lie flat.",
@@ -152,6 +207,22 @@
       ledger_lbl_saved: "Budget Saved by Canceling Meetings",
       ledger_btn: "Contribute +10 Seconds of Pure Daydreaming",
       ledger_feedback_init: "Every click is permanently archived in our Annals of Total Inaction.",
+      home_dir_eyebrow: "Porta Academica · Direct Departmental Portals",
+      home_dir_title: "Explore the Six Halls of Absolutely Nothing University",
+      home_dir_desc: "Use the persistent left sidebar or the quick portals below to visit the Diploma Conferral Hall, Truancy Course Catalog, Blank Journal Archive, or Schrödinger Cafeteria.",
+      pcard1_title: "Instant Ph.D. & Conferral",
+      pcard1_desc: "Zero exams or thesis defense. Customize your absurd major, stamp the crimson wax seal, and export a high-res PNG diploma.",
+      pcard2_title: "Faculties & Truancy Catalog",
+      pcard2_desc: "Explore 8 flagship courses across Retreat Drumming, Deadline Panic Physics, and Meeting Zoning-Out. Enroll and skip immediately.",
+      pcard3_title: "Nature: Nothing Journal",
+      pcard3_desc: "Read our most-cited zero-word manuscripts or submit your own blank paper for instant peer-review acclaim.",
+      pcard4_title: "Absentee Faculty & Auto-Reply",
+      pcard4_desc: "Meet Chief Purring Officer Prof. Ginger and test our 0-second Out-of-Office Perfunctory Email Simulator.",
+      pcard5_title: "Schrödinger Dining & Clubs",
+      pcard5_desc: "Solve humanity's ultimate 'What's for lunch?' dilemma and join the Retreat Symphony Orchestra or Competitive Daydreaming Team.",
+      pcard6_title: "24/7 Security Webcams",
+      pcard6_desc: "Watch live feeds of our empty study hall, cold herbal tea on the Chancellor's desk, and supercomputers roasting sweet potatoes.",
+      pcard_enter: "Enter Hall",
       adm_eyebrow: "Admissio Sine Examine · Direct Enrollment & Conferral",
       adm_title: "3-Second Instant Admission & Honorary Ph.D. Generator",
       adm_desc: "Because our Admissions Committee found reading applications far too exhausting, ANU abolished entrance exams and thesis defenses in 1899. As long as you are currently breathing (or pretending to think), you may confer upon yourself an official wax-sealed diploma right now.",
@@ -191,12 +262,33 @@
       syl_btn_enroll: "Enroll & Skip Entire Semester Now",
       res_eyebrow: "Acta Nihilologica · High-Impact Blank Scholarship",
       res_title: "Nature: Nothing — Blank Manuscript Reading Room",
-      res_desc: "Our scholars publish hundreds of zero-word papers in top journals every year. Select any of this year's most-cited empty manuscripts below to inspect the full text and peer-review praise.",
+      res_desc: "Our scholars publish hundreds of zero-word papers in top journals every year. Select any manuscript below to inspect the full text, or submit your own zero-word paper at the bottom.",
       res_reviewer_label: "Peer Reviewer #2 Official Verdict:",
+      sub_paper_title: "Submit a Zero-Word Manuscript to Nature: Nothing",
+      sub_paper_desc: "Simply enter an impressive-sounding title. Our editorial system will automatically keep the body at 0 words and grant instant peer-reviewed publication.",
+      sub_paper_placeholder: "e.g., Non-Linear Correlations Between Sunday Evening Dread and Takeout Delays",
+      sub_paper_btn: "Submit Blank Manuscript & Publish Instantly",
       fac_eyebrow: "Ordo Professorum · Tenured Absentee Faculty",
       fac_title: "Distinguished Faculty & Sleep Pioneers",
       fac_desc: "All ANU faculty enjoy lifetime immunity from office hours, grant writing, and replying to emails. If you ever spot a professor on campus, they are lost.",
       fac_hours_label: "Office Hours: ",
+      email_prof_title: "Send an Academic Inquiry to an Absentee Professor",
+      email_prof_desc: "Experience our patented '0-Second Auto-Perfunctory Responder.' Whatever you ask, rest assured the professor will not read it.",
+      email_prof_placeholder: "Ask a question (e.g., Professor, I haven't started my thesis due tomorrow...)",
+      email_prof_btn: "Send Email",
+      email_prof_init: "Auto-Responder Ready: Choose a professor and send your inquiry.",
+      life_eyebrow: "Vita Scholastica · Schrödinger Dining & Student Union",
+      life_title: "Campus Life, Culinary Mysticism & Extracurricular Napping",
+      life_desc: "At Absolutely Nothing University, we match our zero academic output with equally effortless campus leisure.",
+      cafe_title: "First Schrödinger Cafeteria · Today's Menu",
+      cafe_note: "Hours: Whenever the chef wakes up from his nap",
+      oracle_title: "Ultimate Human Dilemma Solver: What Should I Eat Today?",
+      oracle_init: "Click below to let the Grand Cafeteria Ladle decide your meal.",
+      oracle_btn: "Consult the Sacred Ladle",
+      clubs_title: "Student Slacking Societies (3 Registered Clubs)",
+      clubs_note: "Zero Dues · Zero Events · Permanent Do-Not-Disturb",
+      club_join_btn: "Join Club & Mute Notifications",
+      club_feedback_init: "Status: Not enrolled in any club yet (they never meet anyway).",
       cam_eyebrow: "Speculum Campi · 24/7 Live Campus Surveillance",
       cam_title: "Real-Time Campus Inactivity Webcam Network",
       cam_desc: "To prove to the public that absolutely nothing is happening on campus, Security streams four high-definition feeds around the clock.",
@@ -213,22 +305,28 @@
       cam4_sub: "Wind: Gentle Breeze · Leaf Status: Unbothered",
       cam4_loc: "Location: South Sunbathing Plaza",
       cam_refresh: "Ping Camera",
-      footer_addr: "Address: A Sunlit Sofa Somewhere on Earth (Postal Code: 000000)<br />Admissions Hotline: Please do not call; nobody will pick up.",
-      footer_col1_title: "Quick Campus Portals",
-      footer_link_adm: "Instant Honorary Ph.D. Diploma",
-      footer_link_acad: "Semester Truancy & Course Guide",
-      footer_link_res: "Nature: Nothing Blank Journal",
-      footer_link_cam: "24/7 Still-Life Security Feeds",
-      footer_col2_title: "Academic Regulations",
-      footer_rule1: "Zero-Attendance Act: 8 AM Classes Banned",
-      footer_rule2: "Thesis Relief Act: Cover Page Counts as Full Text",
-      footer_donate: "Donate $0.00 to the Alumni Endowment",
-      footer_motto: "Motto: Nihil Agere, Omnia Esse · Doing Nothing, Being Everything",
-      donate_alert: "Donation complete! You generously contributed $0.00 to the ANU Endowment. The Bursar's Office is too lazy to issue a receipt."
+      footer_motto: "Motto: Nihil Agere, Omnia Esse · Doing Nothing, Being Everything"
     }
   };
 
-  // Localized dynamic collections
+  // Collections
+  const excusesByLang = {
+    zh: [
+      "今日官方请假条：由于被窝产生局部强引力场，特批全天免起床。",
+      "今日官方请假条：因昨晚梦见自己在加班，精神损耗过大，特批带薪补觉一日。",
+      "今日官方请假条：出门时左脚先迈出导致运势不对称，需退回沙发重新加载。",
+      "今日官方请假条：正在进行“人类如果不工作会发生什么”的纵向对照实验，请勿打扰。",
+      "今日官方请假条：因过度思考中午吃什么导致算力耗尽，今日暂停一切学术活动。"
+    ],
+    en: [
+      "Official Excuse Slip: Due to localized strong gravitational fields inside my duvet, I am excused from waking up today.",
+      "Official Excuse Slip: Dreamt that I was working last night; granted one full day of compensatory rest.",
+      "Official Excuse Slip: Stepped out with my left foot first, causing feng-shui asymmetry; retreating to sofa to reboot.",
+      "Official Excuse Slip: Currently serving as the control group in a longitudinal study on 'What Happens If I Do Nothing.'",
+      "Official Excuse Slip: CPU overheated while deciding what to order for lunch; all academic duties suspended."
+    ]
+  };
+
   const bulletinsByLang = {
     zh: [
       "原定于今日下午举行的《拖延症导论》期中考试，因出卷教授尚未起床，正式推迟至下个世纪举行。",
@@ -247,8 +345,8 @@
   };
 
   const tuitionStatesByLang = {
-    zh: ["学费：¥0.00", "奖学金：精神鼓励 1 次", "住宿费：自备沙发", "教材费：全靠脑补"],
-    en: ["Tuition: $0.00", "Scholarship: 1 Moral High-Five", "Dorm Fee: Bring Your Own Sofa", "Textbooks: 100% Imaginary"]
+    zh: ["学费：¥0.00", "奖学金：精神鼓励", "住宿费：自备沙发", "教材费：全靠脑补"],
+    en: ["Tuition: $0.00", "Grant: 1 High-Five", "Dorm: Your Own Sofa", "Books: Imaginary"]
   };
 
   const praiseByLang = {
@@ -609,28 +707,32 @@
         name: "橘座大主任 (Prof. Ginger)",
         role: "图书馆首席呼噜官 · 终身荣誉馆长",
         bio: "2018 年误入图书馆三楼阳光沙发后拒绝离开，遂被董事会破格聘为终身正教授。代表作《在学生的毕业论文草稿上踩梅花印》。",
-        hours: "每天 14:00–14:02（仅接受冻干贿赂，摸肚皮直接挂科）"
+        hours: "每天 14:00–14:02（仅接受冻干贿赂）",
+        reply: "【自动猫语回信】喵呜。呼噜噜……（橘座主任刚刚在键盘上踩了一脚并把您的邮件当成了猫抓板，视同已批阅通过。）"
       },
       {
         avatar: "鸽",
         name: "司马改天 教授 (Prof. Tomorrow)",
         role: "量子拖延实验室主任 · 鸽学博导",
         bio: "曾连续 14 年向校方提交同一份《明年一定开工》研究计划书。其主持的“死线动力学”课题至今尚未建群。",
-        hours: "下周二（每逢周二自动顺延至下周二）"
+        hours: "下周二（每逢周二自动顺延至下周二）",
+        reply: "【自动延期回信】您好，您的邮件我已收到，我将在 2038 年 2 月 30 日仔细阅读。如遇紧急学术问题，建议先睡一觉，醒来可能就不紧急了。"
       },
       {
         avatar: "糊",
         name: "伊丽莎白·行吧 (Dr. Whatever)",
         role: "高级糊弄学系讲席教授",
         bio: "精通“嗯嗯”“好的”“收到”“在看了”四大高频学术词汇，仅凭这四个词完成了与全校三千名研究生的全部毕业指导。",
-        hours: "已读不回即为最高指导"
+        hours: "已读不回即为最高指导",
+        reply: "【0秒敷衍回信】嗯嗯！好的！太棒了！就按你说的办！辛苦啦！（系统提示：教授甚至没有点开标题。）"
       },
       {
         avatar: "退",
         name: "堂吉诃退 院士 (Prof. Quit)",
         role: "退堂鼓国家重点实验室首席演奏家",
         bio: "座右铭：“只要我放弃得够快，困难就追不上我。” 曾因觉得领奖台台阶太高，主动放弃三项国际学术大奖。",
-        hours: "2月30日 25:00 准时开放"
+        hours: "2月30日 25:00 准时开放",
+        reply: "【战略放弃回信】遇到困难了吗？听老师一句劝：直接放弃吧！咚咚隆咚锵！（附赠退堂鼓音频一份）"
       }
     ],
     en: [
@@ -638,29 +740,94 @@
         avatar: "🐾",
         name: "Prof. Ginger (Meow, Ph.D.)",
         role: "Chief Library Purring Officer & Dean of Naps",
-        bio: "Wandered onto a sunlit third-floor library sofa in 2018 and refused to leave; immediately granted full tenure by the Board of Trustees. Author of 'Walking Across Wet keyboards.'",
-        hours: "Daily 14:00–14:02 (Freeze-dried salmon required; belly rubs result in immediate failure)"
+        bio: "Wandered onto a sunlit third-floor library sofa in 2018 and refused to leave; immediately granted full tenure by the Board of Trustees. Author of 'Walking Across Wet Keyboards.'",
+        hours: "Daily 14:00–14:02 (Salmon treats required)",
+        reply: "[Feline Auto-Reply] Meow. Purrrrrrrr... (Prof. Ginger stepped on the Delete key while stretching on the keyboard. Consider your thesis approved.)"
       },
       {
         avatar: "⏳",
         name: "Prof. Sima Tomorrow",
         role: "Director of the Quantum Procrastination Lab",
         bio: "Has submitted the exact same grant proposal titled 'We Will Definitely Start Next Year' for 14 consecutive years. His flagship project still hasn't created a group chat.",
-        hours: "Next Tuesday (Automatically rolls over every Tuesday to the following Tuesday)"
+        hours: "Next Tuesday (Rolls over every Tuesday)",
+        reply: "[Deferred Auto-Reply] Thank you for your email. I have scheduled it for careful review on February 30, 2038. If it is urgent, take a nap until the deadline passes."
       },
       {
         avatar: "🤷",
         name: "Dr. Elizabeth Whatever",
         role: "Chair Professor of Perfunctory Studies",
         bio: "Master of the four cardinal academic utterances: 'Got it,' 'Sounds good,' 'Looking into it,' and 'Sure.' Supervised 3,000 dissertations using exclusively those four phrases.",
-        hours: "Leaving your email on 'Read' IS the highest form of mentorship"
+        hours: "Leaving your email on 'Read' IS mentorship",
+        reply: "[Instant Perfunctory Reply] Sounds good!! Makes total sense!! Let's circle back!! Keep it up!! (System note: Subject line was not opened.)"
       },
       {
         avatar: "🥁",
         name: "Academician Don Quixote-Quit",
         role: "Principal Virtuoso of Retreat Drumming",
         bio: "Personal motto: 'If I give up fast enough, adversity can never catch me.' Famously declined three international prizes because the podium had too many stairs.",
-        hours: "February 30th at 25:00 sharp"
+        hours: "February 30th at 25:00 sharp",
+        reply: "[Strategic Retreat Reply] Facing a tough academic problem? Take my professional advice: give up immediately! *Ba-dum tss!*"
+      }
+    ]
+  };
+
+  const cafeMenuByLang = {
+    zh: [
+      { name: "《随便，都行》盖浇饭", desc: "主厨也不知道里面炒了什么，打开饭盒前处于叠加态", price: "¥0.00" },
+      { name: "死线前夜冰美式（无水纯冰版）", desc: "含 0% 咖啡因与 100% 心理安慰", price: "¥0.00" },
+      { name: "量子纠缠炸鸡配无罪恶感生菜", desc: "只要把生菜放在炸鸡旁边，热量就会自动转移到平行宇宙", price: "¥0.00" },
+      { name: "画出来的大饼（精装家族传承版）", desc: "导师亲手烙制，管饱但消化不良", price: "¥0.00" }
+    ],
+    en: [
+      { name: "'Whatever, Anything Is Fine' Rice Bowl", desc: "Exists in a quantum superposition of ingredients until you open the lid", price: "$0.00" },
+      { name: "Deadline-Eve Iced Americano (Hold the Coffee)", desc: "0% caffeine, 100% placebo panic energy", price: "$0.00" },
+      { name: "Zero-Guilt Fried Chicken with Decorative Lettuce", desc: "Placing one lettuce leaf beside fried chicken cancels all calories by symmetry", price: "$0.00" },
+      { name: "TheAdvisor's Grand Pie-in-the-Sky", desc: "Freshly baked empty promises; extremely filling yet zero nutrition", price: "$0.00" }
+    ]
+  };
+
+  const lunchOracleByLang = {
+    zh: [
+      "大勺神谕：点一份平时嫌贵没舍得吃的外卖，并用满减凑单三包纸巾！",
+      "大勺神谕：别纠结了，直接去吃热腾腾的炸鸡配快乐水，减肥的事下辈子再议！",
+      "大勺神谕：吃一碗加满双倍肥牛和溏心蛋的拉面，吃完立刻睡午觉！",
+      "大勺神谕：既然想不出吃什么，不如先喝杯奶茶垫一垫，顺便拖延到下午茶时间！"
+    ],
+    en: [
+      "Sacred Ladle Decree: Order that slightly overpriced comfort food you've been eyeing, plus extra fries!",
+      "Sacred Ladle Decree: Stop overthinking—crispy fried chicken and an ice-cold soda. Diet starts next century!",
+      "Sacred Ladle Decree: A steaming bowl of double-beef ramen with a soft-boiled egg, followed by an immediate sofa nap!",
+      "Sacred Ladle Decree: Since deciding is exhausting, order boba milk tea first and postpone lunch until dinner!"
+    ]
+  };
+
+  const clubsByLang = {
+    zh: [
+      {
+        name: "退堂鼓交响乐团 (Retreat Symphony Orchestra)",
+        desc: "全校编制最大的乐团，每次排练前 5 分钟全体成员准时宣布“今天算了吧”并就地解散吃烤肉。"
+      },
+      {
+        name: "校级发呆竞技代表队 (Varsity Zoning-Out Team)",
+        desc: "代表我校出征国际发呆锦标赛，因全体队员忘记买车票而自动夺得“最纯粹虚无奖”。"
+      },
+      {
+        name: "外卖满减凑单数学建模协会 (Takeout Coupon Modeling Club)",
+        desc: "致力于用线性规划凑出正好满 30 减 15 的最优订单，入社即送葱花香菜豁免权。"
+      }
+    ],
+    en: [
+      {
+        name: "ANU Retreat Symphony Orchestra",
+        desc: "Our largest musical ensemble. Five minutes before every rehearsal, all members unanimously vote to call it off and get barbecue instead."
+      },
+      {
+        name: "Varsity Competitive Daydreaming Team",
+        desc: "Represented ANU at the World Zoning-Out Championship; won the Platinum Trophy by forgetting to board the train to the venue."
+      },
+      {
+        name: "Takeout Coupon Linear Programming Society",
+        desc: "Dedicated to hitting the exact $25 minimum for a $5 delivery discount without ordering extra napkins."
       }
     ]
   };
@@ -712,9 +879,10 @@
     }
   };
 
-  // State indices
+  // Runtime states
   let bulletinIdx = 0;
   let tuitionIdx = 0;
+  let excuseIdx = 0;
   let idleSeconds = 9482104;
   let savedBudget = 4290810;
   let currentSerial = "ANU-2026-VOID-00404";
@@ -722,13 +890,23 @@
   let currentDeptFilter = "all";
   let selectedCourseCode = "NTH-101";
   let activePaperIdx = 0;
+  let oracleIdx = 0;
   const camStateIdx = { "1": 0, "2": 0, "3": 0, "4": 0 };
 
-  // DOM Elements
+  // DOM References
+  const sidebarEl = document.getElementById("uni-sidebar");
+  const backdropEl = document.getElementById("sidebar-backdrop");
+  const mobileToggleBtn = document.getElementById("mobile-menu-toggle");
+  const navButtons = document.querySelectorAll("[data-page-target]");
+  const pageViews = document.querySelectorAll(".page-view");
+
   const bulletinText = document.getElementById("bulletin-text");
   const nextBulletinBtn = document.getElementById("next-bulletin-btn");
   const tuitionBtn = document.getElementById("tuition-btn");
   const langSwitchBtn = document.getElementById("lang-switch-btn");
+  const excuseGenBtn = document.getElementById("excuse-gen-btn");
+  const sidebarExcuseText = document.getElementById("sidebar-excuse-text");
+
   const idleCounterEl = document.getElementById("idle-seconds-counter");
   const savedBudgetEl = document.getElementById("saved-budget");
   const contributeBtn = document.getElementById("contribute-idle-btn");
@@ -770,8 +948,89 @@
   const readerContent = document.getElementById("reader-content");
   const readerFootnote = document.getElementById("reader-footnote");
   const readerReview = document.getElementById("reader-review");
-  const facultyGridEl = document.getElementById("faculty-grid");
+  const newPaperInput = document.getElementById("new-paper-title-input");
+  const submitBlankPaperBtn = document.getElementById("submit-blank-paper-btn");
 
+  const facultyGridEl = document.getElementById("faculty-grid");
+  const emailProfSelect = document.getElementById("email-prof-select");
+  const emailQuestionInput = document.getElementById("email-question-input");
+  const sendProfEmailBtn = document.getElementById("send-prof-email-btn");
+  const emailReplyOutput = document.getElementById("email-reply-output");
+
+  const cafeMenuListEl = document.getElementById("cafe-menu-list");
+  const oracleResultEl = document.getElementById("oracle-result");
+  const spinLunchBtn = document.getElementById("spin-lunch-btn");
+  const clubsListEl = document.getElementById("clubs-list");
+  const clubJoinFeedbackEl = document.getElementById("club-join-feedback");
+
+  // 2. Multi-Page Sidebar Router
+  function closeMobileSidebar() {
+    if (sidebarEl) sidebarEl.classList.remove("open");
+    if (backdropEl) backdropEl.classList.remove("open");
+  }
+
+  function switchToPage(pageKey, updateHash = true) {
+    const target = validPages.includes(pageKey) ? pageKey : "overview";
+    currentPage = target;
+
+    pageViews.forEach((sec) => {
+      const p = sec.getAttribute("data-page");
+      sec.classList.toggle("active", p === target);
+    });
+
+    navButtons.forEach((btn) => {
+      const p = btn.getAttribute("data-page-target");
+      btn.classList.toggle("active", p === target);
+    });
+
+    if (updateHash) {
+      history.replaceState(null, "", `#${target}`);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    closeMobileSidebar();
+  }
+
+  navButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = btn.getAttribute("data-page-target");
+      if (target) switchToPage(target, true);
+    });
+  });
+
+  document.querySelectorAll("[data-goto-page]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = btn.getAttribute("data-goto-page");
+      if (target) switchToPage(target, true);
+    });
+  });
+
+  const brandLink = document.querySelector("[data-page-link]");
+  if (brandLink) {
+    brandLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      switchToPage("overview", true);
+    });
+  }
+
+  window.addEventListener("hashchange", () => {
+    const rawHash = (window.location.hash || "").replace(/^#/, "");
+    if (validPages.includes(rawHash)) {
+      switchToPage(rawHash, false);
+    }
+  });
+
+  if (mobileToggleBtn) {
+    mobileToggleBtn.addEventListener("click", () => {
+      if (sidebarEl) sidebarEl.classList.toggle("open");
+      if (backdropEl) backdropEl.classList.toggle("open");
+    });
+  }
+
+  if (backdropEl) {
+    backdropEl.addEventListener("click", closeMobileSidebar);
+  }
+
+  // 3. Render Helpers
   function updateLedgerDisplay() {
     if (idleCounterEl) {
       const unit = currentLang === "zh" ? " 秒" : " sec";
@@ -823,8 +1082,7 @@
 
   function syncDiplomaPreview() {
     const dict = i18nDict[currentLang];
-    const fallbackName = dict.form_default_name;
-    const rawName = (nameInput && nameInput.value.trim()) || fallbackName;
+    const rawName = (nameInput && nameInput.value.trim()) || dict.form_default_name;
     if (certName) certName.textContent = rawName;
     if (certDegree && degreeSelect) certDegree.textContent = degreeSelect.value;
     if (certMajor && majorSelect) certMajor.textContent = dict.cert_major_prefix + majorSelect.value;
@@ -920,7 +1178,21 @@
     if (!facultyGridEl) return;
     facultyGridEl.innerHTML = "";
     const hoursLabel = i18nDict[currentLang].fac_hours_label;
-    facultyByLang[currentLang].forEach((f) => {
+    const list = facultyByLang[currentLang];
+
+    if (emailProfSelect) {
+      const prevIdx = Math.max(0, emailProfSelect.selectedIndex);
+      emailProfSelect.innerHTML = "";
+      list.forEach((f, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = f.name;
+        emailProfSelect.appendChild(opt);
+      });
+      emailProfSelect.selectedIndex = Math.min(prevIdx, list.length - 1);
+    }
+
+    list.forEach((f) => {
       const article = document.createElement("article");
       article.className = "faculty-dossier";
       article.innerHTML = `
@@ -931,11 +1203,62 @@
           <p class="faculty-bio">${f.bio}</p>
         </div>
         <div class="faculty-hours">
-          <strong>${hoursLabel}</strong>${f.hours}
+          <span><strong>${hoursLabel}</strong>${f.hours}</span>
         </div>
       `;
       facultyGridEl.appendChild(article);
     });
+  }
+
+  function renderCampusLife() {
+    if (cafeMenuListEl) {
+      cafeMenuListEl.innerHTML = "";
+      cafeMenuByLang[currentLang].forEach((m) => {
+        const row = document.createElement("div");
+        row.className = "menu-item";
+        row.innerHTML = `
+          <div class="menu-item-name">
+            <strong>${m.name}</strong>
+            <span>${m.desc}</span>
+          </div>
+          <span class="menu-item-price">${m.price}</span>
+        `;
+        cafeMenuListEl.appendChild(row);
+      });
+    }
+
+    if (oracleResultEl) {
+      oracleResultEl.textContent = i18nDict[currentLang].oracle_init;
+    }
+
+    if (clubsListEl) {
+      clubsListEl.innerHTML = "";
+      const btnText = i18nDict[currentLang].club_join_btn;
+      clubsByLang[currentLang].forEach((club) => {
+        const div = document.createElement("div");
+        div.className = "club-card";
+        div.innerHTML = `
+          <h4>${club.name}</h4>
+          <p>${club.desc}</p>
+          <button type="button" class="portal-card-btn">${btnText}</button>
+        `;
+        const btn = div.querySelector("button");
+        if (btn) {
+          btn.addEventListener("click", () => {
+            if (clubJoinFeedbackEl) {
+              clubJoinFeedbackEl.textContent = currentLang === "zh"
+                ? `已成功加入【${club.name}】！社长已将您设为永久免打扰，祝您各自安好。`
+                : `Successfully joined [${club.name}]! The president muted the group chat for eternity.`;
+            }
+          });
+        }
+        clubsListEl.appendChild(div);
+      });
+    }
+
+    if (clubJoinFeedbackEl) {
+      clubJoinFeedbackEl.textContent = i18nDict[currentLang].club_feedback_init;
+    }
   }
 
   function renderWebcams() {
@@ -972,9 +1295,7 @@
       }
     });
 
-    if (langSwitchBtn) {
-      langSwitchBtn.textContent = dict.lang_btn;
-    }
+    if (langSwitchBtn) langSwitchBtn.textContent = dict.lang_btn;
 
     if (bulletinText) {
       const list = bulletinsByLang[currentLang];
@@ -984,6 +1305,23 @@
     if (tuitionBtn) {
       const tList = tuitionStatesByLang[currentLang];
       tuitionBtn.textContent = tList[tuitionIdx % tList.length];
+    }
+
+    if (sidebarExcuseText) {
+      const eList = excusesByLang[currentLang];
+      sidebarExcuseText.textContent = eList[excuseIdx % eList.length];
+    }
+
+    if (newPaperInput) {
+      newPaperInput.placeholder = dict.sub_paper_placeholder;
+    }
+
+    if (emailQuestionInput) {
+      emailQuestionInput.placeholder = dict.email_prof_placeholder;
+    }
+
+    if (emailReplyOutput) {
+      emailReplyOutput.textContent = dict.email_prof_init;
     }
 
     if (nameInput) {
@@ -1009,6 +1347,7 @@
     renderCourseTable(currentDeptFilter);
     renderPaperList();
     renderFaculty();
+    renderCampusLife();
     renderWebcams();
     updateLedgerDisplay();
   }
@@ -1017,6 +1356,14 @@
   if (langSwitchBtn) {
     langSwitchBtn.addEventListener("click", () => {
       applyLanguage(currentLang === "zh" ? "en" : "zh", false);
+    });
+  }
+
+  if (excuseGenBtn && sidebarExcuseText) {
+    excuseGenBtn.addEventListener("click", () => {
+      const list = excusesByLang[currentLang];
+      excuseIdx = (excuseIdx + 1) % list.length;
+      sidebarExcuseText.textContent = list[excuseIdx];
     });
   }
 
@@ -1095,7 +1442,65 @@
     });
   }
 
-  // High-Resolution Canvas Diploma Export (Bilingual support)
+  // Submit Zero-Word Paper
+  if (submitBlankPaperBtn) {
+    submitBlankPaperBtn.addEventListener("click", () => {
+      const rawTitle = (newPaperInput && newPaperInput.value.trim()) ||
+        (currentLang === "zh"
+          ? "论把闹钟按掉后那五分钟的相对论时间膨胀效应"
+          : "Relativistic Time Dilation During the 5 Minutes After Hitting Snooze");
+
+      const serialNum = Math.floor(100 + Math.random() * 899);
+      const zhEntry = {
+        doi: `DOI: 10.0000/anu.void.2026.${serialNum}`,
+        journal: "Nature: Nothing · Express Letter",
+        title: rawTitle,
+        authors: "匿名摸鱼学者¹ · 绝对虚无大学访问研究员",
+        citations: "被引次数：999+ 次（刚刚发表即被梦境索引）",
+        content: "[ 0 字正文 · 作者仅提交了一个标题便去喝下午茶了 ]",
+        footnote: "致谢：感谢自己没有写任何一个字，从而避免了所有潜在的学术争议。",
+        review: "“震撼学界！标题极富哲学张力，而正文的彻底留白更是对当代学术灌水的无声解构，免审直接录用！”"
+      };
+      const enEntry = {
+        doi: `DOI: 10.0000/anu.void.2026.${serialNum}`,
+        journal: "Nature: Nothing · Express Letter",
+        title: rawTitle,
+        authors: "Anonymous Slacker¹ · Visiting Fellow at ANU",
+        citations: "Citations: 999+ (Indexed immediately in REM sleep)",
+        content: "[ 0-WORD MANUSCRIPT · The author submitted only a title and went for boba tea ]",
+        footnote: "Acknowledgments: The author thanks themselves for writing nothing and avoiding all peer disputes.",
+        review: "“Breathtaking! A bold title followed by absolute silence—a masterful deconstruction of academic verbosity. Accepted without revisions!”"
+      };
+
+      papersByLang.zh.unshift(zhEntry);
+      papersByLang.en.unshift(enEntry);
+      activePaperIdx = 0;
+      if (newPaperInput) newPaperInput.value = "";
+      renderPaperList();
+    });
+  }
+
+  // Send Email to Absentee Professor
+  if (sendProfEmailBtn) {
+    sendProfEmailBtn.addEventListener("click", () => {
+      const idx = emailProfSelect ? parseInt(emailProfSelect.value, 10) || 0 : 0;
+      const prof = facultyByLang[currentLang][idx] || facultyByLang[currentLang][0];
+      if (emailReplyOutput && prof) {
+        emailReplyOutput.textContent = prof.reply;
+      }
+    });
+  }
+
+  // Lunch Oracle
+  if (spinLunchBtn && oracleResultEl) {
+    spinLunchBtn.addEventListener("click", () => {
+      const list = lunchOracleByLang[currentLang];
+      oracleIdx = (oracleIdx + 1) % list.length;
+      oracleResultEl.textContent = list[oracleIdx];
+    });
+  }
+
+  // Canvas Diploma Exporter
   if (downloadBtn) {
     downloadBtn.addEventListener("click", () => {
       const dict = i18nDict[currentLang];
@@ -1115,7 +1520,6 @@
       ctx.lineWidth = 3;
       ctx.strokeRect(50, 50, canvas.width - 100, canvas.height - 100);
 
-      // Crest
       ctx.save();
       ctx.translate(600, 125);
       ctx.fillStyle = "#0D1B2A";
@@ -1278,14 +1682,12 @@
     });
   });
 
-  const donateLink = document.getElementById("donate-nothing-link");
-  if (donateLink) {
-    donateLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      alert(i18nDict[currentLang].donate_alert);
-    });
-  }
-
-  // Initialize with detected browser language
+  // Initial Boot
   applyLanguage(currentLang, true);
+  const initialHash = (window.location.hash || "").replace(/^#/, "");
+  if (validPages.includes(initialHash)) {
+    switchToPage(initialHash, false);
+  } else {
+    switchToPage("overview", false);
+  }
 })();
