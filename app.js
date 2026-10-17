@@ -138,7 +138,6 @@
       sub_author_placeholder: "例如：张摸鱼 / 首席退堂鼓学者（留空默认匿名学者）",
       sub_paper_btn: "一键投递手稿并秒获审稿意见",
       sub_random_btn: "随机抽选一个奇葩课题并生成",
-      footer_disclaimer: "【虚构娱乐与合规声明】本网站（Absolutely Nothing University · 绝对虚无大学）系纯幽默讽刺创意项目（Satire & Parody Website），并非真实高等教育机构，亦与澳大利亚国立大学（Australian National University）或任何现实院校毫无关联。本站不收取任何费用、不收集任何个人隐私数据，站内生成的“学位证书”与“论文录用证明”仅供娱乐纪念，不具备任何现实学术或法律效力。",
       fac_eyebrow: "Ordo Professorum · 终身不坐班名师名录",
       fac_title: "杰出师资与睡眠领军人物",
       fac_desc: "我校教授全部实行“终身免坐班、免科研、免回复邮件”制度。如果您在校园里偶遇任何一位教授，说明他走错路了。",
@@ -285,7 +284,6 @@
       sub_author_placeholder: "e.g., Dr. Slacker (Leave blank for Anonymous Fellow)",
       sub_paper_btn: "Submit Manuscript & Get Instant Referee Report",
       sub_random_btn: "Draw Random Topic & Publish Instantly",
-      footer_disclaimer: "[Satire & Parody Disclaimer] Absolutely Nothing University (freeze.edu.kg) is a fictional humor and satire creative project. It is NOT a real higher-education institution and has no affiliation with The Australian National University or any accredited university. Zero fees are charged, zero personal data is collected, and all generated diplomas or certificates are strictly for entertainment.", 
       fac_eyebrow: "Ordo Professorum · Tenured Absentee Faculty",
       fac_title: "Distinguished Faculty & Sleep Pioneers",
       fac_desc: "All ANU faculty enjoy lifetime immunity from office hours, grant writing, and replying to emails. If you ever spot a professor on campus, they are lost.",
@@ -1999,14 +1997,6 @@
       ctx.fillText("0 WORDS", 0, 12);
       ctx.restore();
 
-      ctx.fillStyle = "#64748B";
-      ctx.font = "13px monospace";
-      ctx.fillText(
-        "PARODY & HUMOR CERTIFICATE ONLY · NOT A REAL ACADEMIC PUBLICATION · FREEZE.EDU.KG",
-        600,
-        785
-      );
-
       const link = document.createElement("a");
       link.download = `ANU-Blank-Paper-${activePaper.doi.replace(/[^a-zA-Z0-9.-]/g, "_")}.png`;
       link.href = canvas.toDataURL("image/png");
@@ -2181,10 +2171,6 @@
       ctx.fillStyle = "#4A6583";
       ctx.font = "15px monospace";
       ctx.fillText(`Serial: ${currentSerial}  |  Issued by Absolutely Nothing University`, 600, 764);
-
-      ctx.fillStyle = "#64748B";
-      ctx.font = "12px monospace";
-      ctx.fillText("FOR HUMOR & ENTERTAINMENT ONLY · PARODY DIPLOMA · NOT AN ACCREDITED INSTITUTION", 600, 788);
 
       const safeFileRecipient = recipient.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, "_").slice(0, 30) || "Alumni";
       const link = document.createElement("a");
