@@ -14,7 +14,7 @@ interface CachedJwks {
 
 let jwksCache: CachedJwks | null = null;
 
-function base64UrlToUint8Array(base64Url: string): Uint8Array {
+function base64UrlToUint8Array(base64Url: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
   const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);

@@ -12,7 +12,7 @@
 
   global.ANU_CONFIG = global.ANU_CONFIG || {
     apiBaseUrl: "https://api.freeze.edu.kg",
-    turnstileSiteKey: "",
+    turnstileSiteKey: "0x4AAAAAAFZ4BsbUQSBtf-KB",
     firebase: {
       apiKey: "",
       authDomain: "freeze.edu.kg",

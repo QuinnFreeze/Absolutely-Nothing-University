@@ -17,7 +17,7 @@
 
   const DEFAULT_CONFIG = {
     apiBaseUrl: "https://api.freeze.edu.kg",
-    turnstileSiteKey: "0x4AAAAAAADnPIDROrmt1Wwj", // Replace with production Turnstile Site Key in js/anu-config.js or window.ANU_CONFIG
+    turnstileSiteKey: "0x4AAAAAAFZ4BsbUQSBtf-KB", // Replace with production Turnstile Site Key in js/anu-config.js or window.ANU_CONFIG
     firebase: {
       // Production Firebase Web App config for freeze.edu.kg
       // Replace placeholder keys with your Firebase Console values (see README.md)

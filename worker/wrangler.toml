@@ -21,7 +21,7 @@ RATE_LIMIT_WRITE_PER_HOUR = "25"
 [[d1_databases]]
 binding = "DB"
 database_name = "anu-campus-db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "44fe8355-8004-482c-84db-2c75c61b20ef"
 migrations_dir = "migrations"
 
 # ============================================================================
