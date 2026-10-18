@@ -85,12 +85,11 @@
 
   function detectInitialTheme() {
     try {
-      const saved = localStorage.getItem("anu_theme");
+      // Only explicit choices use this key; the legacy key also stored automatic
+      // system-dark detection and cannot reliably represent a user's preference.
+      const saved = localStorage.getItem("anu_theme_preference");
       if (saved === "dark" || saved === "light") return saved;
     } catch (_) {}
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return "dark";
-    }
     return "light";
   }
 
@@ -284,11 +283,11 @@
   const webcamGridEl = document.getElementById("webcam-grid");
 
   // Theme Controller
-  function applyTheme(theme) {
+  function applyTheme(theme, rememberChoice = true) {
     currentTheme = theme === "dark" ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", currentTheme);
     try {
-      localStorage.setItem("anu_theme", currentTheme);
+      if (rememberChoice) localStorage.setItem("anu_theme_preference", currentTheme);
     } catch (_) {}
     syncThemeButtons();
     updateCloudSecurityCheck();
@@ -2486,7 +2485,7 @@
   }
 
   // Initial Boot
-  applyTheme(currentTheme);
+  applyTheme(currentTheme, false);
   applyLanguage(currentLang, true);
   fetchAnnouncementsData();
 
