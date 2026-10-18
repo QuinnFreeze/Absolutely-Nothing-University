@@ -19,6 +19,13 @@
 
 本次后端版本 `4e829602-af8d-4c75-ab59-1cb09c1eea76` 已部署；生产 D1 已应用 `0002_archive_quota_triggers.sql`，并只读确认三个额度触发器存在。迁移前完成了仓库外私有 SQL 备份和 SHA-256 校验。前端以对应 GitHub Pages 部署为准，完整生产账户流程另行验收。
 
+### 本次发布后的独立核验
+
+- 功能提交 `9a065d4` 已推送到 `main`，GitHub Pages 部署成功。线上 HTTPS 下的 `index.html`、`app.js`、`js/anu-config.js`、`js/student-auth.js`、`js/i18n.js` 与本地文件逐字节一致。
+- 修复验收时发现的自定义域证书缺失：按 GitHub 官方步骤重新绑定同一域名后，`freeze.edu.kg` 与 `www.freeze.edu.kg` 的证书状态为 `approved`，到期日 2027-01-16，并启用 `https_enforced=true`。HTTPS 返回 200，HTTP 自动跳转 HTTPS；未绕过证书验证。
+- 生产 API 健康检查返回 200；未携带身份的私有接口返回 `401 AUTH_REQUIRED`；非白名单来源返回 `403 CORS_ORIGIN_FORBIDDEN`。
+- 实际 Chrome 从正式 HTTPS 页面加载真实 Firebase SDK，游客初始化没有认证错误；论文及证书本机保存成功，页面运行异常为零。真人 Google OAuth、真实挑战后的档案注册与完整同步、物理 iPhone Safari 仍未验收。
+
 ## 二、代码实现与本地自动化覆盖
 
 执行入口：`node --no-warnings tests/run-tests.mjs`（Node.js v24+）。Worker 测试运行实际处理器，并用内存 SQLite 适配 D1 接口；JWT 使用测试签名密钥，Turnstile 使用测试 verifier。客户端通过静态检查和模拟浏览器环境验证。所有结论均受这些环境边界限制。
