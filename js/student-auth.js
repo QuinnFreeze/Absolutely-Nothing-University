@@ -6,8 +6,7 @@
  * 2. Enables ONLY Google Sign-In (GoogleAuthProvider) — zero password auth.
  * 3. Uses Firebase SDK credential management (browserLocalPersistence + indexedDBLocalPersistence)
  *    and NEVER stores raw ID tokens or refresh tokens manually in localStorage.
- * 4. Handles iPhone Safari & mobile browsers (popup-blocked fallback to signInWithRedirect,
- *    plus ITP cross-site storage guidance with custom authDomain freeze.edu.kg).
+ * 4. Uses popup sign-in, with redirect fallback only for a same-origin authDomain.
  * 5. Communicates with https://api.freeze.edu.kg with verified Bearer ID tokens,
  *    Cloudflare Turnstile tokens on write actions, and X-Idempotency-Key for local archive imports.
  * 6. Guests can continue using 100% of all satirical campus features without signing in.
@@ -17,14 +16,14 @@
 
   const DEFAULT_CONFIG = {
     apiBaseUrl: "https://api.freeze.edu.kg",
-    turnstileSiteKey: "0x4AAAAAAFZ4BsbUQSBtf-KB", // Replace with production Turnstile Site Key in js/anu-config.js or window.ANU_CONFIG
+    turnstileSiteKey: "0x4AAAAAAFZ4BsbUQSBtf-KB",
     firebase: {
-      // Production Firebase Web App config for freeze.edu.kg
-      // Replace placeholder keys with your Firebase Console values (see README.md)
-      apiKey: "",
-      authDomain: "freeze.edu.kg",
-      projectId: "anu-freeze-edu",
-      appId: ""
+      apiKey: "AIzaSyARMbWYMW_ov7_EATLs1TmOw_m-oG7-4ZQ",
+      authDomain: "project-8995408b-d1b3-4571-83b.firebaseapp.com",
+      projectId: "project-8995408b-d1b3-4571-83b",
+      storageBucket: "project-8995408b-d1b3-4571-83b.firebasestorage.app",
+      messagingSenderId: "353403995690",
+      appId: "1:353403995690:web:21cee5147681825b486553"
     }
   };
 
@@ -119,9 +118,36 @@
   let studentBundle = null; // Server-returned { profile, transcripts, papers, diplomas, honors }
   let isRegistered = false;
   let authReady = false;
+  let authInitPromise = null;
+  let authError = null;
+  let bundleLoaded = false;
+  let cloudLoading = false;
+  let cloudError = null;
+  let authSession = 0;
+  let bundleRefresh = null;
   let turnstileWidgetId = null;
+  let turnstileContainer = null;
+  let turnstileTheme = null;
+  let turnstileMountPending = false;
+  let turnstileGeneration = 0;
   let latestTurnstileToken = "";
+  let protectedWritePending = false;
+  const consumedTurnstileTokens = new Set();
   const stateListeners = [];
+
+  function errorWithCode(code, message) {
+    const error = new Error(message || code);
+    error.code = code;
+    return error;
+  }
+
+  function errorSnapshot(error) {
+    return {
+      code: (error && error.code) || "NETWORK_ERROR",
+      message: (error && error.message) || "云端请求失败，请稍后重试。",
+      status: (error && error.status) || null
+    };
+  }
 
   function notifyListeners() {
     const snapshot = {
@@ -135,7 +161,11 @@
           }
         : null,
       isRegistered,
-      bundle: studentBundle
+      bundle: studentBundle,
+      bundleLoaded,
+      cloudLoading,
+      cloudError,
+      authError
     };
     stateListeners.forEach((fn) => {
       try {
@@ -159,7 +189,26 @@
     return firebaseModules;
   }
 
-  async function initAuth() {
+  function adoptUser(user) {
+    if ((currentUser && currentUser.uid) !== (user && user.uid) || Boolean(currentUser) !== Boolean(user)) {
+      authSession += 1;
+      studentBundle = null;
+      isRegistered = false;
+      bundleLoaded = false;
+      cloudLoading = false;
+      cloudError = null;
+      bundleRefresh = null;
+      resetTurnstile();
+    }
+    currentUser = user || null;
+  }
+
+  function initAuth() {
+    if (!authInitPromise) authInitPromise = initializeAuth();
+    return authInitPromise;
+  }
+
+  async function initializeAuth() {
     if (!isFirebaseConfigured()) {
       authReady = true;
       notifyListeners();
@@ -182,22 +231,27 @@
       // Handle redirect result on iPhone Safari / Mobile after signInWithRedirect
       try {
         await authMod.getRedirectResult(firebaseAuth);
-      } catch (_) {
-        // Handled via onAuthStateChanged or UI feedback
+      } catch (error) {
+        authError = errorSnapshot(error);
       }
 
       authMod.onAuthStateChanged(firebaseAuth, async (user) => {
-        currentUser = user || null;
+        adoptUser(user);
         authReady = true;
         if (currentUser) {
-          await refreshStudentBundle();
+          // Firebase does not consume rejected async observer promises.
+          try {
+            await refreshStudentBundle();
+          } catch (_) {
+            // refreshStudentBundle has already published cloudError for the UI.
+          }
         } else {
-          studentBundle = null;
-          isRegistered = false;
           notifyListeners();
         }
       });
-    } catch {
+    } catch (error) {
+      firebaseAuth = null;
+      authError = errorSnapshot(error);
       authReady = true;
       notifyListeners();
     }
@@ -205,12 +259,18 @@
 
   async function getFreshIdToken(forceRefresh = false) {
     if (!currentUser || typeof currentUser.getIdToken !== "function") {
-      throw new Error("NOT_AUTHENTICATED");
+      throw errorWithCode("NOT_AUTHENTICATED", "请先登录 Google 账号。");
     }
     return currentUser.getIdToken(forceRefresh);
   }
 
   async function apiRequest(path, options = {}) {
+    const requestSession = options.requireAuth === false ? null : authSession;
+    const assertCurrentSession = () => {
+      if (requestSession !== null && requestSession !== authSession) {
+        throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
+      }
+    };
     const cfg = getRuntimeConfig();
     const url = `${cfg.apiBaseUrl}${path}`;
     const headers = Object.assign(
@@ -222,19 +282,19 @@
 
     if (options.requireAuth !== false) {
       const idToken = await getFreshIdToken(false);
+      assertCurrentSession();
       headers["Authorization"] = `Bearer ${idToken}`;
     }
 
     if (options.turnstileToken) {
       headers["X-Turnstile-Token"] = options.turnstileToken;
-    } else if (latestTurnstileToken) {
-      headers["X-Turnstile-Token"] = latestTurnstileToken;
     }
 
     if (options.idempotencyKey) {
       headers["X-Idempotency-Key"] = options.idempotencyKey;
     }
 
+    if (options.onSend) options.onSend();
     const resp = await fetch(url, {
       method: options.method || "GET",
       headers,
@@ -248,9 +308,10 @@
     } catch {
       payload = { ok: false, error: { code: "NETWORK_PARSE_ERROR", message: "Invalid server response." } };
     }
+    assertCurrentSession();
 
-    if (!resp.ok || !payload || payload.ok === false) {
-      const errCode = (payload && payload.error && payload.error.code) || `HTTP_${resp.status}`;
+    if (!resp.ok || !payload || payload.ok !== true) {
+      const errCode = (payload && payload.error && payload.error.code) || (resp.ok ? "INVALID_SERVER_RESPONSE" : `HTTP_${resp.status}`);
       const errMsg = (payload && payload.error && payload.error.message) || "Request failed.";
       const err = new Error(errMsg);
       err.code = errCode;
@@ -261,31 +322,98 @@
     return payload;
   }
 
-  async function refreshStudentBundle() {
+  function refreshStudentBundle() {
     if (!currentUser) {
       studentBundle = null;
       isRegistered = false;
+      bundleLoaded = false;
+      cloudLoading = false;
+      cloudError = null;
       notifyListeners();
-      return null;
+      return Promise.resolve(null);
     }
+    if (bundleRefresh && bundleRefresh.session === authSession) return bundleRefresh.promise;
+    const session = authSession;
+    const promise = fetchStudentBundle(session);
+    bundleRefresh = { session, promise };
+    return promise;
+  }
+
+  async function fetchStudentBundle(session) {
+    cloudLoading = true;
+    cloudError = null;
+    notifyListeners();
     try {
       const res = await apiRequest("/api/v1/me", { method: "GET" });
+      if (typeof res.registered !== "boolean" || (res.registered && (!res.data || typeof res.data !== "object"))) {
+        throw errorWithCode("INVALID_SERVER_RESPONSE", "云端档案响应不完整，请稍后重试。");
+      }
+      if (session !== authSession) return null;
       isRegistered = Boolean(res.registered && res.data);
       studentBundle = res.data || null;
-      notifyListeners();
+      bundleLoaded = true;
       return studentBundle;
-    } catch {
-      notifyListeners();
-      return null;
+    } catch (error) {
+      if (session === authSession) cloudError = errorSnapshot(error);
+      throw error;
+    } finally {
+      if (session === authSession) {
+        cloudLoading = false;
+        bundleRefresh = null;
+        notifyListeners();
+      }
     }
+  }
+
+  async function protectedWrite(path, body, turnstileToken, options = {}) {
+    const token = typeof turnstileToken === "string" ? turnstileToken.trim() : getTurnstileToken();
+    if (!token) throw errorWithCode("TURNSTILE_REQUIRED", "请先完成人机验证，再提交云端存档。");
+    if (protectedWritePending) throw errorWithCode("CLOUD_WRITE_IN_PROGRESS", "上一笔云端提交尚未完成，请稍候。");
+    if (consumedTurnstileTokens.has(token)) throw errorWithCode("TURNSTILE_TOKEN_USED", "人机验证已使用，请重新验证。");
+    protectedWritePending = true;
+    const session = authSession;
+    let sent = false;
+    try {
+      const response = await apiRequest(path, Object.assign({}, options, {
+        method: "POST",
+        turnstileToken: token,
+        body: Object.assign({}, body, { turnstileToken: token }),
+        onSend() {
+          if (session !== authSession) throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
+          sent = true;
+          consumedTurnstileTokens.add(token);
+          // Only recent in-memory tokens are relevant; never persist credentials.
+          if (consumedTurnstileTokens.size > 32) consumedTurnstileTokens.delete(consumedTurnstileTokens.values().next().value);
+        }
+      }));
+      if (session !== authSession) throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
+      return response;
+    } finally {
+      protectedWritePending = false;
+      if (sent) resetTurnstile();
+    }
+  }
+
+  function acceptBundle(bundle) {
+    studentBundle = bundle;
+    isRegistered = Boolean(bundle);
+    bundleLoaded = true;
+    cloudError = null;
+    notifyListeners();
+  }
+
+  function requireRegisteredStudent() {
+    if (!currentUser) throw errorWithCode("NOT_AUTHENTICATED", "请先登录 Google 账号。");
+    if (!bundleLoaded) throw errorWithCode("CLOUD_PROFILE_NOT_LOADED", "云端档案尚未加载，请先重试同步。");
+    if (!isRegistered) throw errorWithCode("PROFILE_NOT_REGISTERED", "请先建立云端学籍。");
   }
 
   /**
    * Signs in with Google following Firebase official best practices for both desktop
    * and iPhone Safari / mobile browsers:
    * - Attempts signInWithPopup first on user gesture (works on iOS 16.4+ Safari and desktop).
-   * - Automatically falls back to signInWithRedirect if popup is blocked (`auth/popup-blocked`,
-   *   `auth/cancelled-popup-request`, or embedded webviews).
+   * - Redirect fallback requires same-origin auth helpers to avoid third-party storage failures.
+   * See https://firebase.google.com/docs/auth/web/redirect-best-practices
    */
   async function signInWithGoogle() {
     if (!isFirebaseConfigured()) {
@@ -294,16 +422,19 @@
       throw err;
     }
 
-    const { authMod } = await loadFirebaseSdk();
+    await initAuth();
+    if (!firebaseAuth || !firebaseModules) {
+      const error = errorWithCode((authError && authError.code) || "AUTH_NOT_READY", (authError && authError.message) || "登录服务尚未准备完成，请刷新页面后重试。");
+      throw error;
+    }
+    const { authMod } = firebaseModules;
     const provider = new authMod.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
 
     const envInfo = isMobileSafariOrEmbedded();
+    let result;
     try {
-      const result = await authMod.signInWithPopup(firebaseAuth, provider);
-      currentUser = result.user;
-      await refreshStudentBundle();
-      return { mode: "popup", user: currentUser };
+      result = await authMod.signInWithPopup(firebaseAuth, provider);
     } catch (err) {
       const code = (err && err.code) || "";
       if (
@@ -311,28 +442,38 @@
         code === "auth/operation-not-supported-in-this-environment" ||
         (envInfo.isIOS && code === "auth/popup-closed-by-user" && envInfo.isInApp)
       ) {
+        const authOrigin = new URL(`https://${getRuntimeConfig().firebase.authDomain}`).origin;
+        if (!global.location || global.location.origin !== authOrigin) {
+          throw errorWithCode("AUTH_REDIRECT_UNAVAILABLE", "登录弹窗无法打开。请允许此网站的弹窗，并在 Safari 或 Chrome 中重新登录；当前站点尚未配置同源登录跳转。");
+        }
         await authMod.signInWithRedirect(firebaseAuth, provider);
         return { mode: "redirect", user: null };
       }
       throw err;
     }
+    adoptUser(result.user);
+    authReady = true;
+    authError = null;
+    // A cloud outage does not undo successful Google authentication; state exposes
+    // cloudError and the caller can distinguish this from an unfinished redirect.
+    try {
+      await refreshStudentBundle();
+    } catch (_) {}
+    return { mode: "popup", user: currentUser, cloudError };
   }
 
   async function signOutStudent() {
     if (firebaseAuth && firebaseModules) {
       await firebaseModules.authMod.signOut(firebaseAuth);
     }
-    currentUser = null;
-    studentBundle = null;
-    isRegistered = false;
+    adoptUser(null);
+    authError = null;
+    resetTurnstile();
     notifyListeners();
   }
 
   async function registerStudentProfile(formPayload, turnstileToken) {
-    const res = await apiRequest("/api/v1/me/register", {
-      method: "POST",
-      turnstileToken,
-      body: {
+    const res = await protectedWrite("/api/v1/me/register", {
         nickname: formPayload.nickname,
         college: formPayload.college,
         majorIdx: formPayload.majorIdx,
@@ -345,13 +486,9 @@
         visibility: formPayload.visibility === "public" ? "public" : "private",
         publicConsent: Boolean(formPayload.publicConsent),
         acceptTerms: Boolean(formPayload.acceptTerms),
-        acceptPrivacy: Boolean(formPayload.acceptPrivacy),
-        turnstileToken
-      }
-    });
-    isRegistered = true;
-    studentBundle = res.data;
-    notifyListeners();
+        acceptPrivacy: Boolean(formPayload.acceptPrivacy)
+    }, turnstileToken);
+    acceptBundle(res.data);
     return res.data;
   }
 
@@ -360,8 +497,7 @@
       method: "PATCH",
       body: patchPayload
     });
-    studentBundle = res.data;
-    notifyListeners();
+    acceptBundle(res.data);
     return res.data;
   }
 
@@ -371,47 +507,34 @@
       method: "POST",
       body: { courseCode, answers }
     });
-    studentBundle = res.data;
-    notifyListeners();
+    acceptBundle(res.data);
     return res;
   }
 
   async function submitPaperToCloud(paperPayload, turnstileToken) {
-    if (!currentUser || !isRegistered) return null;
-    const res = await apiRequest("/api/v1/me/papers", {
-      method: "POST",
-      turnstileToken,
-      body: {
+    requireRegisteredStudent();
+    const res = await protectedWrite("/api/v1/me/papers", {
         title: paperPayload.title,
         author: paperPayload.author,
         journalIdx: paperPayload.journalIdx,
-        methodologyIdx: paperPayload.methodologyIdx,
-        turnstileToken
-      }
-    });
-    studentBundle = res.data;
-    notifyListeners();
+        methodologyIdx: paperPayload.methodologyIdx
+    }, turnstileToken);
+    acceptBundle(res.data);
     return res;
   }
 
   async function submitDiplomaToCloud(diplomaPayload, turnstileToken) {
-    if (!currentUser || !isRegistered) return null;
-    const res = await apiRequest("/api/v1/me/diplomas", {
-      method: "POST",
-      turnstileToken,
-      body: {
+    requireRegisteredStudent();
+    const res = await protectedWrite("/api/v1/me/diplomas", {
         recipientName: diplomaPayload.recipientName,
         degreeIdx: diplomaPayload.degreeIdx,
         majorIdx: diplomaPayload.majorIdx,
         honorIdx: diplomaPayload.honorIdx,
         citationIdx: diplomaPayload.citationIdx,
         templateId: diplomaPayload.templateId,
-        certLang: diplomaPayload.certLang,
-        turnstileToken
-      }
-    });
-    studentBundle = res.data;
-    notifyListeners();
+        certLang: diplomaPayload.certLang
+    }, turnstileToken);
+    acceptBundle(res.data);
     return res;
   }
 
@@ -421,19 +544,29 @@
       method: "POST",
       body: { badgeKey, action }
     });
-    studentBundle = res.data;
-    notifyListeners();
+    acceptBundle(res.data);
     return res.data;
   }
 
-  async function importLocalArchiveToCloud(localArchivePayload, idempotencyKey) {
-    const res = await apiRequest("/api/v1/me/import", {
-      method: "POST",
-      idempotencyKey,
-      body: localArchivePayload
-    });
-    studentBundle = res.data;
-    notifyListeners();
+  function stableJson(value) {
+    if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+    if (value && typeof value === "object") {
+      return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+    }
+    return JSON.stringify(value);
+  }
+
+  async function importLocalArchiveToCloud(localArchivePayload, turnstileToken) {
+    requireRegisteredStudent();
+    // Normalize exactly the JSON content being transferred, then hash every field.
+    // Sorting object keys keeps equivalent archives stable without ignoring edits.
+    const payload = JSON.parse(JSON.stringify(localArchivePayload));
+    const serialized = stableJson(payload);
+    if (!global.crypto || !global.crypto.subtle) throw errorWithCode("SECURE_CONTEXT_REQUIRED", "请使用 HTTPS 网站导入本地存档。");
+    const digest = await global.crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
+    const hash = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+    const res = await protectedWrite("/api/v1/me/import", payload, turnstileToken, { idempotencyKey: `anu-import-v1-${hash}` });
+    acceptBundle(res.data);
     return res;
   }
 
@@ -453,6 +586,8 @@
     }
     studentBundle = null;
     isRegistered = false;
+    bundleLoaded = false;
+    cloudError = null;
     notifyListeners();
     return res;
   }
@@ -470,17 +605,35 @@
     const el = document.querySelector(containerSelector);
     if (!el) return;
 
+    const theme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    if (turnstileContainer === el && turnstileTheme === theme && turnstileWidgetId !== null) return;
+    if (turnstileWidgetId !== null && global.turnstile) {
+      try {
+        global.turnstile.remove(turnstileWidgetId);
+      } catch (_) {}
+    }
+    turnstileWidgetId = null;
+    latestTurnstileToken = "";
+    turnstileContainer = el;
+    turnstileTheme = theme;
+    turnstileGeneration += 1;
+
     const renderWidget = () => {
-      if (!global.turnstile) return;
-      el.textContent = "";
-      turnstileWidgetId = global.turnstile.render(el, {
+      turnstileMountPending = false;
+      if (!global.turnstile || !turnstileContainer || turnstileWidgetId !== null) return;
+      const generation = turnstileGeneration;
+      turnstileContainer.textContent = "";
+      turnstileWidgetId = global.turnstile.render(turnstileContainer, {
         sitekey: cfg.turnstileSiteKey,
-        theme: document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light",
+        theme: turnstileTheme,
         callback: function (token) {
-          latestTurnstileToken = token;
+          if (generation === turnstileGeneration) latestTurnstileToken = token;
         },
         "expired-callback": function () {
-          latestTurnstileToken = "";
+          if (generation === turnstileGeneration) latestTurnstileToken = "";
+        },
+        "error-callback": function () {
+          if (generation === turnstileGeneration) latestTurnstileToken = "";
         }
       });
     };
@@ -490,25 +643,34 @@
       return;
     }
 
-    if (!document.getElementById("cf-turnstile-script")) {
-      const script = document.createElement("script");
+    if (turnstileMountPending) return;
+    turnstileMountPending = true;
+    let script = document.getElementById("cf-turnstile-script");
+    const retryAfterLoadError = () => {
+      turnstileMountPending = false;
+      latestTurnstileToken = "";
+      // A failed script never emits load again. Remove it so the next mount can
+      // create a fresh request after connectivity or content blocking changes.
+      script.remove();
+    };
+    if (!script) {
+      script = document.createElement("script");
       script.id = "cf-turnstile-script";
       script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
       script.async = true;
       script.defer = true;
-      script.addEventListener("load", renderWidget);
+      script.addEventListener("load", renderWidget, { once: true });
+      script.addEventListener("error", retryAfterLoadError, { once: true });
       document.head.appendChild(script);
+    } else {
+      script.addEventListener("load", renderWidget, { once: true });
+      script.addEventListener("error", retryAfterLoadError, { once: true });
     }
   }
 
   function getTurnstileToken() {
-    if (global.turnstile && turnstileWidgetId !== null) {
-      try {
-        return global.turnstile.getResponse(turnstileWidgetId) || latestTurnstileToken;
-      } catch {
-        return latestTurnstileToken;
-      }
-    }
+    // The callback is authoritative: querying getResponse after expiry/error can
+    // otherwise revive a stale token in a delayed provider state update.
     return latestTurnstileToken;
   }
 
@@ -552,7 +714,11 @@
       isConfigured: isFirebaseConfigured(),
       user: currentUser,
       isRegistered,
-      bundle: studentBundle
+      bundle: studentBundle,
+      bundleLoaded,
+      cloudLoading,
+      cloudError,
+      authError
     })
   };
 })(window);

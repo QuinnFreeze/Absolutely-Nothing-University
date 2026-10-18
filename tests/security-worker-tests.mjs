@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import worker from "../worker/src/index.ts";
+import { checkRateLimit } from "../worker/src/middleware/security.ts";
 
 const rootDir = path.resolve(import.meta.dirname, "..");
 
@@ -16,8 +17,21 @@ function createD1SqliteAdapter(sqlMigrationText) {
   db.exec("PRAGMA foreign_keys = ON;");
   db.exec(sqlMigrationText);
 
+  const executeSync = Symbol("executeSync");
   function createPrepared(query, boundValues = []) {
+    const execute = () => {
+      const stmt = db.prepare(query);
+      const res = stmt.run(...boundValues);
+      return {
+        success: true,
+        meta: {
+          changes: Number(res.changes || 0),
+          last_row_id: Number(res.lastInsertRowid || 0)
+        }
+      };
+    };
     return {
+      [executeSync]: execute,
       bind(...vals) {
         return createPrepared(query, vals);
       },
@@ -29,15 +43,7 @@ function createD1SqliteAdapter(sqlMigrationText) {
         return row;
       },
       async run() {
-        const stmt = db.prepare(query);
-        const res = stmt.run(...boundValues);
-        return {
-          success: true,
-          meta: {
-            changes: Number(res.changes || 0),
-            last_row_id: Number(res.lastInsertRowid || 0)
-          }
-        };
+        return execute();
       },
       async all() {
         const stmt = db.prepare(query);
@@ -56,11 +62,18 @@ function createD1SqliteAdapter(sqlMigrationText) {
       return createPrepared(query, []);
     },
     async batch(statements) {
-      const results = [];
-      for (const s of statements) {
-        results.push(await s.run());
+      // D1 batches are transactional: a failed statement rolls back the batch.
+      db.exec("BEGIN");
+      try {
+        const results = [];
+        // No microtask yield inside a transaction: D1 serializes the whole batch.
+        for (const s of statements) results.push(s[executeSync]());
+        db.exec("COMMIT");
+        return results;
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
       }
-      return results;
     },
     async exec(query) {
       db.exec(query);
@@ -124,10 +137,9 @@ async function signTestFirebaseJwt(privateKey, claims, headerOverrides = {}) {
 export async function runWorkerSecurityTests() {
   console.log("\n=== ANU Cloudflare Worker & D1 Security Test Suite ===");
 
-  const migrationSql = fs.readFileSync(
-    path.join(rootDir, "worker/migrations/0001_initial_schema.sql"),
-    "utf8"
-  );
+  const migrationDir = path.join(rootDir, "worker/migrations");
+  const migrationSql = fs.readdirSync(migrationDir).filter((name) => name.endsWith(".sql"))
+    .sort().map((name) => fs.readFileSync(path.join(migrationDir, name), "utf8")).join("\n");
   const d1 = createD1SqliteAdapter(migrationSql);
   const { privateKey, publicJwk } = await generateTestKeyPair("test-firebase-kid-2026");
   const { privateKey: wrongPrivateKey } = await generateTestKeyPair("wrong-key");
@@ -516,7 +528,8 @@ export async function runWorkerSecurityTests() {
         headers: {
           Authorization: `Bearer ${aliceToken}`,
           "Content-Type": "application/json",
-          "X-Idempotency-Key": "idem-alice-import-key-0001"
+          "X-Idempotency-Key": "idem-alice-import-key-0001",
+          "X-Turnstile-Token": "VALID_TURNSTILE_TOKEN"
         },
         body: JSON.stringify(importPayload)
       }),
@@ -548,6 +561,273 @@ export async function runWorkerSecurityTests() {
     assert.equal(impJson2.data.diplomas.length, 2, "Duplicate import must not create duplicate diplomas");
 
     console.log("✓ [PASS] Server-side exam grading, paper/diploma sync & idempotent local archive import verified");
+  }
+
+  // --------------------------------------------------------------------------
+  // TEST 5e: Import must not bypass Turnstile, subsystem pauses, or archive quotas
+  // --------------------------------------------------------------------------
+  {
+    const countsFor = (uid) => Object.fromEntries(
+      ["transcripts", "papers", "diplomas", "honors_achievements", "idempotency_keys"].map((table) => [
+        table,
+        d1.rawDb.prepare(`SELECT COUNT(*) AS cnt FROM ${table} WHERE firebase_uid = ?`).get(uid).cnt
+      ])
+    );
+    async function createImportStudent(suffix) {
+      const uid = `firebase_uid_import_${suffix}`;
+      const token = await signTestFirebaseJwt(privateKey, createValidClaims(uid));
+      const response = await worker.fetch(new Request("https://api.freeze.edu.kg/api/v1/me/register", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "CF-Connecting-IP": "203.0.113.55",
+          "X-Turnstile-Token": "VALID_TURNSTILE_TOKEN"
+        },
+        body: JSON.stringify({ nickname: suffix, acceptTerms: true, acceptPrivacy: true })
+      }), env);
+      assert.equal(response.status, 201);
+      return { uid, token };
+    }
+    function importRequest(token, key, payload, challenge) {
+      return new Request("https://api.freeze.edu.kg/api/v1/me/import", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "CF-Connecting-IP": "203.0.113.55",
+          "X-Idempotency-Key": key,
+          ...(challenge ? { "X-Turnstile-Token": challenge } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+    const mixedPayload = {
+      badges: ["club_retreat", "easter_konami"],
+      exams: [{ courseCode: "NTH-101", answers: [50, 50] }],
+      papers: [{ title: "Import guard paper", author: "Import student", journalIdx: 0, methodologyIdx: 0 }],
+      diplomas: [{ recipientName: "Import guard student", degreeIdx: 0, majorIdx: 0, honorIdx: 0, templateId: "oxford" }]
+    };
+
+    const guarded = await createImportStudent("challenge_guard");
+    const emptyCounts = countsFor(guarded.uid);
+    for (const challenge of [undefined, "INVALID_BOT_TOKEN"]) {
+      const rejected = await worker.fetch(importRequest(
+        guarded.token, "import-challenge-missing-invalid", mixedPayload, challenge
+      ), env);
+      assert.equal(rejected.status, 403);
+      assert.equal((await rejected.json()).error.code, "TURNSTILE_VERIFICATION_FAILED");
+      assert.deepEqual(countsFor(guarded.uid), emptyCounts, "Unverified imports must not mutate any archive table");
+    }
+
+    let verificationCalls = 0;
+    let challengeUsed = false;
+    const singleUseEnv = {
+      ...env,
+      __TEST_TURNSTILE_VERIFY__: async (challenge) => {
+        verificationCalls++;
+        if (challenge !== "IMPORT_SINGLE_USE_CHALLENGE" || challengeUsed) return false;
+        challengeUsed = true;
+        return true;
+      }
+    };
+    const imported = await worker.fetch(importRequest(
+      guarded.token, "import-single-use-success", mixedPayload, "IMPORT_SINGLE_USE_CHALLENGE"
+    ), singleUseEnv);
+    assert.equal(imported.status, 200);
+    const importedBody = await imported.json();
+    assert.equal(importedBody.importedSummary.papers, 1);
+    const afterImport = countsFor(guarded.uid);
+    const replayed = await worker.fetch(importRequest(
+      guarded.token, "import-single-use-success", mixedPayload
+    ), singleUseEnv);
+    assert.equal(replayed.status, 200);
+    assert.deepEqual(await replayed.json(), importedBody, "Successful import replay must preserve its result");
+    assert.equal(verificationCalls, 1, "Successful replay must not consume a second Turnstile challenge");
+    const newKey = await worker.fetch(importRequest(
+      guarded.token, "import-new-key-reused-challenge", mixedPayload, "IMPORT_SINGLE_USE_CHALLENGE"
+    ), singleUseEnv);
+    assert.equal(newKey.status, 403, "A new import key must still pass fresh verification");
+    assert.deepEqual(countsFor(guarded.uid), afterImport);
+
+    const paused = await createImportStudent("paused_guard");
+    const beforePause = countsFor(paused.uid);
+    for (const [flag, code] of [
+      ["paper_submission_enabled", "PAPER_SUBMISSION_PAUSED"],
+      ["diploma_registration_enabled", "DIPLOMA_REGISTRATION_PAUSED"]
+    ]) {
+      d1.rawDb.prepare("UPDATE system_flags SET enabled = 0 WHERE flag_key = ?").run(flag);
+      try {
+        const rejected = await worker.fetch(importRequest(
+          paused.token, `import-paused-${flag}`, mixedPayload, "VALID_TURNSTILE_TOKEN"
+        ), env);
+        assert.equal(rejected.status, 503);
+        assert.equal((await rejected.json()).error.code, code);
+        assert.deepEqual(countsFor(paused.uid), beforePause, "Paused imports must not partially import badges or other records");
+      } finally {
+        d1.rawDb.prepare("UPDATE system_flags SET enabled = 1 WHERE flag_key = ?").run(flag);
+      }
+    }
+
+    function seedArchive(table, uid, count, offset = 0) {
+      const sample = d1.rawDb.prepare(`SELECT * FROM ${table} WHERE firebase_uid = ? LIMIT 1`).get("firebase_uid_alice_001");
+      assert.ok(sample, `Expected existing ${table} sample`);
+      const columns = Object.keys(sample);
+      const insert = d1.rawDb.prepare(
+        `INSERT INTO ${table} (${columns.join(",")}) VALUES (${columns.map(() => "?").join(",")})`
+      );
+      for (let i = offset; i < offset + count; i++) {
+        const record = { ...sample, id: `${uid}-${i}`, firebase_uid: uid, dedupe_hash: `${uid}-seed-${i}` };
+        if (table === "papers") record.void_id = `VOID-ID: ANU.NULL.2026.SEED-${uid}-${i}`;
+        if (table === "diplomas") record.serial_number = `ANU-2026-VOID-SEED${i}${uid}`;
+        insert.run(...columns.map((column) => record[column]));
+      }
+    }
+    const quotaCases = [
+      { table: "transcripts", field: "exams", limit: 50, code: "TRANSCRIPT_LIMIT_REACHED",
+        first: { courseCode: "NTH-101", answers: [50, 50] },
+        second: { courseCode: "DRM-404", answers: [40, 35] } },
+      { table: "papers", field: "papers", limit: 30, code: "PAPER_LIMIT_REACHED",
+        first: { title: "Quota paper one", journalIdx: 0, methodologyIdx: 0 },
+        second: { title: "Quota paper two", journalIdx: 0, methodologyIdx: 0 } },
+      { table: "diplomas", field: "diplomas", limit: 20, code: "DIPLOMA_LIMIT_REACHED",
+        first: { recipientName: "Quota student one", templateId: "oxford" },
+        second: { recipientName: "Quota student two", templateId: "oxford" } }
+    ];
+    for (const quota of quotaCases) {
+      const student = await createImportStudent(`quota_${quota.table}`);
+      seedArchive(quota.table, student.uid, quota.limit - 1);
+      const before = countsFor(student.uid);
+      const overQuotaPayload = { ...mixedPayload, [quota.field]: [quota.first, quota.second] };
+      const rejected = await worker.fetch(importRequest(
+        student.token, `import-over-quota-${quota.table}`, overQuotaPayload, "VALID_TURNSTILE_TOKEN"
+      ), env);
+      assert.equal(rejected.status, 429);
+      assert.equal((await rejected.json()).error.code, quota.code);
+      assert.deepEqual(countsFor(student.uid), before, "Any exceeded quota must reject before all archive/badge writes");
+
+      const atBoundary = await worker.fetch(importRequest(
+        student.token, `import-quota-boundary-${quota.table}`,
+        { [quota.field]: [quota.first, quota.first] }, "VALID_TURNSTILE_TOKEN"
+      ), env);
+      assert.equal(atBoundary.status, 200, "Duplicate records in one import consume one quota slot");
+      assert.equal((await atBoundary.json()).importedSummary[quota.field], 1);
+      assert.equal(countsFor(student.uid)[quota.table], quota.limit);
+      const duplicateAtLimit = await worker.fetch(importRequest(
+        student.token, `import-quota-duplicate-${quota.table}`,
+        { [quota.field]: [quota.first] }, "VALID_TURNSTILE_TOKEN"
+      ), env);
+      assert.equal(duplicateAtLimit.status, 200, "Already archived records must not consume additional quota");
+      assert.equal((await duplicateAtLimit.json()).importedSummary[quota.field], 0);
+      assert.equal(countsFor(student.uid)[quota.table], quota.limit);
+
+      const oversized = await createImportStudent(`oversized_${quota.table}`);
+      const beforeOversized = countsFor(oversized.uid);
+      const courseCodes = ["NTH-101", "NTH-104", "PRC-202", "PRC-208", "PRF-305", "PRF-309", "DRM-404", "DRM-499"];
+      const oversizedRecords = Array.from({ length: quota.limit + 1 }, (_, i) => quota.field === "exams"
+        ? { courseCode: courseCodes[Math.floor(i / 9)], answers: [Math.floor((i % 9) / 3), i % 3] }
+        : quota.field === "papers" ? { title: `Oversized paper ${i}` }
+        : { recipientName: `Oversized student ${i}` });
+      const oversizedResponse = await worker.fetch(importRequest(
+        oversized.token, `import-too-many-records-${quota.table}`,
+        { ...mixedPayload, [quota.field]: oversizedRecords }, "VALID_TURNSTILE_TOKEN"
+      ), env);
+      assert.equal(oversizedResponse.status, 429, "An over-capacity payload must fail explicitly, without truncation");
+      assert.equal((await oversizedResponse.json()).error.code, quota.code);
+      assert.deepEqual(countsFor(oversized.uid), beforeOversized);
+    }
+
+    const bulk = await createImportStudent("bulk_all_records");
+    const bulkPayload = {
+      exams: Array.from({ length: 12 }, (_, i) => ({
+        courseCode: i < 9 ? "NTH-101" : "DRM-404",
+        answers: [Math.floor((i % 9) / 3), i % 3]
+      })),
+      papers: Array.from({ length: 15 }, (_, i) => ({ title: `Bulk paper ${i}`, journalIdx: 0 })),
+      diplomas: Array.from({ length: 15 }, (_, i) => ({ recipientName: `Bulk student ${i}`, templateId: "oxford" }))
+    };
+    const bulkResponse = await worker.fetch(importRequest(
+      bulk.token, "import-bulk-complete-payload", bulkPayload, "VALID_TURNSTILE_TOKEN"
+    ), env);
+    assert.equal(bulkResponse.status, 200);
+    const bulkBody = await bulkResponse.json();
+    assert.deepEqual(bulkBody.importedSummary, { clubsAndBadges: 0, exams: 12, papers: 15, diplomas: 15 });
+    assert.equal(countsFor(bulk.uid).papers, 15, "Imports must process records past index 10");
+    assert.equal(countsFor(bulk.uid).diplomas, 15);
+
+    function directArchiveRequest(token, field, payload) {
+      return new Request(`https://api.freeze.edu.kg/api/v1/me/${field}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "CF-Connecting-IP": "203.0.113.67",
+          "X-Turnstile-Token": "VALID_TURNSTILE_TOKEN"
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+    for (const quota of quotaCases) {
+      const direct = await createImportStudent(`direct_race_${quota.table}`);
+      seedArchive(quota.table, direct.uid, quota.limit - 1);
+      const directResults = await Promise.all([quota.first, quota.second].map((payload) =>
+        worker.fetch(directArchiveRequest(direct.token, quota.field, payload), env)
+      ));
+      assert.deepEqual(directResults.map((response) => response.status).sort(), [201, 429],
+        "Concurrent direct submissions must share the last slot without exceeding quota");
+      const rejectedDirect = directResults.find((response) => response.status === 429);
+      const directError = await rejectedDirect.json();
+      assert.equal(directError.error.code, quota.code, "Database quota rejection must map to HTTP 429");
+      assert.ok(!JSON.stringify(directError).includes("ANU_"), "Database trigger sentinels must not leak");
+      assert.equal(countsFor(direct.uid)[quota.table], quota.limit);
+      const winningPayload = directResults[0].status === 201 ? quota.first : quota.second;
+      const duplicateDirect = await worker.fetch(directArchiveRequest(direct.token, quota.field, winningPayload), env);
+      assert.ok([200, 201].includes(duplicateDirect.status), "An existing direct submission remains valid at capacity");
+      assert.equal(countsFor(direct.uid)[quota.table], quota.limit);
+
+      const imports = await createImportStudent(`import_race_${quota.table}`);
+      seedArchive(quota.table, imports.uid, quota.limit - 1);
+      const importResults = await Promise.all([quota.first, quota.second].map((payload, i) =>
+        worker.fetch(importRequest(imports.token, `import-race-${quota.table}-${i}`,
+          { [quota.field]: [payload] }, "VALID_TURNSTILE_TOKEN"), env)
+      ));
+      assert.deepEqual(importResults.map((response) => response.status).sort(), [200, 429],
+        "Concurrent import transactions must share the last slot without exceeding quota");
+      assert.equal((await importResults.find((response) => response.status === 429).json()).error.code, quota.code);
+      assert.equal(countsFor(imports.uid)[quota.table], quota.limit);
+
+      const rollback = await createImportStudent(`batch_rollback_${quota.table}`);
+      seedArchive(quota.table, rollback.uid, quota.limit - 1);
+      const before = countsFor(rollback.uid);
+      let raced = false;
+      const racingEnv = {
+        ...env,
+        DB: {
+          ...d1,
+          async batch(statements) {
+            // A competing request fills the final slot after import preflight.
+            raced = true;
+            seedArchive(quota.table, rollback.uid, 1, quota.limit - 1);
+            try {
+              return await d1.batch(statements);
+            } catch (cause) {
+              throw new Error("D1_ERROR: batch failed", { cause });
+            }
+          }
+        }
+      };
+      const rollbackResponse = await worker.fetch(importRequest(
+        rollback.token, `import-raced-rollback-${quota.table}`,
+        { ...mixedPayload, [quota.field]: [quota.first] }, "VALID_TURNSTILE_TOKEN"
+      ), racingEnv);
+      assert.equal(raced, true, "Regression must reach the post-preflight write race");
+      assert.equal(rollbackResponse.status, 429);
+      assert.equal((await rollbackResponse.json()).error.code, quota.code);
+      assert.deepEqual(countsFor(rollback.uid), { ...before, [quota.table]: quota.limit },
+        "Trigger failure must roll back all import records and leave only the competing record");
+    }
+    console.log("✓ [PASS] Import Turnstile single-use replay, subsystem pauses, deduplicated archive quotas & rejection without partial writes verified");
+    console.log("✓ [PASS] Full archive imports, database-enforced concurrent quotas, direct deduplication & raced batch rollback verified");
   }
 
   // --------------------------------------------------------------------------
@@ -787,6 +1067,41 @@ export async function runWorkerSecurityTests() {
     assert.ok(!errText.includes("SQLITE_ERROR"), "Error response must never leak SQL error details");
     assert.ok(!errText.includes("secret_token"), "Error response must never leak secret values");
     console.log("✓ [PASS] Per-UID/IP rate limiting (HTTP 429) & zero internal error/SQL leakage verified");
+  }
+
+  // --------------------------------------------------------------------------
+  // TEST 11: Atomic fixed-window reservations under concurrent requests
+  // --------------------------------------------------------------------------
+  {
+    const originalNow = Date.now;
+    const fixedNow = Math.floor(originalNow() / 60000) * 60000 + 1000;
+    let testNow = fixedNow;
+    Date.now = () => testNow;
+    try {
+      for (const dimension of ["ip", "uid", "write"]) {
+        const identifier = `concurrent-limit-${dimension}`;
+        const limit = 7;
+        const reservations = await Promise.all(Array.from({ length: 40 }, () =>
+          checkRateLimit(env, dimension, identifier, limit, 60)
+        ));
+        assert.equal(reservations.filter((result) => result.allowed).length, limit,
+          "Exactly the configured number of concurrent requests may reserve a slot");
+        assert.deepEqual(reservations.filter((result) => result.allowed).map((result) => result.remaining).sort(),
+          [0, 1, 2, 3, 4, 5, 6], "Each accepted request must own a distinct rate-limit slot");
+        const bucket = `${dimension}:${identifier}:${Math.floor(fixedNow / 60000) * 60}`;
+        assert.equal(d1.rawDb.prepare("SELECT hit_count FROM rate_limits WHERE bucket_key = ?").get(bucket).hit_count,
+          limit, "Rejected requests must not overflow or corrupt the stored counter");
+        assert.equal((await checkRateLimit(env, dimension, identifier, limit, 60)).allowed, false);
+        testNow = fixedNow + 60000;
+        const nextWindow = await checkRateLimit(env, dimension, identifier, limit, 60);
+        assert.equal(nextWindow.allowed, true, "The next fixed window must open a fresh bucket");
+        assert.equal(nextWindow.remaining, limit - 1);
+        testNow = fixedNow;
+      }
+    } finally {
+      Date.now = originalNow;
+    }
+    console.log("✓ [PASS] Atomic concurrent IP/UID/write rate-limit reservations & fixed-window reset verified");
   }
 }
 

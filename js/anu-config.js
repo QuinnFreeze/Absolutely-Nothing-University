@@ -14,10 +14,12 @@
     apiBaseUrl: "https://api.freeze.edu.kg",
     turnstileSiteKey: "0x4AAAAAAFZ4BsbUQSBtf-KB",
     firebase: {
-      apiKey: "",
-      authDomain: "freeze.edu.kg",
-      projectId: "anu-freeze-edu",
-      appId: ""
+      apiKey: "AIzaSyARMbWYMW_ov7_EATLs1TmOw_m-oG7-4ZQ",
+      authDomain: "project-8995408b-d1b3-4571-83b.firebaseapp.com",
+      projectId: "project-8995408b-d1b3-4571-83b",
+      storageBucket: "project-8995408b-d1b3-4571-83b.firebasestorage.app",
+      messagingSenderId: "353403995690",
+      appId: "1:353403995690:web:21cee5147681825b486553"
     }
   };
 })(window);

@@ -415,6 +415,10 @@
                     <select id="applicant-achievement" class="form-control"></select>
                   </div>
 
+                  <div class="cloud-security-check" style="display: none;">
+                    <p class="form-panel-note" data-i18n="my_security_notice"></p>
+                    <div id="turnstile-diploma-container" class="turnstile-box"></div>
+                  </div>
                   <div class="form-button-row">
                     <button type="button" class="btn-primary" id="stamp-diploma-btn" data-i18n="form_btn_stamp">
                       加盖校长蓝晶大印
@@ -640,6 +644,10 @@
                   </div>
                 </div>
 
+                <div class="cloud-security-check" style="display: none;">
+                  <p class="form-panel-note" data-i18n="my_security_notice"></p>
+                  <div id="turnstile-paper-container" class="turnstile-box"></div>
+                </div>
                 <div class="submission-studio-actions">
                   <button type="button" class="btn-primary" id="submit-blank-paper-btn" data-i18n="sub_paper_btn"></button>
                   <button type="button" class="btn-secondary" id="random-paper-topic-btn" data-i18n="sub_random_btn"></button>
@@ -860,6 +868,10 @@
                 </div>
               </div>
               <div class="enroll-status-box" id="my-anu-global-feedback" aria-live="polite" style="margin-bottom: 1.5rem;"></div>
+              <div class="cloud-security-check" style="display: none;">
+                <p class="form-panel-note" data-i18n="my_security_notice"></p>
+                <div id="turnstile-reg-container" class="turnstile-box"></div>
+              </div>
 
               <!-- First-Time Student Profile Registration Panel (Shown when signed in with Google but not yet registered in D1) -->
               <div class="my-anu-registration-panel" id="my-anu-registration-panel" style="display: none;">
@@ -934,13 +946,10 @@
 
                 <div class="my-anu-checkbox-group">
                   <label class="exam-option-label">
-                    <input type="checkbox" id="reg-legal-consent-chk" checked />
+                    <input type="checkbox" id="reg-legal-consent-chk" />
                     <span data-i18n="my_reg_chk_legal"></span>
                   </label>
                 </div>
-
-                <!-- Cloudflare Turnstile Container -->
-                <div id="turnstile-reg-container" class="turnstile-box"></div>
 
                 <div class="form-button-row" style="margin-top: 1rem;">
                   <button type="button" class="btn-primary" id="submit-student-reg-btn" data-i18n="my_reg_btn_submit">

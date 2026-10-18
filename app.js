@@ -291,6 +291,7 @@
       localStorage.setItem("anu_theme", currentTheme);
     } catch (_) {}
     syncThemeButtons();
+    updateCloudSecurityCheck();
   }
 
   function syncThemeButtons() {
@@ -335,6 +336,7 @@
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
     closeMobileSidebar();
+    updateCloudSecurityCheck();
   }
 
   navButtons.forEach((btn) => {
@@ -1442,7 +1444,7 @@
     });
     saveLocalList("anu_local_papers", localPapers);
 
-    if (window.ANU_AUTH) {
+    if (window.ANU_AUTH && window.ANU_AUTH.getState().isRegistered) {
       const turnstileToken = window.ANU_AUTH.getTurnstileToken();
       window.ANU_AUTH.submitPaperToCloud(
         {
@@ -1452,9 +1454,18 @@
           methodologyIdx: sIdx
         },
         turnstileToken
-      ).then(() => {
+      ).then((res) => {
         renderMyAnuPortal();
-      }).catch(() => {});
+        if (res && submitPaperStatusEl) {
+          submitPaperStatusEl.textContent += currentLang === "zh" ? " ✓ 已同步至云端论文档案。" : " ✓ Saved to your cloud paper archive.";
+        }
+      }).catch((err) => {
+        if (submitPaperStatusEl) {
+          submitPaperStatusEl.textContent += currentLang === "zh"
+            ? ` 已保存本机，云端未同步：${cloudErrorMessage(err)}。可稍后在 My ANU 导入。`
+            : ` Saved locally; cloud sync failed: ${cloudErrorMessage(err)}. You can import it later in My ANU.`;
+        }
+      });
     }
     renderMyAnuPortal();
 
@@ -1753,6 +1764,37 @@
     return p;
   }
 
+  function cloudErrorMessage(err) {
+    const messages = {
+      TURNSTILE_REQUIRED: ["请先完成本页安全验证", "Complete this page's security check first"],
+      CLOUD_WRITE_IN_PROGRESS: ["上一项云端登记仍在处理，请稍后再试", "A cloud save is still in progress. Try again shortly"],
+      TURNSTILE_TOKEN_USED: ["安全验证已使用，请重新验证", "This security check has been used. Complete a fresh check"],
+      "auth/popup-blocked": ["请允许本站弹窗后重试 Google 登录", "Allow popups for this site and retry Google sign-in"],
+      AUTH_REDIRECT_UNAVAILABLE: ["请允许登录弹窗；内置浏览器请改用 Safari 或 Chrome", "Allow sign-in popups, or open this page in Safari or Chrome"],
+      "auth/unauthorized-domain": ["本站尚未加入 Firebase 授权网域，请联系管理员", "This site needs to be added to the Firebase authorized domains"],
+      "auth/operation-not-allowed": ["管理员尚未启用 Google 登录", "Google sign-in has not been enabled by the administrator"],
+      AUTH_NOT_READY: ["登录组件正在准备，请稍后重试", "Sign-in is getting ready. Please retry shortly"],
+      "auth/network-request-failed": ["无法连接 Google 登录服务，请检查网络后重试", "Cannot reach Google sign-in. Check your connection and retry"]
+    };
+    const message = messages[err && err.code];
+    return message ? message[currentLang === "zh" ? 0 : 1] : (err && err.message) || (currentLang === "zh" ? "网络请求失败，请重试" : "Request failed. Please retry");
+  }
+
+  function updateCloudSecurityCheck() {
+    const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : null;
+    const selectors = {
+      "my-anu": "#turnstile-reg-container",
+      admissions: "#turnstile-diploma-container",
+      research: "#turnstile-paper-container"
+    };
+    const selector = authState && authState.user && (currentPage === "my-anu" || authState.isRegistered)
+      ? selectors[currentPage] : null;
+    document.querySelectorAll(".cloud-security-check").forEach((panel) => {
+      panel.style.display = selector && panel.querySelector(selector) ? "block" : "none";
+    });
+    if (selector) window.ANU_AUTH.mountTurnstileWidget(selector);
+  }
+
   function renderMyAnuPortal() {
     const dict = i18nDict[currentLang];
     const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : { user: null, isRegistered: false, bundle: null };
@@ -1760,23 +1802,28 @@
     const profile = bundle && bundle.profile;
 
     if (sidebarAuthBadge) {
-      sidebarAuthBadge.textContent = profile ? "SYNC" : authState.user ? "NEW" : "ID";
+      sidebarAuthBadge.textContent = profile ? "SYNC" : authState.user ? (authState.bundleLoaded ? "NEW" : "…") : "ID";
     }
 
     // Update top auth banner
     if (authState.user) {
       if (googleSigninBtn) googleSigninBtn.style.display = "none";
       if (googleSignoutBtn) googleSignoutBtn.style.display = "inline-flex";
-      if (syncCloudBtn) syncCloudBtn.style.display = authState.isRegistered ? "inline-flex" : "none";
+      if (syncCloudBtn) {
+        syncCloudBtn.style.display = "inline-flex";
+        syncCloudBtn.disabled = Boolean(authState.cloudLoading);
+      }
       if (importLocalArchiveBtn) importLocalArchiveBtn.style.display = authState.isRegistered ? "inline-flex" : "none";
-      if (myAnuRegPanel) myAnuRegPanel.style.display = authState.isRegistered ? "none" : "block";
+      if (myAnuRegPanel) myAnuRegPanel.style.display = authState.bundleLoaded && !authState.isRegistered ? "block" : "none";
 
       if (myAnuStatusHeadline) {
         myAnuStatusHeadline.textContent = profile
           ? (currentLang === "zh"
               ? `欢迎回到校园，${profile.nickname}（学号：${profile.studentNumber}）`
               : `Welcome back, ${profile.nickname} (ID: ${profile.studentNumber})`)
-          : (currentLang === "zh"
+          : !authState.bundleLoaded
+            ? (currentLang === "zh" ? "Google 已登录 · 校园档案尚未加载" : "Signed in with Google · Campus archive not loaded yet")
+            : (currentLang === "zh"
               ? "Google 账号验证成功 · 请完成首次 ANU 校园学籍建立"
               : "Google Account Verified · Complete Your ANU Matriculation Below");
       }
@@ -1790,6 +1837,11 @@
       if (!authState.isRegistered && regNicknameInput && !regNicknameInput.value.trim()) {
         regNicknameInput.value = authState.user.displayName || dict.form_default_name;
       }
+      if (authState.cloudError && myAnuGlobalFeedback) {
+        myAnuGlobalFeedback.textContent = currentLang === "zh"
+          ? `云端档案暂时无法同步：${cloudErrorMessage(authState.cloudError)}。请点击「立即同步」重试。`
+          : `Cloud archive unavailable: ${cloudErrorMessage(authState.cloudError)}. Use Sync Now to retry.`;
+      }
     } else {
       if (googleSigninBtn) googleSigninBtn.style.display = "inline-flex";
       if (googleSignoutBtn) googleSignoutBtn.style.display = "none";
@@ -1799,6 +1851,8 @@
       if (myAnuStatusHeadline) myAnuStatusHeadline.textContent = dict.my_guest_banner_title;
       if (myAnuStatusSub) myAnuStatusSub.textContent = dict.my_guest_banner_desc;
     }
+    if (googleSigninBtn) googleSigninBtn.disabled = !authState.authReady;
+    updateCloudSecurityCheck();
 
     // Update Student ID Card
     const localProfile = (function () {
@@ -2101,8 +2155,8 @@
           if (diplomaCloudStatusEl) {
             diplomaCloudStatusEl.textContent =
               currentLang === "zh"
-                ? `已存入本机档案（云端同步提示：${err.message || "稍后可在 My ANU 导入"}）`
-                : `Saved to local archive (Cloud note: ${err.message || "You can import later in My ANU"})`;
+                ? `已存入本机档案（云端未同步：${cloudErrorMessage(err)}，稍后可在 My ANU 导入）`
+                : `Saved to local archive (Cloud sync failed: ${cloudErrorMessage(err)}. You can import later in My ANU.)`;
           }
         }
       } else {
@@ -2130,24 +2184,29 @@
         return;
       }
       try {
+        googleSigninBtn.disabled = true;
         if (myAnuGlobalFeedback) {
           myAnuGlobalFeedback.textContent =
             currentLang === "zh" ? "正在启动 Google 安全登录..." : "Launching Google Sign-In...";
         }
-        await window.ANU_AUTH.signInWithGoogle();
-        window.ANU_AUTH.mountTurnstileWidget("#turnstile-reg-container");
+        const result = await window.ANU_AUTH.signInWithGoogle();
         renderMyAnuPortal();
         if (myAnuGlobalFeedback) {
-          myAnuGlobalFeedback.textContent =
-            currentLang === "zh" ? "✓ Google 账号登录成功！" : "✓ Signed in with Google!";
+          myAnuGlobalFeedback.textContent = result.mode === "redirect"
+            ? (currentLang === "zh" ? "正在前往 Google 登录页面…" : "Opening Google sign-in…")
+            : result.cloudError
+              ? (currentLang === "zh" ? `Google 已登录，校园档案暂时无法同步：${cloudErrorMessage(result.cloudError)}` : `Signed in with Google; campus sync unavailable: ${cloudErrorMessage(result.cloudError)}`)
+              : (currentLang === "zh" ? "✓ Google 账号登录成功！" : "✓ Signed in with Google!");
         }
       } catch (err) {
         if (myAnuGlobalFeedback) {
           myAnuGlobalFeedback.textContent =
             currentLang === "zh"
-              ? `登录未完成：${err.message || "请检查浏览器弹窗或跨站设置"}`
-              : `Sign-in incomplete: ${err.message || "Please check popup or browser settings"}`;
+              ? `登录未完成：${cloudErrorMessage(err)}`
+              : `Sign-in incomplete: ${cloudErrorMessage(err)}`;
         }
+      } finally {
+        googleSigninBtn.disabled = false;
       }
     });
   }
@@ -2233,11 +2292,19 @@
   // Sync Now Button
   if (syncCloudBtn && window.ANU_AUTH) {
     syncCloudBtn.addEventListener("click", async () => {
-      await window.ANU_AUTH.refreshStudentBundle();
-      renderMyAnuPortal();
-      if (myAnuGlobalFeedback) {
-        myAnuGlobalFeedback.textContent =
-          currentLang === "zh" ? "✓ 已从 Cloudflare D1 同步最新校园档案。" : "✓ Synced latest campus archive from Cloudflare D1.";
+      try {
+        await window.ANU_AUTH.refreshStudentBundle();
+        renderMyAnuPortal();
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh" ? "✓ 已同步最新校园档案。" : "✓ Synced your latest campus archive.";
+        }
+      } catch (err) {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent = currentLang === "zh"
+            ? `同步失败：${cloudErrorMessage(err)}。请稍后重试。`
+            : `Sync failed: ${cloudErrorMessage(err)}. Please retry.`;
+        }
       }
     });
   }
@@ -2250,16 +2317,8 @@
       const localDiplomas = loadLocalList("anu_local_diplomas");
       const badges = Array.from(joinedClubs);
 
-      const rawFingerprint = JSON.stringify({
-        b: badges.sort(),
-        e: localExams.length,
-        p: localPapers.length,
-        d: localDiplomas.length
-      });
-      let idemKey = "import-v1-" + btoa(unescape(encodeURIComponent(rawFingerprint))).replace(/[^a-zA-Z0-9]/g, "").slice(0, 48);
-      if (idemKey.length < 12) idemKey += "00000000";
-
       try {
+        importLocalArchiveBtn.disabled = true;
         const res = await window.ANU_AUTH.importLocalArchiveToCloud(
           {
             badges,
@@ -2267,7 +2326,7 @@
             papers: localPapers,
             diplomas: localDiplomas
           },
-          idemKey
+          window.ANU_AUTH.getTurnstileToken()
         );
         renderMyAnuPortal();
         const s = res.importedSummary || { clubsAndBadges: 0, exams: 0, papers: 0, diplomas: 0 };
@@ -2280,8 +2339,10 @@
       } catch (err) {
         if (myAnuGlobalFeedback) {
           myAnuGlobalFeedback.textContent =
-            currentLang === "zh" ? `导入失败：${err.message}` : `Import failed: ${err.message}`;
+            currentLang === "zh" ? `导入失败：${cloudErrorMessage(err)}` : `Import failed: ${cloudErrorMessage(err)}`;
         }
+      } finally {
+        importLocalArchiveBtn.disabled = false;
       }
     });
   }

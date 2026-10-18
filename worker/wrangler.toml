@@ -10,7 +10,7 @@ routes = [
 
 [vars]
 ENVIRONMENT = "production"
-FIREBASE_PROJECT_ID = "anu-freeze-edu"
+FIREBASE_PROJECT_ID = "project-8995408b-d1b3-4571-83b"
 ALLOWED_ORIGINS = "https://freeze.edu.kg,http://localhost:8088,http://127.0.0.1:8088"
 RATE_LIMIT_IP_PER_MIN = "60"
 RATE_LIMIT_UID_PER_MIN = "30"

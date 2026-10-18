@@ -25,7 +25,7 @@ import {
   verifyAdminAuthorization,
   verifyTurnstileToken
 } from "./middleware/security.ts";
-import type { Env, StudentRecord, VerifiedFirebaseUser } from "./types.ts";
+import type { D1PreparedStatement, Env, StudentRecord, VerifiedFirebaseUser } from "./types.ts";
 import {
   generateId,
   generateStudentNumber,
@@ -901,22 +901,6 @@ export default {
           );
         }
 
-        const countRow = await env.DB.prepare(
-          "SELECT COUNT(*) AS cnt FROM transcripts WHERE firebase_uid = ?"
-        )
-          .bind(uid)
-          .first<{ cnt: number }>();
-
-        if ((countRow?.cnt || 0) >= MAX_EXAMS_PER_STUDENT) {
-          return errorResponse(
-            "TRANSCRIPT_LIMIT_REACHED",
-            "Maximum saved exam transcripts limit reached.",
-            429,
-            allowedOrigin,
-            requestId
-          );
-        }
-
         const spec = COURSE_EXAMS[courseCode];
         const dedupeHash = await sha256Hex(
           `${uid}:exam:${courseCode}:${graded.normalizedAnswers.join(",")}`
@@ -930,7 +914,7 @@ export default {
 
         if (!existingExam) {
           await env.DB.prepare(
-            `INSERT INTO transcripts (
+            `INSERT OR IGNORE INTO transcripts (
               id, firebase_uid, course_code, course_title_zh, course_title_en,
               score, grade, grade_label_zh, grade_label_en, verdict_zh, verdict_en,
               answers_json, dedupe_hash
@@ -1003,22 +987,6 @@ export default {
           );
         }
 
-        const countRow = await env.DB.prepare(
-          "SELECT COUNT(*) AS cnt FROM papers WHERE firebase_uid = ?"
-        )
-          .bind(uid)
-          .first<{ cnt: number }>();
-
-        if ((countRow?.cnt || 0) >= MAX_PAPERS_PER_STUDENT) {
-          return errorResponse(
-            "PAPER_LIMIT_REACHED",
-            "Maximum archived papers limit (30) reached for this student account.",
-            429,
-            allowedOrigin,
-            requestId
-          );
-        }
-
         const title = sanitizePlainText(body.title, 100, "");
         if (!title) {
           return errorResponse("INVALID_PAPER_TITLE", "Paper title is required.", 400, allowedOrigin, requestId);
@@ -1078,7 +1046,8 @@ export default {
             content_zh, content_en, footnote_zh, footnote_en,
             reviewer_header_zh, reviewer_header_en, review_zh, review_en,
             citations_zh, citations_en, dedupe_hash
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(firebase_uid, dedupe_hash) DO NOTHING`
         )
           .bind(
             generateId(),
@@ -1105,8 +1074,11 @@ export default {
           .run();
 
         await grantBadgeIfAbsent(env, uid, "milestone_first_paper");
+        const savedPaper = await env.DB.prepare(
+          "SELECT void_id FROM papers WHERE firebase_uid = ? AND dedupe_hash = ?"
+        ).bind(uid, dedupeHash).first<{ void_id: string }>();
         const bundle = await fetchFullStudentBundle(env, uid);
-        return jsonResponse({ ok: true, voidId, data: bundle }, 201, allowedOrigin, requestId);
+        return jsonResponse({ ok: true, voidId: savedPaper?.void_id || voidId, data: bundle }, 201, allowedOrigin, requestId);
       }
 
       // 13. POST /api/v1/me/diplomas - Register Honorary Diploma in Student Archive
@@ -1131,22 +1103,6 @@ export default {
             "TURNSTILE_VERIFICATION_FAILED",
             "Human verification (Cloudflare Turnstile) is required for diploma registration.",
             403,
-            allowedOrigin,
-            requestId
-          );
-        }
-
-        const countRow = await env.DB.prepare(
-          "SELECT COUNT(*) AS cnt FROM diplomas WHERE firebase_uid = ?"
-        )
-          .bind(uid)
-          .first<{ cnt: number }>();
-
-        if ((countRow?.cnt || 0) >= MAX_DIPLOMAS_PER_STUDENT) {
-          return errorResponse(
-            "DIPLOMA_LIMIT_REACHED",
-            "Maximum archived diplomas limit (20) reached for this student account.",
-            429,
             allowedOrigin,
             requestId
           );
@@ -1232,7 +1188,8 @@ export default {
             major_idx, major_zh, major_en,
             honor_idx, honor_zh, honor_en,
             citation_idx, template_id, cert_lang, is_stamped, issued_date, dedupe_hash
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+          ON CONFLICT(firebase_uid, dedupe_hash) DO NOTHING`
         )
           .bind(
             generateId(),
@@ -1257,8 +1214,11 @@ export default {
           .run();
 
         await grantBadgeIfAbsent(env, uid, "milestone_first_diploma");
+        const savedDiploma = await env.DB.prepare(
+          "SELECT serial_number FROM diplomas WHERE firebase_uid = ? AND dedupe_hash = ?"
+        ).bind(uid, dedupeHash).first<{ serial_number: string }>();
         const bundle = await fetchFullStudentBundle(env, uid);
-        return jsonResponse({ ok: true, serialNumber, data: bundle }, 201, allowedOrigin, requestId);
+        return jsonResponse({ ok: true, serialNumber: savedDiploma?.serial_number || serialNumber, data: bundle }, 201, allowedOrigin, requestId);
       }
 
       // 14. POST /api/v1/me/honors - Sync Club Memberships & Easter Egg Achievements
@@ -1322,24 +1282,51 @@ export default {
           );
         }
 
-        let importedClubs = 0;
-        let importedExams = 0;
-        let importedPapers = 0;
-        let importedDiplomas = 0;
-
-        // 15a. Validate and import joined clubs / badges
-        if (Array.isArray(body.badges)) {
-          for (const rawKey of body.badges.slice(0, 20)) {
-            if (typeof rawKey === "string" && OFFICIAL_BADGES[rawKey]) {
-              const added = await grantBadgeIfAbsent(env, uid, rawKey);
-              if (added) importedClubs++;
-            }
-          }
+        // Successful replays above must not consume a second single-use challenge.
+        // Every new import requires the same human verification as direct submissions.
+        const turnstileToken =
+          request.headers.get("X-Turnstile-Token") ||
+          (typeof body.turnstileToken === "string" ? body.turnstileToken : "");
+        if (!(await verifyTurnstileToken(env, turnstileToken, clientIp))) {
+          return errorResponse(
+            "TURNSTILE_VERIFICATION_FAILED",
+            "Human verification (Cloudflare Turnstile) is required for archive import.",
+            403,
+            allowedOrigin,
+            requestId
+          );
         }
 
-        // 15b. Validate and server-grade imported exams
+        if (Array.isArray(body.papers) && body.papers.length > 0 &&
+            !(await isFeatureEnabled(env, "paper_submission_enabled"))) {
+          return errorResponse(
+            "PAPER_SUBMISSION_PAUSED",
+            "Zero-word manuscript submissions are temporarily paused by the Editorial Board.",
+            503,
+            allowedOrigin,
+            requestId
+          );
+        }
+        if (Array.isArray(body.diplomas) && body.diplomas.length > 0 &&
+            !(await isFeatureEnabled(env, "diploma_registration_enabled"))) {
+          return errorResponse(
+            "DIPLOMA_REGISTRATION_PAUSED",
+            "Honorary diploma registration is temporarily paused by the Chancellor's Office.",
+            503,
+            allowedOrigin,
+            requestId
+          );
+        }
+
+        // Prepare all candidate records before any mutation. A full archive or a
+        // paused subsystem must reject the whole request without partial writes.
+        const examWrites = new Map<string, D1PreparedStatement>();
+        const paperWrites = new Map<string, D1PreparedStatement>();
+        const diplomaWrites = new Map<string, D1PreparedStatement>();
+
+        // 15a. Validate and server-grade imported exams
         if (Array.isArray(body.exams)) {
-          for (const ex of body.exams.slice(0, 10)) {
+          for (const ex of body.exams) {
             if (!ex || typeof ex !== "object") continue;
             const rec = ex as Record<string, unknown>;
             const cCode = typeof rec.courseCode === "string" ? rec.courseCode : "";
@@ -1349,7 +1336,7 @@ export default {
             const dedupeHash = await sha256Hex(
               `${uid}:exam:${cCode}:${graded.normalizedAnswers.join(",")}`
             );
-            const res = await env.DB.prepare(
+            const statement = env.DB.prepare(
               `INSERT OR IGNORE INTO transcripts (
                 id, firebase_uid, course_code, course_title_zh, course_title_en,
                 score, grade, grade_label_zh, grade_label_en, verdict_zh, verdict_en,
@@ -1370,21 +1357,14 @@ export default {
                 graded.verdictEn,
                 JSON.stringify(graded.normalizedAnswers),
                 dedupeHash
-              )
-              .run();
-            if (res.meta?.changes && res.meta.changes > 0) {
-              importedExams++;
-            }
-          }
-          if (importedExams > 0) {
-            await grantBadgeIfAbsent(env, uid, "milestone_first_exam");
+              );
+            examWrites.set(dedupeHash, statement);
           }
         }
 
-        // 15c. Validate and import local papers (if paper_submission_enabled)
-        const paperAllowed = await isFeatureEnabled(env, "paper_submission_enabled");
-        if (paperAllowed && Array.isArray(body.papers)) {
-          for (const p of body.papers.slice(0, 10)) {
+        // 15b. Validate local papers
+        if (Array.isArray(body.papers)) {
+          for (const p of body.papers) {
             if (!p || typeof p !== "object") continue;
             const rec = p as Record<string, unknown>;
             const title = sanitizePlainText(rec.title, 100, "");
@@ -1417,7 +1397,7 @@ export default {
             const reviewIdx = (jIdx + mIdx) % PEER_REVIEW_POOL.zh.length;
             const citIdx = jIdx % CITATIONS_POOL.zh.length;
 
-            const res = await env.DB.prepare(
+            const statement = env.DB.prepare(
               `INSERT OR IGNORE INTO papers (
                 id, firebase_uid, void_id, title, author_display,
                 journal_idx, journal_zh, journal_en, methodology_idx,
@@ -1447,21 +1427,14 @@ export default {
                 CITATIONS_POOL.zh[citIdx],
                 CITATIONS_POOL.en[citIdx],
                 dedupeHash
-              )
-              .run();
-            if (res.meta?.changes && res.meta.changes > 0) {
-              importedPapers++;
-            }
-          }
-          if (importedPapers > 0) {
-            await grantBadgeIfAbsent(env, uid, "milestone_first_paper");
+              );
+            paperWrites.set(dedupeHash, statement);
           }
         }
 
-        // 15d. Validate and import local diplomas (if diploma_registration_enabled)
-        const dipAllowed = await isFeatureEnabled(env, "diploma_registration_enabled");
-        if (dipAllowed && Array.isArray(body.diplomas)) {
-          for (const d of body.diplomas.slice(0, 10)) {
+        // 15c. Validate local diplomas
+        if (Array.isArray(body.diplomas)) {
+          for (const d of body.diplomas) {
             if (!d || typeof d !== "object") continue;
             const rec = d as Record<string, unknown>;
             const recipientName = sanitizePlainText(
@@ -1515,7 +1488,7 @@ export default {
             const serialNumber = `ANU-2026-VOID-${randSerial}`;
             const issuedDate = new Date().toISOString().slice(0, 10);
 
-            const res = await env.DB.prepare(
+            const statement = env.DB.prepare(
               `INSERT OR IGNORE INTO diplomas (
                 id, firebase_uid, serial_number, recipient_name,
                 degree_idx, degree_zh, degree_en,
@@ -1543,16 +1516,54 @@ export default {
                 certLang,
                 issuedDate,
                 dedupeHash
-              )
-              .run();
-            if (res.meta?.changes && res.meta.changes > 0) {
-              importedDiplomas++;
-            }
-          }
-          if (importedDiplomas > 0) {
-            await grantBadgeIfAbsent(env, uid, "milestone_first_diploma");
+              );
+            diplomaWrites.set(dedupeHash, statement);
           }
         }
+
+        const archiveChecks = [
+          { table: "transcripts", writes: examWrites, limit: MAX_EXAMS_PER_STUDENT,
+            code: "TRANSCRIPT_LIMIT_REACHED", message: "Maximum saved exam transcripts limit reached." },
+          { table: "papers", writes: paperWrites, limit: MAX_PAPERS_PER_STUDENT,
+            code: "PAPER_LIMIT_REACHED", message: "Maximum archived papers limit (30) reached for this student account." },
+          { table: "diplomas", writes: diplomaWrites, limit: MAX_DIPLOMAS_PER_STUDENT,
+            code: "DIPLOMA_LIMIT_REACHED", message: "Maximum archived diplomas limit (20) reached for this student account." }
+        ] as const;
+        for (const check of archiveChecks) {
+          if (check.writes.size === 0) continue;
+          // Table names come only from the fixed list above; UID remains bound.
+          const existing = await env.DB.prepare(
+            `SELECT dedupe_hash FROM ${check.table} WHERE firebase_uid = ?`
+          ).bind(uid).all<{ dedupe_hash: string }>();
+          const existingHashes = new Set(existing.results.map((row) => row.dedupe_hash));
+          for (const hash of existingHashes) check.writes.delete(hash);
+          if (check.writes.size > 0 && existingHashes.size + check.writes.size > check.limit) {
+            return errorResponse(check.code, check.message, 429, allowedOrigin, requestId);
+          }
+        }
+
+        const writes = [...examWrites.values(), ...paperWrites.values(), ...diplomaWrites.values()];
+        const results = writes.length
+          ? await env.DB.batch<{ meta?: { changes?: number } }>(writes)
+          : [];
+        const countChanges = (start: number, count: number) => results
+          .slice(start, start + count)
+          .reduce((sum, result) => sum + (result.meta?.changes || 0), 0);
+        const importedExams = countChanges(0, examWrites.size);
+        const importedPapers = countChanges(examWrites.size, paperWrites.size);
+        const importedDiplomas = countChanges(examWrites.size + paperWrites.size, diplomaWrites.size);
+
+        let importedClubs = 0;
+        if (Array.isArray(body.badges)) {
+          for (const rawKey of body.badges) {
+            if (typeof rawKey === "string" && OFFICIAL_BADGES[rawKey]) {
+              if (await grantBadgeIfAbsent(env, uid, rawKey)) importedClubs++;
+            }
+          }
+        }
+        if (importedExams > 0) await grantBadgeIfAbsent(env, uid, "milestone_first_exam");
+        if (importedPapers > 0) await grantBadgeIfAbsent(env, uid, "milestone_first_paper");
+        if (importedDiplomas > 0) await grantBadgeIfAbsent(env, uid, "milestone_first_diploma");
 
         const bundle = await fetchFullStudentBundle(env, uid);
         const responsePayload = {
@@ -1578,7 +1589,23 @@ export default {
       }
 
       return errorResponse("NOT_FOUND", "Endpoint not found.", 404, allowedOrigin, requestId);
-    } catch {
+    } catch (err) {
+      // D1 can wrap a trigger exception in Error.cause. Only our three explicit
+      // quota sentinels become 429; all other SQL/internal details stay private.
+      const quotaMessages = {
+        TRANSCRIPT_LIMIT_REACHED: "Maximum saved exam transcripts limit reached.",
+        PAPER_LIMIT_REACHED: "Maximum archived papers limit (30) reached for this student account.",
+        DIPLOMA_LIMIT_REACHED: "Maximum archived diplomas limit (20) reached for this student account."
+      } as const;
+      let failure: unknown = err;
+      for (let depth = 0; depth < 3 && failure instanceof Error; depth++) {
+        const match = failure.message.match(/\bANU_(TRANSCRIPT_LIMIT_REACHED|PAPER_LIMIT_REACHED|DIPLOMA_LIMIT_REACHED)\b/);
+        if (match) {
+          const code = match[1] as keyof typeof quotaMessages;
+          return errorResponse(code, quotaMessages[code], 429, allowedOrigin, requestId);
+        }
+        failure = failure.cause;
+      }
       // Phase 2 requirement: Never leak credentials, SQL queries, or internal stack traces
       return errorResponse(
         "INTERNAL_SERVER_ERROR",

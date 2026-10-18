@@ -2,7 +2,7 @@ import type { Env } from "../types.ts";
 import { generateId, timingSafeEqualStr } from "../utils/crypto.ts";
 
 /**
- * Enforces sliding-window rate limits per IP and per authenticated Firebase UID
+ * Enforces fixed-window rate limits per IP and per authenticated Firebase UID
  * backed by Cloudflare D1.
  */
 export async function checkRateLimit(
@@ -24,42 +24,20 @@ export async function checkRateLimit(
       .catch(() => {});
   }
 
-  const existing = await env.DB.prepare(
-    "SELECT hit_count FROM rate_limits WHERE bucket_key = ?"
+  // The conditional UPSERT reserves a slot and returns its count in one atomic
+  // statement. Separate SELECT/UPDATE calls let concurrent requests share a slot.
+  const reserved = await env.DB.prepare(
+    `INSERT INTO rate_limits (bucket_key, window_start, hit_count) VALUES (?, ?, 1)
+     ON CONFLICT(bucket_key) DO UPDATE SET hit_count = hit_count + 1
+     WHERE hit_count < ?
+     RETURNING hit_count`
   )
-    .bind(bucketKey)
+    .bind(bucketKey, windowBucket, limitCount)
     .first<{ hit_count: number }>();
 
-  if (!existing) {
-    await env.DB.prepare(
-      "INSERT INTO rate_limits (bucket_key, window_start, hit_count) VALUES (?, ?, 1) ON CONFLICT(bucket_key) DO UPDATE SET hit_count = hit_count + 1"
-    )
-      .bind(bucketKey, windowBucket)
-      .run();
-    return {
-      allowed: true,
-      remaining: Math.max(0, limitCount - 1),
-      resetAt: windowBucket + windowSeconds
-    };
-  }
-
-  if (existing.hit_count >= limitCount) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetAt: windowBucket + windowSeconds
-    };
-  }
-
-  await env.DB.prepare(
-    "UPDATE rate_limits SET hit_count = hit_count + 1 WHERE bucket_key = ?"
-  )
-    .bind(bucketKey)
-    .run();
-
   return {
-    allowed: true,
-    remaining: Math.max(0, limitCount - (existing.hit_count + 1)),
+    allowed: Boolean(reserved),
+    remaining: reserved ? Math.max(0, limitCount - reserved.hit_count) : 0,
     resetAt: windowBucket + windowSeconds
   };
 }

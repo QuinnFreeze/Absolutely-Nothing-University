@@ -185,9 +185,9 @@ assert.ok(
 );
 assert.ok(
   authClientCode.includes("signInWithPopup") && authClientCode.includes("signInWithRedirect"),
-  "js/student-auth.js must handle both popup and mobile Safari redirect fallback"
+  "js/student-auth.js must support popup and configured same-origin redirect"
 );
-console.log("✓ [PASS] Firebase Google Sign-In client security (zero localStorage token storage + mobile Safari redirect fallback) verified");
+console.log("✓ [PASS] Firebase Google provider and absence of custom localStorage credential writes verified");
 
 // 8b. Verify all 32 My ANU DOM elements and execute js/student-auth.js in VM sandbox
 const requiredMyAnuIds = [
@@ -251,9 +251,20 @@ const trackedFilesToScan = [
 for (const relPath of trackedFilesToScan) {
   const srcText = fs.readFileSync(path.join(rootDir, relPath), "utf8");
   assert.ok(!srcText.includes("-----BEGIN PRIVATE KEY-----"), `Private key leak check failed in ${relPath}`);
-  assert.ok(!srcText.includes("AIzaSy"), `Hardcoded API key check failed in ${relPath}`);
+  const apiKeys = srcText.match(/AIzaSy[\w-]+/g) || [];
+  for (const apiKey of apiKeys) {
+    assert.ok(
+      ["js/anu-config.js", "js/student-auth.js"].includes(relPath) && apiKey === authVmSandbox.window.ANU_CONFIG.firebase.apiKey,
+      `Unexpected API key in ${relPath}`
+    );
+  }
 }
-console.log("✓ [PASS] D1 backup/restore script syntax & zero hardcoded secret scan verified");
+const wranglerConfig = fs.readFileSync(path.join(rootDir, "worker/wrangler.toml"), "utf8");
+assert.ok(wranglerConfig.includes(`FIREBASE_PROJECT_ID = "${authVmSandbox.window.ANU_CONFIG.firebase.projectId}"`), "Client and Worker Firebase project IDs must match");
+console.log("✓ [PASS] D1 backup/restore syntax, secret scan and public Firebase config alignment verified");
+
+const { runStudentAuthTests } = await import("./student-auth-tests.mjs");
+await runStudentAuthTests();
 
 // 9. Run Cloudflare Worker + D1 SQLite End-to-End Security Test Suite
 const { runWorkerSecurityTests } = await import("./security-worker-tests.mjs");
