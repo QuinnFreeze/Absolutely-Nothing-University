@@ -111,6 +111,23 @@
     } catch (_) {}
   }
 
+  function loadLocalList(storageKey) {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  function saveLocalList(storageKey, arr) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(arr.slice(0, 30)));
+    } catch (_) {}
+  }
+
   let currentLang = detectInitialLang();
   let currentTheme = detectInitialTheme();
   let currentPage = "overview";
@@ -122,7 +139,8 @@
     "research",
     "faculty",
     "campus",
-    "webcams"
+    "webcams",
+    "my-anu"
   ];
 
   // Runtime states
@@ -811,6 +829,44 @@
       if (examTranscriptGrade) examTranscriptGrade.textContent = letterGrade;
       if (examTranscriptComment) examTranscriptComment.textContent = comment;
       if (examTranscriptBox) examTranscriptBox.classList.add("visible");
+
+      const answerScores = [];
+      for (let i = 0; i < qCount; i++) {
+        const checked = document.querySelector(`input[name="anu-exam-q-${i}"]:checked`);
+        answerScores.push(checked ? parseInt(checked.value, 10) || 0 : 0);
+      }
+
+      const localExams = loadLocalList("anu_local_exams");
+      localExams.unshift({
+        courseCode: course.code,
+        courseTitleZh: coursesByLang.zh.find((c) => c.code === course.code)?.title || course.title,
+        courseTitleEn: coursesByLang.en.find((c) => c.code === course.code)?.title || course.title,
+        score: totalScore,
+        grade: totalScore >= 85 ? "A+" : totalScore >= 50 ? "B+" : "F",
+        gradeLabelZh: letterGrade,
+        gradeLabelEn: letterGrade,
+        verdictZh: comment,
+        verdictEn: comment,
+        answers: answerScores,
+        createdAt: new Date().toISOString().slice(0, 10)
+      });
+      saveLocalList("anu_local_exams", localExams);
+
+      if (window.ANU_AUTH) {
+        window.ANU_AUTH.submitExamToCloud(course.code, answerScores).then((res) => {
+          if (res && res.graded) {
+            const g = res.graded;
+            if (examTranscriptGrade) {
+              examTranscriptGrade.textContent = currentLang === "zh" ? g.gradeLabelZh : g.gradeLabelEn;
+            }
+            if (examTranscriptComment) {
+              examTranscriptComment.textContent = currentLang === "zh" ? g.verdictZh : g.verdictEn;
+            }
+          }
+          renderMyAnuPortal();
+        }).catch(() => {});
+      }
+      renderMyAnuPortal();
     });
   }
 
@@ -1041,7 +1097,11 @@
           if (joinedClubs.has(club.id)) {
             joinedClubs.delete(club.id);
             saveJoinedClubs(joinedClubs);
+            if (window.ANU_AUTH) {
+              window.ANU_AUTH.syncHonorOrClubToCloud(club.id, "remove").then(renderMyAnuPortal).catch(() => {});
+            }
             renderCampusLife();
+            renderMyAnuPortal();
             if (clubJoinFeedbackEl) {
               clubJoinFeedbackEl.textContent = currentLang === "zh"
                 ? `您已退出【${club.name}】（反正本来也没有群消息）。`
@@ -1050,7 +1110,11 @@
           } else {
             joinedClubs.add(club.id);
             saveJoinedClubs(joinedClubs);
+            if (window.ANU_AUTH) {
+              window.ANU_AUTH.syncHonorOrClubToCloud(club.id, "add").then(renderMyAnuPortal).catch(() => {});
+            }
             renderCampusLife();
+            renderMyAnuPortal();
             if (clubJoinFeedbackEl) {
               clubJoinFeedbackEl.textContent = currentLang === "zh"
                 ? `已成功加入【${club.name}】！社长已将您设为永久免打扰，当前共加入 ${joinedClubs.size} 个摸鱼社团。`
@@ -1168,6 +1232,8 @@
     renderCampusLife();
     renderWebcams();
     updateLedgerDisplay();
+    populateMyAnuSelects();
+    renderMyAnuPortal();
   }
 
   // Event Listeners
@@ -1363,6 +1429,35 @@
     if (newPaperInput) newPaperInput.value = "";
     renderPaperList();
 
+    const localPapers = loadLocalList("anu_local_papers");
+    localPapers.unshift({
+      void_id: voidIdStr,
+      title: currentLang === "zh" ? zhTitle : enTitle,
+      author: rawAuthor || (currentLang === "zh" ? "匿名摸鱼学者" : "Anonymous Slacker"),
+      journalIdx: jIdx,
+      journal_zh: zhJournal,
+      journal_en: enJournal,
+      methodologyIdx: sIdx,
+      created_at: new Date().toISOString().slice(0, 10)
+    });
+    saveLocalList("anu_local_papers", localPapers);
+
+    if (window.ANU_AUTH) {
+      const turnstileToken = window.ANU_AUTH.getTurnstileToken();
+      window.ANU_AUTH.submitPaperToCloud(
+        {
+          title: currentLang === "zh" ? zhTitle : enTitle,
+          author: rawAuthor || (currentLang === "zh" ? "匿名摸鱼学者" : "Anonymous Slacker"),
+          journalIdx: jIdx,
+          methodologyIdx: sIdx
+        },
+        turnstileToken
+      ).then(() => {
+        renderMyAnuPortal();
+      }).catch(() => {});
+    }
+    renderMyAnuPortal();
+
     if (submitPaperStatusEl) {
       submitPaperStatusEl.textContent = currentLang === "zh"
         ? `🎉 秒录用成功！已刊发于《${zhJournal}》（${voidIdStr}），请查看上方阅览室！`
@@ -1507,6 +1602,13 @@
     idleSeconds += 10000;
     savedBudget += 88888;
     updateLedgerDisplay();
+    const badgeKey = mode === "konami" ? "easter_konami" : "easter_crest";
+    joinedClubs.add(badgeKey);
+    saveJoinedClubs(joinedClubs);
+    if (window.ANU_AUTH) {
+      window.ANU_AUTH.syncHonorOrClubToCloud(badgeKey, "add").then(renderMyAnuPortal).catch(() => {});
+    }
+    renderMyAnuPortal();
 
     if (!easterToast || !easterTitle || !easterBody) return;
     if (mode === "konami") {
@@ -1558,6 +1660,769 @@
       konamiPos = 0;
     }
   });
+
+  // =========================================================================
+  // PAGE 8: MY ANU · PERSONAL CAMPUS CENTER & CLOUD SYNC CONTROLLER
+  // =========================================================================
+  const saveDiplomaCloudBtn = document.getElementById("save-diploma-cloud-btn");
+  const diplomaCloudStatusEl = document.getElementById("diploma-cloud-status");
+  const sidebarAuthBadge = document.getElementById("sidebar-auth-badge");
+
+  const myAnuStatusHeadline = document.getElementById("my-anu-status-headline");
+  const myAnuStatusSub = document.getElementById("my-anu-status-sub");
+  const googleSigninBtn = document.getElementById("google-signin-btn");
+  const googleSignoutBtn = document.getElementById("google-signout-btn");
+  const syncCloudBtn = document.getElementById("sync-cloud-btn");
+  const importLocalArchiveBtn = document.getElementById("import-local-archive-btn");
+  const myAnuGlobalFeedback = document.getElementById("my-anu-global-feedback");
+
+  const myAnuRegPanel = document.getElementById("my-anu-registration-panel");
+  const regNicknameInput = document.getElementById("reg-nickname-input");
+  const regCollegeSelect = document.getElementById("reg-college-select");
+  const regMajorSelect = document.getElementById("reg-major-select");
+  const regYearInput = document.getElementById("reg-year-input");
+  const regHonorSelect = document.getElementById("reg-honor-select");
+  const regAvatarSelect = document.getElementById("reg-avatar-select");
+  const regUseGoogleAvatar = document.getElementById("reg-use-google-avatar");
+  const regVisibilitySelect = document.getElementById("reg-visibility-select");
+  const regPublicConsentWrap = document.getElementById("reg-public-consent-wrap");
+  const regPublicConsentChk = document.getElementById("reg-public-consent-chk");
+  const regLegalConsentChk = document.getElementById("reg-legal-consent-chk");
+  const submitStudentRegBtn = document.getElementById("submit-student-reg-btn");
+
+  const myAnuAvatarBox = document.getElementById("my-anu-avatar-box");
+  const myAnuVisibilityPill = document.getElementById("my-anu-visibility-pill");
+  const myAnuDisplayName = document.getElementById("my-anu-display-name");
+  const myAnuStudentNumber = document.getElementById("my-anu-student-number");
+  const myAnuCollegeVal = document.getElementById("my-anu-college-val");
+  const myAnuMajorVal = document.getElementById("my-anu-major-val");
+  const myAnuEnrollmentVal = document.getElementById("my-anu-enrollment-val");
+  const myAnuHonorVal = document.getElementById("my-anu-honor-val");
+
+  const myTabButtons = document.querySelectorAll("[data-my-tab]");
+  const myTabPanes = document.querySelectorAll("[data-my-pane]");
+  const myTranscriptsList = document.getElementById("my-transcripts-list");
+  const myPapersList = document.getElementById("my-papers-list");
+  const myDiplomasList = document.getElementById("my-diplomas-list");
+  const myHonorsList = document.getElementById("my-honors-list");
+
+  const setNicknameInput = document.getElementById("set-nickname-input");
+  const setCollegeSelect = document.getElementById("set-college-select");
+  const setAvatarSelect = document.getElementById("set-avatar-select");
+  const setVisibilitySelect = document.getElementById("set-visibility-select");
+  const setPublicConsentChk = document.getElementById("set-public-consent-chk");
+  const saveProfileSettingsBtn = document.getElementById("save-profile-settings-btn");
+  const deleteAccountConfirmInput = document.getElementById("delete-account-confirm-input");
+  const deleteAccountBtn = document.getElementById("delete-account-btn");
+
+  const publicStudentIdInput = document.getElementById("public-student-id-input");
+  const lookupPublicStudentBtn = document.getElementById("lookup-public-student-btn");
+  const publicLookupResult = document.getElementById("public-lookup-result");
+
+  function populateMyAnuSelects() {
+    if (regMajorSelect) {
+      const prevIdx = Math.max(0, regMajorSelect.selectedIndex);
+      regMajorSelect.textContent = "";
+      majorOptionsByLang[currentLang].forEach((m, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = m;
+        regMajorSelect.appendChild(opt);
+      });
+      regMajorSelect.selectedIndex = Math.min(prevIdx, majorOptionsByLang[currentLang].length - 1);
+    }
+    if (regHonorSelect) {
+      const prevIdx = Math.max(0, regHonorSelect.selectedIndex);
+      regHonorSelect.textContent = "";
+      honorTitlesByLang[currentLang].forEach((h, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = h;
+        regHonorSelect.appendChild(opt);
+      });
+      regHonorSelect.selectedIndex = Math.min(prevIdx, honorTitlesByLang[currentLang].length - 1);
+    }
+  }
+
+  function createEmptyNoticeElement(text) {
+    const p = document.createElement("p");
+    p.style.fontSize = "0.88rem";
+    p.style.color = "var(--ink-muted)";
+    p.style.padding = "0.75rem 0";
+    p.textContent = text;
+    return p;
+  }
+
+  function renderMyAnuPortal() {
+    const dict = i18nDict[currentLang];
+    const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : { user: null, isRegistered: false, bundle: null };
+    const bundle = authState.bundle;
+    const profile = bundle && bundle.profile;
+
+    if (sidebarAuthBadge) {
+      sidebarAuthBadge.textContent = profile ? "SYNC" : authState.user ? "NEW" : "ID";
+    }
+
+    // Update top auth banner
+    if (authState.user) {
+      if (googleSigninBtn) googleSigninBtn.style.display = "none";
+      if (googleSignoutBtn) googleSignoutBtn.style.display = "inline-flex";
+      if (syncCloudBtn) syncCloudBtn.style.display = authState.isRegistered ? "inline-flex" : "none";
+      if (importLocalArchiveBtn) importLocalArchiveBtn.style.display = authState.isRegistered ? "inline-flex" : "none";
+      if (myAnuRegPanel) myAnuRegPanel.style.display = authState.isRegistered ? "none" : "block";
+
+      if (myAnuStatusHeadline) {
+        myAnuStatusHeadline.textContent = profile
+          ? (currentLang === "zh"
+              ? `欢迎回到校园，${profile.nickname}（学号：${profile.studentNumber}）`
+              : `Welcome back, ${profile.nickname} (ID: ${profile.studentNumber})`)
+          : (currentLang === "zh"
+              ? "Google 账号验证成功 · 请完成首次 ANU 校园学籍建立"
+              : "Google Account Verified · Complete Your ANU Matriculation Below");
+      }
+      if (myAnuStatusSub) {
+        myAnuStatusSub.textContent = authState.user.email
+          ? (currentLang === "zh"
+              ? `当前已绑定安全 Google 账号：${authState.user.email}（由 Firebase Authentication 托管保护）`
+              : `Authenticated via Google: ${authState.user.email} (Managed by Firebase Authentication)`)
+          : "";
+      }
+      if (!authState.isRegistered && regNicknameInput && !regNicknameInput.value.trim()) {
+        regNicknameInput.value = authState.user.displayName || dict.form_default_name;
+      }
+    } else {
+      if (googleSigninBtn) googleSigninBtn.style.display = "inline-flex";
+      if (googleSignoutBtn) googleSignoutBtn.style.display = "none";
+      if (syncCloudBtn) syncCloudBtn.style.display = "none";
+      if (importLocalArchiveBtn) importLocalArchiveBtn.style.display = "none";
+      if (myAnuRegPanel) myAnuRegPanel.style.display = "none";
+      if (myAnuStatusHeadline) myAnuStatusHeadline.textContent = dict.my_guest_banner_title;
+      if (myAnuStatusSub) myAnuStatusSub.textContent = dict.my_guest_banner_desc;
+    }
+
+    // Update Student ID Card
+    const localProfile = (function () {
+      try {
+        return JSON.parse(localStorage.getItem("anu_local_profile") || "null");
+      } catch {
+        return null;
+      }
+    })();
+
+    const activeNickname = profile
+      ? profile.nickname
+      : (localProfile && localProfile.nickname) || (nameInput && nameInput.value.trim()) || dict.form_default_name;
+    const activeStudentNumber = profile ? profile.studentNumber : "ANU-2026-GUEST0";
+    const activeAvatarSeed = profile
+      ? profile.avatarSeed
+      : (localProfile && localProfile.avatarSeed) || "crest-oxford";
+    const activeAvatarUrl = profile ? profile.avatarUrl : "";
+    const activeVisibility = profile
+      ? profile.visibility
+      : (localProfile && localProfile.visibility) || "private";
+
+    if (window.ANU_AUTH && myAnuAvatarBox) {
+      window.ANU_AUTH.renderCrestAvatarSvg(myAnuAvatarBox, activeAvatarSeed, activeNickname, activeAvatarUrl);
+    }
+
+    if (myAnuVisibilityPill) {
+      myAnuVisibilityPill.textContent =
+        activeVisibility === "public"
+          ? dict.my_lbl_visibility_badge_public
+          : dict.my_lbl_visibility_badge_private;
+    }
+    if (myAnuDisplayName) myAnuDisplayName.textContent = activeNickname;
+    if (myAnuStudentNumber) myAnuStudentNumber.textContent = activeStudentNumber;
+
+    if (myAnuCollegeVal) {
+      if (profile) {
+        myAnuCollegeVal.textContent = currentLang === "zh" ? profile.collegeNameZh : profile.collegeNameEn;
+      } else {
+        myAnuCollegeVal.textContent = dict.dept_retreat;
+      }
+    }
+    if (myAnuMajorVal) {
+      myAnuMajorVal.textContent = profile
+        ? profile.major
+        : majorOptionsByLang[currentLang][0];
+    }
+    if (myAnuEnrollmentVal) {
+      myAnuEnrollmentVal.textContent = profile
+        ? `${profile.enrollmentYear} (${profile.enrollmentDate})`
+        : "2026 (Guest)";
+    }
+    if (myAnuHonorVal) {
+      myAnuHonorVal.textContent = profile
+        ? profile.fictionalHonor
+        : honorTitlesByLang[currentLang][0];
+    }
+
+    // Populate Settings inputs
+    if (setNicknameInput && document.activeElement !== setNicknameInput) {
+      setNicknameInput.value = activeNickname;
+    }
+    if (setCollegeSelect && profile) {
+      setCollegeSelect.value = profile.college;
+    }
+    if (setAvatarSelect) {
+      setAvatarSelect.value = activeAvatarSeed;
+    }
+    if (setVisibilitySelect) {
+      setVisibilitySelect.value = activeVisibility;
+    }
+    if (setPublicConsentChk) {
+      setPublicConsentChk.checked = Boolean(profile ? profile.publicConsent : false);
+    }
+
+    // 1. Render Transcripts Tab
+    if (myTranscriptsList) {
+      myTranscriptsList.textContent = "";
+      const cloudTranscripts = (bundle && bundle.transcripts) || [];
+      const localTranscripts = loadLocalList("anu_local_exams");
+      const items = cloudTranscripts.length ? cloudTranscripts : localTranscripts;
+
+      if (!items.length) {
+        myTranscriptsList.appendChild(createEmptyNoticeElement(dict.my_empty_transcripts));
+      } else {
+        items.forEach((t) => {
+          const card = document.createElement("article");
+          card.className = "ann-item";
+          const meta = document.createElement("div");
+          meta.className = "ann-item-meta";
+          const badge = document.createElement("span");
+          badge.className = "ann-badge";
+          badge.textContent = t.course_code || t.courseCode || "EXAM";
+          const dateSpan = document.createElement("span");
+          dateSpan.textContent = (t.created_at || t.createdAt || "").slice(0, 10);
+          meta.appendChild(badge);
+          meta.appendChild(dateSpan);
+
+          const h4 = document.createElement("h4");
+          h4.textContent =
+            currentLang === "zh"
+              ? (t.course_title_zh || t.courseTitleZh || "") + " · " + (t.grade_label_zh || t.gradeLabelZh || "")
+              : (t.course_title_en || t.courseTitleEn || "") + " · " + (t.grade_label_en || t.gradeLabelEn || "");
+
+          const p = document.createElement("p");
+          p.textContent = currentLang === "zh" ? (t.verdict_zh || t.verdictZh || "") : (t.verdict_en || t.verdictEn || "");
+
+          card.appendChild(meta);
+          card.appendChild(h4);
+          card.appendChild(p);
+          myTranscriptsList.appendChild(card);
+        });
+      }
+    }
+
+    // 2. Render Papers Tab
+    if (myPapersList) {
+      myPapersList.textContent = "";
+      const cloudPapers = (bundle && bundle.papers) || [];
+      const localPapers = loadLocalList("anu_local_papers");
+      const items = cloudPapers.length ? cloudPapers : localPapers;
+
+      if (!items.length) {
+        myPapersList.appendChild(createEmptyNoticeElement(dict.my_empty_papers));
+      } else {
+        items.forEach((p) => {
+          const card = document.createElement("article");
+          card.className = "ann-item";
+          const meta = document.createElement("div");
+          meta.className = "ann-item-meta";
+          const badge = document.createElement("span");
+          badge.className = "ann-badge";
+          badge.textContent = p.void_id || "VOID-ID";
+          const jSpan = document.createElement("span");
+          jSpan.textContent = currentLang === "zh" ? (p.journal_zh || "") : (p.journal_en || "");
+          meta.appendChild(badge);
+          meta.appendChild(jSpan);
+
+          const h4 = document.createElement("h4");
+          h4.textContent = p.title || "";
+          const authorP = document.createElement("p");
+          authorP.textContent = p.author_display || p.author || "";
+
+          card.appendChild(meta);
+          card.appendChild(h4);
+          card.appendChild(authorP);
+          myPapersList.appendChild(card);
+        });
+      }
+    }
+
+    // 3. Render Diplomas Tab
+    if (myDiplomasList) {
+      myDiplomasList.textContent = "";
+      const cloudDiplomas = (bundle && bundle.diplomas) || [];
+      const localDiplomas = loadLocalList("anu_local_diplomas");
+      const items = cloudDiplomas.length ? cloudDiplomas : localDiplomas;
+
+      if (!items.length) {
+        myDiplomasList.appendChild(createEmptyNoticeElement(dict.my_empty_diplomas));
+      } else {
+        items.forEach((d) => {
+          const card = document.createElement("article");
+          card.className = "ann-item";
+          const meta = document.createElement("div");
+          meta.className = "ann-item-meta";
+          const badge = document.createElement("span");
+          badge.className = "ann-badge";
+          badge.textContent = d.serial_number || d.serialNumber || "ANU-DIPLOMA";
+          const dateSpan = document.createElement("span");
+          dateSpan.textContent = d.issued_date || d.issuedDate || "";
+          meta.appendChild(badge);
+          meta.appendChild(dateSpan);
+
+          const h4 = document.createElement("h4");
+          h4.textContent =
+            (d.recipient_name || d.recipientName || "") +
+            " — " +
+            (currentLang === "zh" ? (d.degree_zh || d.degreeZh || "") : (d.degree_en || d.degreeEn || ""));
+
+          const p = document.createElement("p");
+          p.textContent =
+            (currentLang === "zh" ? (d.major_zh || d.majorZh || "") : (d.major_en || d.majorEn || "")) +
+            " · " +
+            (currentLang === "zh" ? (d.honor_zh || d.honorZh || "") : (d.honor_en || d.honorEn || ""));
+
+          card.appendChild(meta);
+          card.appendChild(h4);
+          card.appendChild(p);
+          myDiplomasList.appendChild(card);
+        });
+      }
+    }
+
+    // 4. Render Honors & Societies Tab
+    if (myHonorsList) {
+      myHonorsList.textContent = "";
+      const cloudHonors = (bundle && bundle.honors) || [];
+
+      if (cloudHonors.length) {
+        cloudHonors.forEach((h) => {
+          const card = document.createElement("article");
+          card.className = "ann-item";
+          const h4 = document.createElement("h4");
+          h4.textContent = "🏅 " + (currentLang === "zh" ? h.title_zh : h.title_en);
+          const p = document.createElement("p");
+          p.textContent = currentLang === "zh" ? h.desc_zh : h.desc_en;
+          card.appendChild(h4);
+          card.appendChild(p);
+          myHonorsList.appendChild(card);
+        });
+      } else if (joinedClubs.size > 0) {
+        Array.from(joinedClubs).forEach((key) => {
+          const clubMatch = clubsByLang[currentLang].find((c) => c.id === key);
+          const card = document.createElement("article");
+          card.className = "ann-item";
+          const h4 = document.createElement("h4");
+          h4.textContent = "🏅 " + (clubMatch ? clubMatch.name : key);
+          const p = document.createElement("p");
+          p.textContent = clubMatch
+            ? clubMatch.desc
+            : currentLang === "zh"
+            ? "已在本机解锁隐藏校园摸鱼荣誉勋章。"
+            : "Unlocked hidden campus slacking medallion on this device.";
+          card.appendChild(h4);
+          card.appendChild(p);
+          myHonorsList.appendChild(card);
+        });
+      } else {
+        myHonorsList.appendChild(createEmptyNoticeElement(dict.my_empty_honors));
+      }
+    }
+  }
+
+  // Tab switching inside My ANU
+  myTabButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetTab = btn.getAttribute("data-my-tab");
+      myTabButtons.forEach((b) => b.classList.toggle("active", b === btn));
+      myTabPanes.forEach((pane) => {
+        pane.classList.toggle("active", pane.getAttribute("data-my-pane") === targetTab);
+      });
+    });
+  });
+
+  if (regVisibilitySelect && regPublicConsentWrap) {
+    regVisibilitySelect.addEventListener("change", () => {
+      regPublicConsentWrap.style.display = regVisibilitySelect.value === "public" ? "block" : "none";
+    });
+  }
+
+  // Save Diploma to Local + Cloud Archive
+  if (saveDiplomaCloudBtn) {
+    saveDiplomaCloudBtn.addEventListener("click", async () => {
+      if (!isStamped && stampBtn) {
+        stampBtn.click();
+      }
+      const degIdx = degreeSelect ? parseInt(degreeSelect.value, 10) || 0 : 0;
+      const majIdx = majorSelect ? parseInt(majorSelect.value, 10) || 0 : 0;
+      const honIdx = honorSelect ? parseInt(honorSelect.value, 10) || 0 : 0;
+      const citIdx = achievementSelect ? parseInt(achievementSelect.value, 10) || 0 : 0;
+      const tplId = (templateSelect && templateSelect.value) || "oxford";
+      const certLangVal = (certLangSelect && certLangSelect.value) || "auto";
+      const recName = (nameInput && nameInput.value.trim()) || i18nDict[currentLang].form_default_name;
+
+      const localDip = {
+        serialNumber: currentSerial,
+        recipientName: recName,
+        degreeIdx: degIdx,
+        degreeZh: degreeOptionsByLang.zh[degIdx],
+        degreeEn: degreeOptionsByLang.en[degIdx],
+        majorIdx: majIdx,
+        majorZh: majorOptionsByLang.zh[majIdx],
+        majorEn: majorOptionsByLang.en[majIdx],
+        honorIdx: honIdx,
+        honorZh: honorTitlesByLang.zh[honIdx],
+        honorEn: honorTitlesByLang.en[honIdx],
+        citationIdx: citIdx,
+        templateId: tplId,
+        certLang: certLangVal,
+        issuedDate: new Date().toISOString().slice(0, 10)
+      };
+
+      const list = loadLocalList("anu_local_diplomas");
+      list.unshift(localDip);
+      saveLocalList("anu_local_diplomas", list);
+
+      const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : null;
+      if (authState && authState.user && authState.isRegistered) {
+        try {
+          const turnstileToken = window.ANU_AUTH.getTurnstileToken();
+          const res = await window.ANU_AUTH.submitDiplomaToCloud(localDip, turnstileToken);
+          if (diplomaCloudStatusEl) {
+            diplomaCloudStatusEl.textContent =
+              currentLang === "zh"
+                ? `✓ 已同步至您的 My ANU 云端证书档案（序列号：${res.serialNumber || currentSerial}）！`
+                : `✓ Saved to your My ANU Cloud Diploma Archive (Serial: ${res.serialNumber || currentSerial})!`;
+          }
+        } catch (err) {
+          if (diplomaCloudStatusEl) {
+            diplomaCloudStatusEl.textContent =
+              currentLang === "zh"
+                ? `已存入本机档案（云端同步提示：${err.message || "稍后可在 My ANU 导入"}）`
+                : `Saved to local archive (Cloud note: ${err.message || "You can import later in My ANU"})`;
+          }
+        }
+      } else {
+        if (diplomaCloudStatusEl) {
+          diplomaCloudStatusEl.textContent =
+            currentLang === "zh"
+              ? "✓ 已存入本机「My ANU · 荣誉学位证书」档案！登录 Google 账号后可跨设备云端同步。"
+              : "✓ Saved to your local My ANU Diploma Archive! Sign in with Google anytime to sync to the cloud.";
+        }
+      }
+      renderMyAnuPortal();
+    });
+  }
+
+  // Google Sign-In Button
+  if (googleSigninBtn && window.ANU_AUTH) {
+    googleSigninBtn.addEventListener("click", async () => {
+      if (!window.ANU_AUTH.isFirebaseConfigured()) {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? "提示：当前环境尚未填入 Firebase Web 配置 (js/anu-config.js)。游客模式与本机档案功能已全部就绪，管理员按 README 完成 Firebase 与 Cloudflare 配置后即可启用云端 Google 登录。"
+              : "Note: Firebase Web credentials are not yet populated in js/anu-config.js. Guest mode and local campus archives are fully active; follow README.md to enable live Google Cloud Sign-In.";
+        }
+        return;
+      }
+      try {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh" ? "正在启动 Google 安全登录..." : "Launching Google Sign-In...";
+        }
+        await window.ANU_AUTH.signInWithGoogle();
+        window.ANU_AUTH.mountTurnstileWidget("#turnstile-reg-container");
+        renderMyAnuPortal();
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh" ? "✓ Google 账号登录成功！" : "✓ Signed in with Google!";
+        }
+      } catch (err) {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? `登录未完成：${err.message || "请检查浏览器弹窗或跨站设置"}`
+              : `Sign-in incomplete: ${err.message || "Please check popup or browser settings"}`;
+        }
+      }
+    });
+  }
+
+  // Google Sign-Out Button
+  if (googleSignoutBtn && window.ANU_AUTH) {
+    googleSignoutBtn.addEventListener("click", async () => {
+      await window.ANU_AUTH.signOutStudent();
+      renderMyAnuPortal();
+      if (myAnuGlobalFeedback) {
+        myAnuGlobalFeedback.textContent =
+          currentLang === "zh"
+            ? "您已安全退出 Google 账户，当前处于游客模式。"
+            : "Signed out of Google account. You are now in Guest Mode.";
+      }
+    });
+  }
+
+  // First-Time Student Registration Submit
+  if (submitStudentRegBtn && window.ANU_AUTH) {
+    submitStudentRegBtn.addEventListener("click", async () => {
+      if (regLegalConsentChk && !regLegalConsentChk.checked) {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? "请先勾选同意《隐私政策》与《使用条款》。"
+              : "Please agree to the Privacy Policy and Terms of Use first.";
+        }
+        return;
+      }
+      const wantsPub = regVisibilitySelect && regVisibilitySelect.value === "public";
+      if (wantsPub && regPublicConsentChk && !regPublicConsentChk.checked) {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? "公开档案必须单独勾选公开展示同意选项，否则请选择默认的「私有档案」。"
+              : "Making your profile public requires checking the separate explicit consent box.";
+        }
+        return;
+      }
+
+      const majIdx = regMajorSelect ? parseInt(regMajorSelect.value, 10) || 0 : 0;
+      const honIdx = regHonorSelect ? parseInt(regHonorSelect.value, 10) || 0 : 0;
+
+      try {
+        const turnstileToken = window.ANU_AUTH.getTurnstileToken();
+        await window.ANU_AUTH.registerStudentProfile(
+          {
+            nickname: (regNicknameInput && regNicknameInput.value.trim()) || i18nDict[currentLang].form_default_name,
+            college: (regCollegeSelect && regCollegeSelect.value) || "retreat",
+            majorIdx: majIdx,
+            major: majorOptionsByLang[currentLang][majIdx],
+            honorIdx: honIdx,
+            fictionalHonor: honorTitlesByLang[currentLang][honIdx],
+            enrollmentYear: regYearInput ? parseInt(regYearInput.value, 10) || 2026 : 2026,
+            avatarSeed: (regAvatarSelect && regAvatarSelect.value) || "crest-oxford",
+            useGoogleAvatar: Boolean(regUseGoogleAvatar && regUseGoogleAvatar.checked),
+            visibility: wantsPub ? "public" : "private",
+            publicConsent: Boolean(wantsPub && regPublicConsentChk && regPublicConsentChk.checked),
+            acceptTerms: true,
+            acceptPrivacy: true
+          },
+          turnstileToken
+        );
+        renderMyAnuPortal();
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? "🎉 恭喜！您的唯一 ANU 学生档案已成功建立！"
+              : "🎉 Matriculation complete! Your unique ANU Student Profile is now active!";
+        }
+      } catch (err) {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? `档案创建失败：${err.message}`
+              : `Registration failed: ${err.message}`;
+        }
+      }
+    });
+  }
+
+  // Sync Now Button
+  if (syncCloudBtn && window.ANU_AUTH) {
+    syncCloudBtn.addEventListener("click", async () => {
+      await window.ANU_AUTH.refreshStudentBundle();
+      renderMyAnuPortal();
+      if (myAnuGlobalFeedback) {
+        myAnuGlobalFeedback.textContent =
+          currentLang === "zh" ? "✓ 已从 Cloudflare D1 同步最新校园档案。" : "✓ Synced latest campus archive from Cloudflare D1.";
+      }
+    });
+  }
+
+  // Import Local Campus Archive Button (Idempotent)
+  if (importLocalArchiveBtn && window.ANU_AUTH) {
+    importLocalArchiveBtn.addEventListener("click", async () => {
+      const localExams = loadLocalList("anu_local_exams");
+      const localPapers = loadLocalList("anu_local_papers");
+      const localDiplomas = loadLocalList("anu_local_diplomas");
+      const badges = Array.from(joinedClubs);
+
+      const rawFingerprint = JSON.stringify({
+        b: badges.sort(),
+        e: localExams.length,
+        p: localPapers.length,
+        d: localDiplomas.length
+      });
+      let idemKey = "import-v1-" + btoa(unescape(encodeURIComponent(rawFingerprint))).replace(/[^a-zA-Z0-9]/g, "").slice(0, 48);
+      if (idemKey.length < 12) idemKey += "00000000";
+
+      try {
+        const res = await window.ANU_AUTH.importLocalArchiveToCloud(
+          {
+            badges,
+            exams: localExams,
+            papers: localPapers,
+            diplomas: localDiplomas
+          },
+          idemKey
+        );
+        renderMyAnuPortal();
+        const s = res.importedSummary || { clubsAndBadges: 0, exams: 0, papers: 0, diplomas: 0 };
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? `✓ 本机档案导入完成（新增社团/勋章 ${s.clubsAndBadges} 项、统考成绩 ${s.exams} 份、空白论文 ${s.papers} 篇、学位证书 ${s.diplomas} 份）！`
+              : `✓ Local archive imported (Added ${s.clubsAndBadges} badges, ${s.exams} exams, ${s.papers} papers, ${s.diplomas} diplomas)!`;
+        }
+      } catch (err) {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh" ? `导入失败：${err.message}` : `Import failed: ${err.message}`;
+        }
+      }
+    });
+  }
+
+  // Save Profile & Privacy Settings
+  if (saveProfileSettingsBtn) {
+    saveProfileSettingsBtn.addEventListener("click", async () => {
+      const newNick = (setNicknameInput && setNicknameInput.value.trim()) || i18nDict[currentLang].form_default_name;
+      const newCol = (setCollegeSelect && setCollegeSelect.value) || "retreat";
+      const newAva = (setAvatarSelect && setAvatarSelect.value) || "crest-oxford";
+      const newVis = (setVisibilitySelect && setVisibilitySelect.value) || "private";
+      const pubConsent = Boolean(setPublicConsentChk && setPublicConsentChk.checked);
+
+      if (newVis === "public" && !pubConsent) {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? "设为公开档案必须勾选单独的公开展示授权复选框。"
+              : "Setting visibility to Public requires checking the explicit consent checkbox.";
+        }
+        return;
+      }
+
+      try {
+        localStorage.setItem(
+          "anu_local_profile",
+          JSON.stringify({
+            nickname: newNick,
+            college: newCol,
+            avatarSeed: newAva,
+            visibility: newVis === "public" && pubConsent ? "public" : "private"
+          })
+        );
+      } catch (_) {}
+
+      const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : null;
+      if (authState && authState.user && authState.isRegistered) {
+        try {
+          await window.ANU_AUTH.updateStudentProfile({
+            nickname: newNick,
+            college: newCol,
+            avatarSeed: newAva,
+            visibility: newVis === "public" && pubConsent ? "public" : "private",
+            publicConsent: Boolean(newVis === "public" && pubConsent)
+          });
+          if (myAnuGlobalFeedback) {
+            myAnuGlobalFeedback.textContent =
+              currentLang === "zh" ? "✓ 云端学生档案与隐私设置已更新！" : "✓ Cloud profile and privacy settings saved!";
+          }
+        } catch (err) {
+          if (myAnuGlobalFeedback) {
+            myAnuGlobalFeedback.textContent = err.message;
+          }
+        }
+      } else {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? "✓ 本机校园偏好设置已保存（登录 Google 账号后可同步至云端）。"
+              : "✓ Local profile preferences saved (Sign in with Google to sync to cloud).";
+        }
+      }
+      renderMyAnuPortal();
+    });
+  }
+
+  // Permanent Account Deletion
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener("click", async () => {
+      const confirmVal = (deleteAccountConfirmInput && deleteAccountConfirmInput.value.trim()) || "";
+      if (confirmVal !== "DELETE_MY_ANU_ARCHIVE") {
+        if (myAnuGlobalFeedback) {
+          myAnuGlobalFeedback.textContent =
+            currentLang === "zh"
+              ? "请输入准确的确认口令 DELETE_MY_ANU_ARCHIVE 以执行永久删除。"
+              : "Please type DELETE_MY_ANU_ARCHIVE exactly to confirm permanent deletion.";
+        }
+        return;
+      }
+
+      try {
+        localStorage.removeItem("anu_local_profile");
+        localStorage.removeItem("anu_local_exams");
+        localStorage.removeItem("anu_local_papers");
+        localStorage.removeItem("anu_local_diplomas");
+        localStorage.removeItem("anu_joined_clubs");
+        joinedClubs.clear();
+      } catch (_) {}
+
+      const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : null;
+      if (authState && authState.user) {
+        try {
+          await window.ANU_AUTH.deleteStudentAccount();
+        } catch (_) {}
+      }
+
+      if (deleteAccountConfirmInput) deleteAccountConfirmInput.value = "";
+      renderCampusLife();
+      renderMyAnuPortal();
+      if (myAnuGlobalFeedback) {
+        myAnuGlobalFeedback.textContent =
+          currentLang === "zh"
+            ? "✓ 您的 ANU 校园档案与全部本地/云端关联数据已彻底删除。"
+            : "✓ Your ANU student profile and all associated records have been permanently erased.";
+      }
+    });
+  }
+
+  // Public Student ID Card Lookup
+  if (lookupPublicStudentBtn && publicStudentIdInput && publicLookupResult) {
+    lookupPublicStudentBtn.addEventListener("click", async () => {
+      const rawId = publicStudentIdInput.value.trim().toUpperCase();
+      if (!/^ANU-\d{4}-[A-Z0-9]{6}$/.test(rawId)) {
+        publicLookupResult.textContent =
+          currentLang === "zh"
+            ? "学号格式无效，请输入标准格式（例如 ANU-2026-AB12CD）。注意：学号仅用于公开名片展示，绝不作为登录凭据。"
+            : "Invalid ANU Student ID format (expected ANU-YYYY-XXXXXX). Student IDs are display-only and never used for authentication.";
+        return;
+      }
+      try {
+        const res = await window.ANU_AUTH.lookupPublicStudentProfile(rawId);
+        const pub = res.publicProfile;
+        publicLookupResult.textContent =
+          currentLang === "zh"
+            ? `[公开校友名片] 学号：${pub.studentNumber} · 昵称：${pub.nickname} · 学院：${pub.collegeNameZh} · 专业：${pub.major} · 荣誉：${pub.fictionalHonor}`
+            : `[Public Alumni Card] ID: ${pub.studentNumber} · Nickname: ${pub.nickname} · College: ${pub.collegeNameEn} · Major: ${pub.major} · Honor: ${pub.fictionalHonor}`;
+      } catch (err) {
+        publicLookupResult.textContent =
+          currentLang === "zh"
+            ? `未找到公开记录（该学号不存在或学生保持了默认的私有档案保护）。`
+            : `No public record found (Student ID does not exist or remains Private by default).`;
+      }
+    });
+  }
+
+  if (window.ANU_AUTH) {
+    window.ANU_AUTH.onStateChange(() => {
+      renderMyAnuPortal();
+    });
+    window.ANU_AUTH.initAuth();
+  }
 
   // Initial Boot
   applyTheme(currentTheme);

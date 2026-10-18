@@ -1,0 +1,32 @@
+name = "anu-student-api"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+workers_dev = false
+
+# Target custom domain route: https://api.freeze.edu.kg/*
+routes = [
+  { pattern = "api.freeze.edu.kg", custom_domain = true }
+]
+
+[vars]
+ENVIRONMENT = "production"
+FIREBASE_PROJECT_ID = "anu-freeze-edu"
+ALLOWED_ORIGINS = "https://freeze.edu.kg,http://localhost:8088,http://127.0.0.1:8088"
+RATE_LIMIT_IP_PER_MIN = "60"
+RATE_LIMIT_UID_PER_MIN = "30"
+RATE_LIMIT_WRITE_PER_HOUR = "25"
+
+# Cloudflare D1 Database Binding
+# Replace database_id with the output from: npx wrangler d1 create anu-campus-db
+[[d1_databases]]
+binding = "DB"
+database_name = "anu-campus-db"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# ============================================================================
+# Required Secrets (Set via `npx wrangler secret put <NAME>`, NEVER commit):
+#   - TURNSTILE_SECRET_KEY : Cloudflare Turnstile server-side secret key
+#   - ADMIN_API_TOKEN      : High-entropy ≥32 byte token for /api/v1/admin/*
+#   - IP_HASH_SALT         : Random salt for privacy-preserving IP hashing
+# ============================================================================

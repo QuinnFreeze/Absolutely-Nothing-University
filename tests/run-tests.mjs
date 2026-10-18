@@ -172,3 +172,90 @@ const appCode = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
 const innerHtmlOccurrences = [...appCode.matchAll(/\.innerHTML\s*=/g)];
 assert.equal(innerHtmlOccurrences.length, 1, "Only data-i18n-html dictionary binding may use innerHTML");
 console.log("✓ [PASS] XSS protection verified (zero user-input innerHTML assignments in app.js)");
+
+// 8. Verify js/student-auth.js does NOT store raw tokens in localStorage
+const authClientCode = fs.readFileSync(path.join(rootDir, "js/student-auth.js"), "utf8");
+assert.ok(
+  !authClientCode.includes("localStorage.setItem"),
+  "js/student-auth.js must never store raw credentials/tokens in localStorage"
+);
+assert.ok(
+  authClientCode.includes("GoogleAuthProvider"),
+  "js/student-auth.js must use official GoogleAuthProvider"
+);
+assert.ok(
+  authClientCode.includes("signInWithPopup") && authClientCode.includes("signInWithRedirect"),
+  "js/student-auth.js must handle both popup and mobile Safari redirect fallback"
+);
+console.log("✓ [PASS] Firebase Google Sign-In client security (zero localStorage token storage + mobile Safari redirect fallback) verified");
+
+// 8b. Verify all 32 My ANU DOM elements and execute js/student-auth.js in VM sandbox
+const requiredMyAnuIds = [
+  "page-my-anu", "sidebar-my-anu-btn", "google-signin-btn", "google-signout-btn",
+  "sync-cloud-btn", "import-local-archive-btn", "my-anu-registration-panel",
+  "reg-nickname-input", "reg-college-select", "reg-major-select", "reg-year-input",
+  "reg-honor-select", "reg-avatar-select", "reg-visibility-select",
+  "reg-public-consent-chk", "reg-legal-consent-chk", "turnstile-reg-container",
+  "submit-student-reg-btn", "my-anu-avatar-box", "my-anu-visibility-pill",
+  "my-anu-display-name", "my-anu-student-number", "my-transcripts-list",
+  "my-papers-list", "my-diplomas-list", "my-honors-list", "save-profile-settings-btn",
+  "delete-account-confirm-input", "delete-account-btn", "public-student-id-input",
+  "lookup-public-student-btn", "privacy-terms-section"
+];
+for (const id of requiredMyAnuIds) {
+  assert.ok(html.includes(`id="${id}"`), `Missing My ANU DOM element id="${id}"`);
+}
+
+const configCode = fs.readFileSync(path.join(rootDir, "js/anu-config.js"), "utf8");
+const authVmSandbox = {
+  window: {},
+  navigator: { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", maxTouchPoints: 5 },
+  document: {
+    documentElement: { getAttribute() { return "light"; } },
+    createElementNS() {
+      return {
+        setAttribute() {},
+        appendChild() {},
+        textContent: ""
+      };
+    },
+    querySelector() { return null; },
+    getElementById() { return null; }
+  }
+};
+vm.createContext(authVmSandbox);
+vm.runInContext(configCode, authVmSandbox);
+vm.runInContext(authClientCode, authVmSandbox);
+assert.ok(authVmSandbox.window.ANU_AUTH, "window.ANU_AUTH must be exported");
+let svgAppended = false;
+authVmSandbox.window.ANU_AUTH.renderCrestAvatarSvg(
+  { textContent: "", appendChild() { svgAppended = true; } },
+  "crest-oxford",
+  "Dr. Slacker",
+  ""
+);
+assert.ok(svgAppended, "renderCrestAvatarSvg must generate local SVG crest avatar without external network leaks");
+console.log("✓ [PASS] All 32 My ANU DOM elements & local SVG crest avatar generator verified");
+
+
+// 8c. Verify backup script syntax and zero hardcoded secrets across all source files
+import { execSync } from "node:child_process";
+execSync("bash -n worker/scripts/backup-restore.sh", { cwd: rootDir });
+const trackedFilesToScan = [
+  "index.html", "styles.css", "app.js", "js/i18n.js", "js/canvas-export.js",
+  "js/anu-config.js", "js/student-auth.js", "worker/wrangler.toml",
+  "worker/src/index.ts", "worker/src/catalog.ts", "worker/src/types.ts",
+  "worker/src/middleware/firebaseAuth.ts", "worker/src/middleware/security.ts",
+  "worker/src/utils/crypto.ts", "worker/src/utils/http.ts"
+];
+for (const relPath of trackedFilesToScan) {
+  const srcText = fs.readFileSync(path.join(rootDir, relPath), "utf8");
+  assert.ok(!srcText.includes("-----BEGIN PRIVATE KEY-----"), `Private key leak check failed in ${relPath}`);
+  assert.ok(!srcText.includes("AIzaSy"), `Hardcoded API key check failed in ${relPath}`);
+}
+console.log("✓ [PASS] D1 backup/restore script syntax & zero hardcoded secret scan verified");
+
+// 9. Run Cloudflare Worker + D1 SQLite End-to-End Security Test Suite
+const { runWorkerSecurityTests } = await import("./security-worker-tests.mjs");
+await runWorkerSecurityTests();
+console.log("\n=== ALL FRONTEND, WORKER & D1 SECURITY TESTS PASSED ===");

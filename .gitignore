@@ -1,2 +1,9 @@
 .claude/
 .DS_Store
+node_modules/
+worker/node_modules/
+worker/.wrangler/
+worker/.dev.vars
+*.db
+*.sqlite
+*.sqlite3

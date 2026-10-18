@@ -2116,3 +2116,209 @@ html[data-theme="dark"] .btn-contribute-nothing {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   MY ANU · PERSONAL CAMPUS CENTER & GOOGLE STUDENT ACCOUNT STYLES
+   ========================================================================== */
+
+.my-anu-auth-banner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--bulletin-bg);
+  border: 1px solid var(--bulletin-border);
+  border-left: 5px solid var(--crimson-seal);
+  border-radius: 12px;
+  padding: 1.35rem 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.my-anu-auth-info {
+  flex: 1 1 420px;
+}
+
+.my-anu-auth-info strong {
+  display: block;
+  font-family: var(--serif-font);
+  font-size: 1.25rem;
+  color: var(--oxford-abyss);
+  margin-bottom: 0.35rem;
+}
+
+.my-anu-auth-info p {
+  font-size: 0.9rem;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+}
+
+.my-anu-safari-note {
+  font-size: 0.78rem !important;
+  color: var(--ink-muted) !important;
+  margin-bottom: 0 !important;
+}
+
+.my-anu-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.my-anu-registration-panel {
+  background: var(--surface-elevated);
+  border: 1px solid var(--stone-border);
+  border-top: 4px solid var(--gilded-brass);
+  border-radius: 12px;
+  padding: 1.6rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.my-anu-checkbox-group {
+  margin-top: 0.75rem;
+}
+
+.turnstile-box {
+  margin-top: 1rem;
+  min-height: 8px;
+}
+
+.my-anu-dashboard {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.my-anu-id-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--stone-border);
+  border-top: 4px solid var(--oxford-abyss);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.my-anu-id-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1.15rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px dashed var(--stone-border);
+}
+
+.my-anu-avatar-box {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--warm-stone);
+  border: 2px solid var(--gilded-light);
+}
+
+.my-anu-avatar-svg,
+.my-anu-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.my-anu-student-name {
+  font-family: var(--serif-font);
+  font-size: 1.35rem;
+  color: var(--oxford-abyss);
+  line-height: 1.25;
+  margin-top: 0.25rem;
+}
+
+.my-anu-student-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--crimson-seal);
+  margin-top: 0.2rem;
+}
+
+.my-anu-records-panel {
+  background: var(--surface-elevated);
+  border: 1px solid var(--stone-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.my-anu-tab-pane {
+  display: none;
+}
+
+.my-anu-tab-pane.active {
+  display: block;
+}
+
+.my-anu-danger-zone {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  border: 1px solid #FCA5A5;
+  background: rgba(239, 68, 68, 0.06);
+  border-radius: 10px;
+}
+
+.my-anu-danger-zone h4 {
+  color: #DC2626;
+  font-family: var(--serif-font);
+  font-size: 1.15rem;
+  margin-bottom: 0.35rem;
+}
+
+html[data-theme="dark"] .my-anu-danger-zone {
+  border-color: #991B1B;
+  background: rgba(153, 27, 27, 0.18);
+}
+
+html[data-theme="dark"] .my-anu-danger-zone h4 {
+  color: #FCA5A5;
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.68rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid #B91C1C;
+  background: #DC2626;
+  color: #FFFFFF;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-danger:hover {
+  background: #B91C1C;
+}
+
+.my-anu-legal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 960px) {
+  .my-anu-dashboard {
+    grid-template-columns: 1fr;
+  }
+  .my-anu-legal-grid {
+    grid-template-columns: 1fr;
+  }
+}

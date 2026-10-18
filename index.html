@@ -113,6 +113,16 @@
           </span>
           <span class="nav-item-badge">SIM</span>
         </button>
+
+        <div class="sidebar-nav-section-label" data-i18n="sidebar_sec_account">学生门户 · MY ANU</div>
+
+        <button type="button" class="nav-item-btn" data-page-target="my-anu" id="sidebar-my-anu-btn">
+          <span class="nav-item-left">
+            <span class="nav-item-code">VIII.</span>
+            <span data-i18n="nav_my_anu">My ANU · 我的校园</span>
+          </span>
+          <span class="nav-item-badge" id="sidebar-auth-badge">ID</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -412,7 +422,11 @@
                     <button type="button" class="btn-secondary" id="download-diploma-btn" data-i18n="form_btn_download">
                       导出高清 PNG 学位证
                     </button>
+                    <button type="button" class="btn-secondary" id="save-diploma-cloud-btn" data-i18n="btn_save_diploma_cloud">
+                      存入我的 ANU 云端证书档案
+                    </button>
                   </div>
+                  <p id="diploma-cloud-status" aria-live="polite" style="font-size: 0.82rem; color: var(--crimson-seal); margin-top: 0.55rem; font-weight: 600;"></p>
                 </div>
 
                 <div class="diploma-preview-wrapper">
@@ -812,6 +826,300 @@
             </div>
           </div>
         </section>
+
+        <!-- PAGE 8: MY ANU · PERSONAL STUDENT ARCHIVE & GOOGLE ACCOUNT CENTER -->
+        <section class="page-view" id="page-my-anu" data-page="my-anu">
+          <div class="academic-section">
+            <div class="container">
+              <div class="section-header">
+                <p class="section-latin" data-i18n="my_eyebrow">Regestum Scholasticum · Google 学生账户与云端校园档案</p>
+                <h2 class="section-title" data-i18n="my_title">My ANU · 我的虚无校园个人中心</h2>
+                <p class="section-desc" data-i18n="my_desc"></p>
+              </div>
+
+              <!-- Auth & Guest Mode Top Banner -->
+              <div class="my-anu-auth-banner" id="my-anu-auth-banner">
+                <div class="my-anu-auth-info">
+                  <strong id="my-anu-status-headline" data-i18n="my_guest_banner_title">您当前处于游客模式（Guest Mode）</strong>
+                  <p id="my-anu-status-sub" data-i18n="my_guest_banner_desc"></p>
+                  <p class="my-anu-safari-note" data-i18n="my_safari_notice"></p>
+                </div>
+                <div class="my-anu-auth-actions">
+                  <button type="button" class="btn-primary" id="google-signin-btn" data-i18n="my_btn_google_signin">
+                    使用 Google 账号安全登录
+                  </button>
+                  <button type="button" class="btn-secondary" id="sync-cloud-btn" style="display: none;" data-i18n="my_btn_sync_now">
+                    立即同步云端档案
+                  </button>
+                  <button type="button" class="btn-secondary" id="import-local-archive-btn" style="display: none;" data-i18n="my_btn_import_local">
+                    导入本机现有校园记录
+                  </button>
+                  <button type="button" class="bulletin-next-btn" id="google-signout-btn" style="display: none;" data-i18n="my_btn_signout">
+                    退出登录
+                  </button>
+                </div>
+              </div>
+              <div class="enroll-status-box" id="my-anu-global-feedback" aria-live="polite" style="margin-bottom: 1.5rem;"></div>
+
+              <!-- First-Time Student Profile Registration Panel (Shown when signed in with Google but not yet registered in D1) -->
+              <div class="my-anu-registration-panel" id="my-anu-registration-panel" style="display: none;">
+                <h3 class="form-panel-title" data-i18n="my_reg_card_title">首次入学登记 · 创建您的 ANU 校园档案</h3>
+                <p class="form-panel-note" data-i18n="my_reg_card_note"></p>
+
+                <div class="submission-studio-grid">
+                  <div class="form-group">
+                    <label for="reg-nickname-input" data-i18n="my_reg_lbl_nickname">校园昵称 (Campus Nickname)</label>
+                    <input type="text" id="reg-nickname-input" class="form-control" maxlength="36" />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="reg-college-select" data-i18n="my_reg_lbl_college">所属学院 (Academic College)</label>
+                    <select id="reg-college-select" class="form-control">
+                      <option value="retreat" data-i18n="dept_retreat">退堂鼓与战略性放弃学院</option>
+                      <option value="procrastination" data-i18n="dept_procrastination">死线物理与量子拖延学院</option>
+                      <option value="perfunctory" data-i18n="dept_perfunctory">高级糊弄学与废话文学系</option>
+                      <option value="daydream" data-i18n="dept_daydream">深度睡眠与带薪发呆研究院</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="reg-major-select" data-i18n="my_reg_lbl_major">主修荒诞专业 (Major)</label>
+                    <select id="reg-major-select" class="form-control"></select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="reg-year-input" data-i18n="my_reg_lbl_year">入学年份 (Enrollment Year)</label>
+                    <input type="number" id="reg-year-input" class="form-control" value="2026" min="1899" max="2030" />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="reg-honor-select" data-i18n="my_reg_lbl_honor">虚构学术荣誉头衔 (Fictional Honor)</label>
+                    <select id="reg-honor-select" class="form-control"></select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="reg-avatar-select" data-i18n="my_reg_lbl_avatar">校园头像风格 (Crest Avatar Style)</label>
+                    <select id="reg-avatar-select" class="form-control">
+                      <option value="crest-oxford" data-i18n="my_avatar_opt_oxford">牛津蓝晶校徽</option>
+                      <option value="crest-ginger" data-i18n="my_avatar_opt_ginger">橘座大主任御印</option>
+                      <option value="crest-void" data-i18n="my_avatar_opt_void">纯粹空集符号</option>
+                      <option value="crest-slumber" data-i18n="my_avatar_opt_slumber">午夜深度睡眠星环</option>
+                      <option value="crest-thermos" data-i18n="my_avatar_opt_thermos">校长枸杞保温杯</option>
+                      <option value="crest-retreat" data-i18n="my_avatar_opt_retreat">皇家退堂鼓徽章</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="my-anu-checkbox-group">
+                  <label class="exam-option-label">
+                    <input type="checkbox" id="reg-use-google-avatar" />
+                    <span data-i18n="my_reg_chk_google_avatar"></span>
+                  </label>
+                </div>
+
+                <div class="form-group" style="margin-top: 0.9rem;">
+                  <label for="reg-visibility-select" data-i18n="my_reg_lbl_visibility">档案可见性设置 (Profile Visibility)</label>
+                  <select id="reg-visibility-select" class="form-control">
+                    <option value="private" selected data-i18n="my_vis_private">私有档案（默认推荐 · 仅本人登录后可见）</option>
+                    <option value="public" data-i18n="my_vis_public">公开卡片（需单独勾选同意 · 允许通过学号只读查询公开名片）</option>
+                  </select>
+                </div>
+
+                <div class="my-anu-checkbox-group" id="reg-public-consent-wrap" style="display: none;">
+                  <label class="exam-option-label">
+                    <input type="checkbox" id="reg-public-consent-chk" />
+                    <span data-i18n="my_reg_chk_public_consent"></span>
+                  </label>
+                </div>
+
+                <div class="my-anu-checkbox-group">
+                  <label class="exam-option-label">
+                    <input type="checkbox" id="reg-legal-consent-chk" checked />
+                    <span data-i18n="my_reg_chk_legal"></span>
+                  </label>
+                </div>
+
+                <!-- Cloudflare Turnstile Container -->
+                <div id="turnstile-reg-container" class="turnstile-box"></div>
+
+                <div class="form-button-row" style="margin-top: 1rem;">
+                  <button type="button" class="btn-primary" id="submit-student-reg-btn" data-i18n="my_reg_btn_submit">
+                    正式建立学籍并领取唯一 ANU 学号
+                  </button>
+                </div>
+              </div>
+
+              <!-- Student Campus Dossier & Multi-Tab Dashboard -->
+              <div class="my-anu-dashboard" id="my-anu-dashboard">
+                <!-- Left Column: Student Identity Card -->
+                <aside class="my-anu-id-card" aria-label="Student Identity Card">
+                  <div class="my-anu-id-header">
+                    <div class="my-anu-avatar-box" id="my-anu-avatar-box"></div>
+                    <div class="my-anu-id-meta">
+                      <span class="syllabus-tag" id="my-anu-visibility-pill" data-i18n="my_lbl_visibility_badge_private">🔒 私有档案</span>
+                      <h3 class="my-anu-student-name" id="my-anu-display-name">首席退堂鼓演奏家</h3>
+                      <p class="my-anu-student-number" id="my-anu-student-number">ANU-2026-GUEST0</p>
+                    </div>
+                  </div>
+
+                  <div class="my-anu-id-fields">
+                    <div class="ledger-row">
+                      <span class="ledger-label" data-i18n="my_reg_lbl_college">所属学院</span>
+                      <span class="ledger-value" id="my-anu-college-val">退堂鼓与战略性放弃学院</span>
+                    </div>
+                    <div class="ledger-row">
+                      <span class="ledger-label" data-i18n="my_reg_lbl_major">主修专业</span>
+                      <span class="ledger-value" id="my-anu-major-val">退堂鼓非物质文化遗产表演系</span>
+                    </div>
+                    <div class="ledger-row">
+                      <span class="ledger-label" data-i18n="my_lbl_enrollment">入学时间</span>
+                      <span class="ledger-value" id="my-anu-enrollment-val">2026</span>
+                    </div>
+                    <div class="ledger-row">
+                      <span class="ledger-label" data-i18n="my_reg_lbl_honor">学术荣誉</span>
+                      <span class="ledger-value gold" id="my-anu-honor-val">Summa Cum Somno</span>
+                    </div>
+                  </div>
+                </aside>
+
+                <!-- Right Column: 5 Archive Tabs (Transcripts, Papers, Diplomas, Honors, Settings) -->
+                <div class="my-anu-records-panel">
+                  <div class="dept-filter-bar" role="tablist" aria-label="My ANU Sections" style="margin-bottom: 1.25rem;">
+                    <button type="button" class="dept-tab active" data-my-tab="transcripts" data-i18n="my_tab_transcripts">个人成绩单</button>
+                    <button type="button" class="dept-tab" data-my-tab="papers" data-i18n="my_tab_papers">零字数论文成果</button>
+                    <button type="button" class="dept-tab" data-my-tab="diplomas" data-i18n="my_tab_diplomas">荣誉学位证书</button>
+                    <button type="button" class="dept-tab" data-my-tab="honors" data-i18n="my_tab_honors">荣誉勋章与社团</button>
+                    <button type="button" class="dept-tab" data-my-tab="settings" data-i18n="my_tab_settings">账户与隐私设置</button>
+                  </div>
+
+                  <!-- Tab 1: Transcripts -->
+                  <div class="my-anu-tab-pane active" id="my-tab-pane-transcripts" data-my-pane="transcripts">
+                    <div id="my-transcripts-list" class="ann-list"></div>
+                  </div>
+
+                  <!-- Tab 2: Papers -->
+                  <div class="my-anu-tab-pane" id="my-tab-pane-papers" data-my-pane="papers">
+                    <div id="my-papers-list" class="ann-list"></div>
+                  </div>
+
+                  <!-- Tab 3: Diplomas -->
+                  <div class="my-anu-tab-pane" id="my-tab-pane-diplomas" data-my-pane="diplomas">
+                    <div id="my-diplomas-list" class="ann-list"></div>
+                  </div>
+
+                  <!-- Tab 4: Honors & Medals -->
+                  <div class="my-anu-tab-pane" id="my-tab-pane-honors" data-my-pane="honors">
+                    <div id="my-honors-list" class="ann-list"></div>
+                  </div>
+
+                  <!-- Tab 5: Account & Privacy Settings + Account Deletion -->
+                  <div class="my-anu-tab-pane" id="my-tab-pane-settings" data-my-pane="settings">
+                    <h4 class="form-panel-title" data-i18n="my_settings_title">档案编辑、隐私可见性与账户注销</h4>
+                    <div class="submission-studio-grid" style="margin-top: 0.85rem;">
+                      <div class="form-group">
+                        <label for="set-nickname-input" data-i18n="my_reg_lbl_nickname">校园昵称</label>
+                        <input type="text" id="set-nickname-input" class="form-control" maxlength="36" />
+                      </div>
+
+                      <div class="form-group">
+                        <label for="set-college-select" data-i18n="my_reg_lbl_college">所属学院</label>
+                        <select id="set-college-select" class="form-control">
+                          <option value="retreat" data-i18n="dept_retreat">退堂鼓与战略性放弃学院</option>
+                          <option value="procrastination" data-i18n="dept_procrastination">死线物理与量子拖延学院</option>
+                          <option value="perfunctory" data-i18n="dept_perfunctory">高级糊弄学与废话文学系</option>
+                          <option value="daydream" data-i18n="dept_daydream">深度睡眠与带薪发呆研究院</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="set-avatar-select" data-i18n="my_reg_lbl_avatar">校园头像风格</label>
+                        <select id="set-avatar-select" class="form-control">
+                          <option value="crest-oxford" data-i18n="my_avatar_opt_oxford">牛津蓝晶校徽</option>
+                          <option value="crest-ginger" data-i18n="my_avatar_opt_ginger">橘座大主任御印</option>
+                          <option value="crest-void" data-i18n="my_avatar_opt_void">纯粹空集符号</option>
+                          <option value="crest-slumber" data-i18n="my_avatar_opt_slumber">午夜深度睡眠星环</option>
+                          <option value="crest-thermos" data-i18n="my_avatar_opt_thermos">校长枸杞保温杯</option>
+                          <option value="crest-retreat" data-i18n="my_avatar_opt_retreat">皇家退堂鼓徽章</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="set-visibility-select" data-i18n="my_reg_lbl_visibility">档案可见性设置</label>
+                        <select id="set-visibility-select" class="form-control">
+                          <option value="private" data-i18n="my_vis_private">私有档案（默认推荐 · 仅本人可见）</option>
+                          <option value="public" data-i18n="my_vis_public">公开卡片（需单独勾选同意）</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="my-anu-checkbox-group">
+                      <label class="exam-option-label">
+                        <input type="checkbox" id="set-public-consent-chk" />
+                        <span data-i18n="my_reg_chk_public_consent"></span>
+                      </label>
+                    </div>
+
+                    <div class="form-button-row" style="margin-top: 1rem;">
+                      <button type="button" class="btn-primary" id="save-profile-settings-btn" data-i18n="my_settings_btn_save">
+                        保存档案与隐私设置
+                      </button>
+                    </div>
+
+                    <!-- Account Deletion Danger Zone -->
+                    <div class="my-anu-danger-zone">
+                      <h4 data-i18n="my_danger_title">危险操作区 · 永久注销并删除校园账户</h4>
+                      <p data-i18n="my_danger_desc"></p>
+                      <div class="form-group" style="margin-top: 0.75rem;">
+                        <label for="delete-account-confirm-input" data-i18n="my_danger_confirm_label"></label>
+                        <input
+                          type="text"
+                          id="delete-account-confirm-input"
+                          class="form-control"
+                          placeholder="DELETE_MY_ANU_ARCHIVE"
+                          maxlength="32"
+                        />
+                      </div>
+                      <button type="button" class="btn-danger" id="delete-account-btn" data-i18n="my_danger_btn_delete">
+                        永久删除我的 ANU 校园档案与账户
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Public Student ID Card Lookup (Read-Only, Consent-Gated) -->
+              <div class="submit-paper-box" style="margin-top: 2rem;">
+                <h3 class="form-panel-title" data-i18n="my_lookup_title">公开校友学号名片核验（仅限已显式开启公开授权的学号）</h3>
+                <div class="submit-paper-row" style="margin-top: 0.75rem;">
+                  <input
+                    type="text"
+                    id="public-student-id-input"
+                    class="form-control"
+                    maxlength="20"
+                    placeholder="ANU-2026-AB12CD"
+                    aria-label="ANU Student Number"
+                  />
+                  <button type="button" class="btn-secondary" id="lookup-public-student-btn" data-i18n="my_lookup_btn">
+                    查询公开学籍卡
+                  </button>
+                </div>
+                <div class="enroll-status-box" id="public-lookup-result" aria-live="polite" style="margin-top: 0.85rem;"></div>
+              </div>
+
+              <!-- Privacy Policy & Terms of Use Section -->
+              <div class="my-anu-legal-grid" id="privacy-terms-section">
+                <article class="chancellor-dossier-card">
+                  <h3 class="form-panel-title" data-i18n="my_legal_privacy_title">隐私政策 (Privacy Policy)</h3>
+                  <p class="syllabus-text" data-i18n="my_legal_privacy_body"></p>
+                </article>
+                <article class="chancellor-dossier-card">
+                  <h3 class="form-panel-title" data-i18n="my_legal_terms_title">使用条款 (Terms of Use)</h3>
+                  <p class="syllabus-text" data-i18n="my_legal_terms_body"></p>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <!-- Hidden Easter Egg Toast -->
@@ -833,8 +1141,10 @@
     </div>
   </div>
 
+  <script src="js/anu-config.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/canvas-export.js"></script>
+  <script src="js/student-auth.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
