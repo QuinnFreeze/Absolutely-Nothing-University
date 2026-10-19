@@ -1358,7 +1358,7 @@
   if (downloadBtn && CANVAS_EXPORT) {
     downloadBtn.addEventListener("click", () => {
       const certData = getResolvedCertData();
-      CANVAS_EXPORT.exportDiplomaPNG(certData);
+      downloadPng(downloadBtn, () => CANVAS_EXPORT.downloadDiplomaPNG(certData));
     });
   }
 
@@ -1491,7 +1491,7 @@
     downloadPaperCertBtn.addEventListener("click", () => {
       const list = papersByLang[currentLang];
       const activePaper = list[activePaperIdx] || list[0];
-      CANVAS_EXPORT.exportPaperAcceptancePNG(activePaper, currentLang);
+      downloadPng(downloadPaperCertBtn, () => CANVAS_EXPORT.downloadPaperAcceptancePNG(activePaper, currentLang));
     });
   }
 
@@ -1715,6 +1715,12 @@
   const myPapersList = document.getElementById("my-papers-list");
   const myDiplomasList = document.getElementById("my-diplomas-list");
   const myHonorsList = document.getElementById("my-honors-list");
+  const archiveSourceSelect = document.getElementById("archive-source-select");
+  const archiveSourceNote = document.getElementById("archive-source-note");
+  const exportArchiveBtn = document.getElementById("export-archive-btn");
+  let archiveSource = "cloud";
+  let archiveAccount = null;
+  let portalLanguage = null;
 
   const setNicknameInput = document.getElementById("set-nickname-input");
   const setCollegeSelect = document.getElementById("set-college-select");
@@ -1763,8 +1769,55 @@
     return p;
   }
 
+  async function downloadPng(button, download) {
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      await download();
+      if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = i18nDict[currentLang].my_export_started;
+    } catch (err) {
+      const message = currentLang === "zh" ? "PNG 导出失败，请重试或缩短过长内容：" : "PNG export failed. Retry or shorten very long content: ";
+      if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = message + cloudErrorMessage(err);
+      // Generator status remains visible outside My ANU.
+      const status = currentPage === "admissions" ? diplomaCloudStatusEl : document.getElementById("submit-paper-status");
+      if (status) status.textContent = message + cloudErrorMessage(err);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function archivePngButton(download) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn-secondary archive-png-btn";
+    button.textContent = i18nDict[currentLang].my_export_png;
+    button.addEventListener("click", () => downloadPng(button, download));
+    return button;
+  }
+
   function cloudErrorMessage(err) {
     const messages = {
+      PNG_CONTENT_TOO_LARGE: ["内容过长，请减少单次导出的记录数量", "Too much content. Export fewer records at once"],
+      PNG_CANVAS_UNAVAILABLE: ["浏览器无法创建导出画布，请更换浏览器重试", "Canvas export is unavailable. Try another browser"],
+      PNG_ENCODING_FAILED: ["浏览器未能生成 PNG，请重试", "The browser could not encode this PNG. Please retry"],
+      PNG_NO_TRANSCRIPTS: ["没有可导出的成绩记录", "No transcript records are available to export"],
+      PNG_EXPORT_FAILED: ["PNG 导出失败，请重试或更换浏览器", "PNG export failed. Retry or use another browser"],
+      FEATURE_PAUSED: ["此功能正在暂停维护，请稍后再试", "This feature is paused. Please try again later"],
+      PROFILE_UPDATE_CONFLICT: ["档案已在其他窗口更新，请点击「立即同步」后重新修改", "Your profile changed in another window. Sync before editing again"],
+      AUTH_SIGNOUT_IN_PROGRESS: ["正在退出登录，请完成后再切换账号", "Signing out. Wait before switching accounts"],
+      INVALID_SERVER_RESPONSE: ["校园服务返回的数据不完整，请重新同步确认", "Campus service returned incomplete data. Sync to confirm"],
+      AUTH_REQUIRES_RECENT_LOGIN: ["请重新 Google 登录后再执行此操作（需要最近 5 分钟内的验证）", "Sign in with Google again before this action (verification within 5 minutes required)"],
+      AUTH_RETRY_REQUIRED: ["会话已更新，请重新安全验证并手动重试；上次写入不会自动重发", "Session refreshed. Complete a new security check and retry manually"],
+      AUTH_INIT_TIMEOUT: ["登录服务初始化超时，请点击登录重试；游客功能仍可使用", "Sign-in setup timed out. Click Sign in to retry; guest features remain available"],
+      AUTH_POPUP_TIMEOUT: ["登录窗口等待超时，请关闭旧窗口后重试", "Sign-in window timed out. Close the old window and retry"],
+      AUTH_SIGNOUT_TIMEOUT: ["退出登录超时，请重试以确认退出", "Sign-out timed out. Retry to confirm you are signed out"],
+      API_REQUEST_TIMEOUT: ["校园服务响应超时，可点击同步确认最新状态", "Campus service timed out. Sync to check the latest state"],
+      NETWORK_ERROR: ["网络连接失败，请检查连接后重试", "Network request failed. Check your connection and retry"],
+      INVALID_API_RESPONSE: ["校园服务返回的数据不完整，请稍后重新同步", "Campus service returned incomplete data. Retry syncing shortly"],
+      TURNSTILE_ACTION_MISMATCH: ["安全验证与当前操作不符，请重新验证", "Security check does not match this action. Complete a new check"],
+      FEATURE_DISABLED: ["此功能暂未开放，请稍后再试", "This feature is temporarily closed. Please try again later"],
+      "auth/popup-closed-by-user": ["已取消 Google 登录，您可以继续使用游客功能", "Google sign-in cancelled. Guest features remain available"],
+      "auth/cancelled-popup-request": ["登录窗口已被另一次操作替换，请重试", "Another sign-in replaced this window. Please retry"],
       TURNSTILE_REQUIRED: ["请先完成本页安全验证", "Complete this page's security check first"],
       CLOUD_WRITE_IN_PROGRESS: ["上一项云端登记仍在处理，请稍后再试", "A cloud save is still in progress. Try again shortly"],
       TURNSTILE_TOKEN_USED: ["安全验证已使用，请重新验证", "This security check has been used. Complete a fresh check"],
@@ -1791,14 +1844,36 @@
     document.querySelectorAll(".cloud-security-check").forEach((panel) => {
       panel.style.display = selector && panel.querySelector(selector) ? "block" : "none";
     });
-    if (selector) window.ANU_AUTH.mountTurnstileWidget(selector);
+    const action = currentPage === "my-anu" ? (authState && authState.isRegistered ? "import" : "register")
+      : currentPage === "admissions" ? "diploma" : "paper";
+    if (selector) window.ANU_AUTH.mountTurnstileWidget(selector, action);
   }
 
   function renderMyAnuPortal() {
     const dict = i18nDict[currentLang];
+    // Transient notices belong to the language in which the operation happened.
+    // Persistent pending/error state below is rendered again in the new language.
+    if (portalLanguage && portalLanguage !== currentLang && myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = "";
+    portalLanguage = currentLang;
     const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : { user: null, isRegistered: false, bundle: null };
     const bundle = authState.bundle;
     const profile = bundle && bundle.profile;
+    const account = authState.user && authState.user.uid;
+    if (archiveAccount !== account) {
+      archiveAccount = account;
+      archiveSource = "cloud";
+    }
+    const showCloud = Boolean(authState.user && archiveSource === "cloud");
+    if (archiveSourceSelect) {
+      archiveSourceSelect.value = authState.user ? archiveSource : "local";
+      archiveSourceSelect.disabled = !authState.user;
+    }
+    if (archiveSourceNote) archiveSourceNote.textContent = showCloud ? dict.my_source_cloud_note : dict.my_source_local_note;
+    const busy = Boolean(authState.cloudSaving);
+    [importLocalArchiveBtn, submitStudentRegBtn, saveProfileSettingsBtn, deleteAccountBtn].forEach((button) => {
+      if (button) button.disabled = busy;
+    });
+    if (googleSignoutBtn) googleSignoutBtn.disabled = Boolean(authState.authSigningIn || authState.authSigningOut);
 
     if (sidebarAuthBadge) {
       sidebarAuthBadge.textContent = profile ? "SYNC" : authState.user ? (authState.bundleLoaded ? "NEW" : "…") : "ID";
@@ -1806,11 +1881,13 @@
 
     // Update top auth banner
     if (authState.user) {
-      if (googleSigninBtn) googleSigninBtn.style.display = "none";
+      if (googleSigninBtn) googleSigninBtn.style.display = "inline-flex";
       if (googleSignoutBtn) googleSignoutBtn.style.display = "inline-flex";
       if (syncCloudBtn) {
         syncCloudBtn.style.display = "inline-flex";
-        syncCloudBtn.disabled = Boolean(authState.cloudLoading);
+        syncCloudBtn.disabled = Boolean(authState.cloudLoading || busy);
+        syncCloudBtn.setAttribute("aria-busy", String(Boolean(authState.cloudLoading)));
+        syncCloudBtn.textContent = authState.cloudLoading ? dict.my_sync_loading : dict.my_btn_sync_now;
       }
       if (importLocalArchiveBtn) importLocalArchiveBtn.style.display = authState.isRegistered ? "inline-flex" : "none";
       if (myAnuRegPanel) myAnuRegPanel.style.display = authState.bundleLoaded && !authState.isRegistered ? "block" : "none";
@@ -1850,7 +1927,12 @@
       if (myAnuStatusHeadline) myAnuStatusHeadline.textContent = dict.my_guest_banner_title;
       if (myAnuStatusSub) myAnuStatusSub.textContent = dict.my_guest_banner_desc;
     }
-    if (googleSigninBtn) googleSigninBtn.disabled = !authState.authReady;
+    if (googleSigninBtn) {
+      googleSigninBtn.disabled = Boolean(authState.authSigningIn || authState.authSigningOut);
+      googleSigninBtn.textContent = authState.user ? dict.my_btn_switch_account : dict.my_btn_google_signin;
+      googleSigninBtn.setAttribute("aria-busy", String(Boolean(authState.authInitializing || authState.authSigningIn)));
+    }
+    if (busy && myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = dict.my_sync_saving;
     updateCloudSecurityCheck();
 
     // Update Student ID Card
@@ -1864,7 +1946,8 @@
 
     const activeNickname = profile
       ? profile.nickname
-      : (localProfile && localProfile.nickname) || (nameInput && nameInput.value.trim()) || dict.form_default_name;
+      : authState.user ? (currentLang === "zh" ? "校园档案未加载" : "Campus profile not loaded")
+        : (localProfile && localProfile.nickname) || (nameInput && nameInput.value.trim()) || dict.form_default_name;
     const activeStudentNumber = profile ? profile.studentNumber : "ANU-2026-GUEST0";
     const activeAvatarSeed = profile
       ? profile.avatarSeed
@@ -1872,7 +1955,7 @@
     const activeAvatarUrl = profile ? profile.avatarUrl : "";
     const activeVisibility = profile
       ? profile.visibility
-      : (localProfile && localProfile.visibility) || "private";
+      : "private";
 
     if (window.ANU_AUTH && myAnuAvatarBox) {
       window.ANU_AUTH.renderCrestAvatarSvg(myAnuAvatarBox, activeAvatarSeed, activeNickname, activeAvatarUrl);
@@ -1932,7 +2015,7 @@
       myTranscriptsList.textContent = "";
       const cloudTranscripts = (bundle && bundle.transcripts) || [];
       const localTranscripts = loadLocalList("anu_local_exams");
-      const items = cloudTranscripts.length ? cloudTranscripts : localTranscripts;
+      const items = showCloud ? cloudTranscripts : localTranscripts;
 
       if (!items.length) {
         myTranscriptsList.appendChild(createEmptyNoticeElement(dict.my_empty_transcripts));
@@ -1962,6 +2045,7 @@
           card.appendChild(meta);
           card.appendChild(h4);
           card.appendChild(p);
+          card.appendChild(archivePngButton(() => CANVAS_EXPORT.downloadTranscriptPNG(t, currentLang, showCloud ? profile : localProfile)));
           myTranscriptsList.appendChild(card);
         });
       }
@@ -1972,7 +2056,7 @@
       myPapersList.textContent = "";
       const cloudPapers = (bundle && bundle.papers) || [];
       const localPapers = loadLocalList("anu_local_papers");
-      const items = cloudPapers.length ? cloudPapers : localPapers;
+      const items = showCloud ? cloudPapers : localPapers;
 
       if (!items.length) {
         myPapersList.appendChild(createEmptyNoticeElement(dict.my_empty_papers));
@@ -1998,6 +2082,7 @@
           card.appendChild(meta);
           card.appendChild(h4);
           card.appendChild(authorP);
+          card.appendChild(archivePngButton(() => CANVAS_EXPORT.downloadPaperAcceptancePNG(p, currentLang)));
           myPapersList.appendChild(card);
         });
       }
@@ -2008,7 +2093,7 @@
       myDiplomasList.textContent = "";
       const cloudDiplomas = (bundle && bundle.diplomas) || [];
       const localDiplomas = loadLocalList("anu_local_diplomas");
-      const items = cloudDiplomas.length ? cloudDiplomas : localDiplomas;
+      const items = showCloud ? cloudDiplomas : localDiplomas;
 
       if (!items.length) {
         myDiplomasList.appendChild(createEmptyNoticeElement(dict.my_empty_diplomas));
@@ -2041,6 +2126,10 @@
           card.appendChild(meta);
           card.appendChild(h4);
           card.appendChild(p);
+          card.appendChild(archivePngButton(() => {
+            const language = d.cert_lang || d.certLang || "auto";
+            return CANVAS_EXPORT.downloadDiplomaPNG(Object.assign({}, d, { certLang: language === "auto" ? currentLang : language }));
+          }));
           myDiplomasList.appendChild(card);
         });
       }
@@ -2049,7 +2138,7 @@
     // 4. Render Honors & Societies Tab
     if (myHonorsList) {
       myHonorsList.textContent = "";
-      const cloudHonors = (bundle && bundle.honors) || [];
+      const cloudHonors = showCloud ? (bundle && bundle.honors) || [] : [];
 
       if (cloudHonors.length) {
         cloudHonors.forEach((h) => {
@@ -2063,7 +2152,7 @@
           card.appendChild(p);
           myHonorsList.appendChild(card);
         });
-      } else if (joinedClubs.size > 0) {
+      } else if (!showCloud && joinedClubs.size > 0) {
         Array.from(joinedClubs).forEach((key) => {
           const clubMatch = clubsByLang[currentLang].find((c) => c.id === key);
           const card = document.createElement("article");
@@ -2086,16 +2175,50 @@
     }
   }
 
-  // Tab switching inside My ANU
+  if (archiveSourceSelect) archiveSourceSelect.addEventListener("change", () => {
+    archiveSource = archiveSourceSelect.value === "local" ? "local" : "cloud";
+    renderMyAnuPortal();
+  });
+
+  // Tab switching inside My ANU, including keyboard navigation.
+  function selectMyTab(btn) {
+    const targetTab = btn.getAttribute("data-my-tab");
+    myTabButtons.forEach((b) => {
+      b.classList.toggle("active", b === btn);
+      b.setAttribute("aria-selected", String(b === btn));
+      b.tabIndex = b === btn ? 0 : -1;
+    });
+    myTabPanes.forEach((pane) => {
+      const selected = pane.getAttribute("data-my-pane") === targetTab;
+      pane.classList.toggle("active", selected);
+      pane.hidden = !selected;
+    });
+  }
   myTabButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const targetTab = btn.getAttribute("data-my-tab");
-      myTabButtons.forEach((b) => b.classList.toggle("active", b === btn));
-      myTabPanes.forEach((pane) => {
-        pane.classList.toggle("active", pane.getAttribute("data-my-pane") === targetTab);
-      });
+    const name = btn.getAttribute("data-my-tab");
+    btn.id = `my-tab-${name}`;
+    btn.setAttribute("role", "tab");
+    btn.setAttribute("aria-controls", `my-tab-pane-${name}`);
+    btn.addEventListener("click", () => selectMyTab(btn));
+    btn.addEventListener("keydown", (event) => {
+      const buttons = Array.from(myTabButtons);
+      let index = buttons.indexOf(btn);
+      if (event.key === "ArrowRight") index = (index + 1) % buttons.length;
+      else if (event.key === "ArrowLeft") index = (index - 1 + buttons.length) % buttons.length;
+      else if (event.key === "Home") index = 0;
+      else if (event.key === "End") index = buttons.length - 1;
+      else return;
+      event.preventDefault();
+      selectMyTab(buttons[index]);
+      buttons[index].focus();
     });
   });
+  myTabPanes.forEach((pane) => {
+    pane.setAttribute("role", "tabpanel");
+    pane.setAttribute("aria-labelledby", `my-tab-${pane.getAttribute("data-my-pane")}`);
+    pane.tabIndex = 0;
+  });
+  if (myTabButtons[0]) selectMyTab(myTabButtons[0]);
 
   if (regVisibilitySelect && regPublicConsentWrap) {
     regVisibilitySelect.addEventListener("change", () => {
@@ -2210,16 +2333,46 @@
     });
   }
 
+  if (googleSigninBtn && window.ANU_AUTH) {
+    ["pointerdown", "focus", "touchstart"].forEach((event) => googleSigninBtn.addEventListener(event, () => {
+      window.ANU_AUTH.prepareSignIn().catch(() => {});
+    }, { passive: true }));
+  }
+
+  if (exportArchiveBtn) exportArchiveBtn.addEventListener("click", async () => {
+    exportArchiveBtn.disabled = true;
+    let objectUrl;
+    try {
+      const state = window.ANU_AUTH ? window.ANU_AUTH.getState() : {};
+      const data = state.user && archiveSource === "cloud" ? (await window.ANU_AUTH.exportStudentArchive()).data
+        : { profile: JSON.parse(localStorage.getItem("anu_local_profile") || "null"), transcripts: loadLocalList("anu_local_exams"), papers: loadLocalList("anu_local_papers"), diplomas: loadLocalList("anu_local_diplomas"), honors: Array.from(joinedClubs) };
+      const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), source: state.user && archiveSource === "cloud" ? "cloud" : "device", data }, null, 2)], { type: "application/json" });
+      objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = "ANU-personal-archive.json";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => { link.remove(); URL.revokeObjectURL(objectUrl); }, 60000);
+      if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = i18nDict[currentLang].my_export_started;
+    } catch (err) {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = cloudErrorMessage(err);
+    } finally { exportArchiveBtn.disabled = false; }
+  });
+
   // Google Sign-Out Button
   if (googleSignoutBtn && window.ANU_AUTH) {
     googleSignoutBtn.addEventListener("click", async () => {
-      await window.ANU_AUTH.signOutStudent();
-      renderMyAnuPortal();
-      if (myAnuGlobalFeedback) {
-        myAnuGlobalFeedback.textContent =
+      try {
+        await window.ANU_AUTH.signOutStudent();
+        renderMyAnuPortal();
+        if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent =
           currentLang === "zh"
             ? "您已安全退出 Google 账户，当前处于游客模式。"
             : "Signed out of Google account. You are now in Guest Mode.";
+      } catch (err) {
+        if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = cloudErrorMessage(err);
       }
     });
   }
@@ -2281,8 +2434,8 @@
         if (myAnuGlobalFeedback) {
           myAnuGlobalFeedback.textContent =
             currentLang === "zh"
-              ? `档案创建失败：${err.message}`
-              : `Registration failed: ${err.message}`;
+              ? `档案创建失败：${cloudErrorMessage(err)}`
+              : `Registration failed: ${cloudErrorMessage(err)}`;
         }
       }
     });
@@ -2365,18 +2518,6 @@
         return;
       }
 
-      try {
-        localStorage.setItem(
-          "anu_local_profile",
-          JSON.stringify({
-            nickname: newNick,
-            college: newCol,
-            avatarSeed: newAva,
-            visibility: newVis === "public" && pubConsent ? "public" : "private"
-          })
-        );
-      } catch (_) {}
-
       const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : null;
       if (authState && authState.user && authState.isRegistered) {
         try {
@@ -2393,17 +2534,27 @@
           }
         } catch (err) {
           if (myAnuGlobalFeedback) {
-            myAnuGlobalFeedback.textContent = err.message;
+            myAnuGlobalFeedback.textContent = cloudErrorMessage(err);
           }
         }
-      } else {
+      } else if (!authState || !authState.user) {
+        try {
+          localStorage.setItem("anu_local_profile", JSON.stringify({
+            nickname: newNick, college: newCol, avatarSeed: newAva,
+            visibility: "private"
+          }));
+        } catch (err) {
+          if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = currentLang === "zh" ? "本机存储不可用，设置未保存。" : "Device storage unavailable. Settings were not saved.";
+          return;
+        }
+
         if (myAnuGlobalFeedback) {
           myAnuGlobalFeedback.textContent =
             currentLang === "zh"
               ? "✓ 本机校园偏好设置已保存（登录 Google 账号后可同步至云端）。"
               : "✓ Local profile preferences saved (Sign in with Google to sync to cloud).";
         }
-      }
+      } else if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = currentLang === "zh" ? "请先同步或建立校园档案。" : "Sync or create a campus profile first.";
       renderMyAnuPortal();
     });
   }
@@ -2422,30 +2573,25 @@
         return;
       }
 
-      try {
-        localStorage.removeItem("anu_local_profile");
-        localStorage.removeItem("anu_local_exams");
-        localStorage.removeItem("anu_local_papers");
-        localStorage.removeItem("anu_local_diplomas");
-        localStorage.removeItem("anu_joined_clubs");
-        joinedClubs.clear();
-      } catch (_) {}
-
       const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : null;
-      if (authState && authState.user) {
-        try {
+      deleteAccountBtn.disabled = true;
+      try {
+        if (authState && authState.user) {
           await window.ANU_AUTH.deleteStudentAccount();
-        } catch (_) {}
-      }
-
-      if (deleteAccountConfirmInput) deleteAccountConfirmInput.value = "";
-      renderCampusLife();
-      renderMyAnuPortal();
-      if (myAnuGlobalFeedback) {
-        myAnuGlobalFeedback.textContent =
-          currentLang === "zh"
-            ? "✓ 您的 ANU 校园档案与全部本地/云端关联数据已彻底删除。"
-            : "✓ Your ANU student profile and all associated records have been permanently erased.";
+        } else {
+          ["anu_local_profile", "anu_local_exams", "anu_local_papers", "anu_local_diplomas", "anu_joined_clubs"].forEach((key) => localStorage.removeItem(key));
+          joinedClubs.clear();
+        }
+        if (deleteAccountConfirmInput) deleteAccountConfirmInput.value = "";
+        renderCampusLife();
+        renderMyAnuPortal();
+        if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = authState && authState.user
+          ? (currentLang === "zh" ? "✓ 本人 ANU 云端校园档案已删除。本机游客记录和 Google 账号保留。" : "✓ Your ANU cloud archive was deleted. Device guest records and your Google account are retained.")
+          : (currentLang === "zh" ? "✓ 本机游客记录已删除。" : "✓ Device guest records were deleted.");
+      } catch (err) {
+        if (myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = (currentLang === "zh" ? "删除未确认成功，记录已保留。" : "Deletion was not confirmed. Records have been retained. ") + cloudErrorMessage(err);
+      } finally {
+        deleteAccountBtn.disabled = false;
       }
     });
   }

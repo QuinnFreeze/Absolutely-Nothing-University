@@ -5,15 +5,20 @@
   "type": "module",
   "description": "Cloudflare Worker + D1 Secure Student Identity & Academic Archive API for Absolutely Nothing University (freeze.edu.kg)",
   "scripts": {
-    "dev": "wrangler dev --local --port 8787",
-    "deploy": "wrangler deploy",
-    "db:migrate:local": "wrangler d1 migrations apply anu-campus-db --local",
-    "db:migrate:prod": "wrangler d1 migrations apply anu-campus-db --remote",
-    "db:backup:prod": "wrangler d1 export anu-campus-db --remote --output=./backups/anu-campus-backup.sql"
+    "dev": "wrangler dev --config wrangler.dev.toml --local --port 8787",
+    "deploy": "node scripts/release-gate.mjs deploy",
+    "db:migrate:local": "wrangler d1 migrations apply anu-campus-db-local --config wrangler.dev.toml --local",
+    "db:migrate:prod": "node scripts/release-gate.mjs migrate",
+    "db:backup:prod": "bash scripts/backup-restore.sh backup",
+    "typecheck": "tsc --noEmit",
+    "deploy:dry-run": "wrangler deploy --config wrangler.toml --dry-run --outdir .wrangler/dry-run"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250101.0",
+    "@cloudflare/workers-types": "5.20261019.1",
     "typescript": "^5.7.0",
-    "wrangler": "^3.99.0"
+    "wrangler": "4.151.1"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

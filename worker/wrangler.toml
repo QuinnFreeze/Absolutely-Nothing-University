@@ -11,8 +11,13 @@ routes = [
 [vars]
 ENVIRONMENT = "production"
 FIREBASE_PROJECT_ID = "project-8995408b-d1b3-4571-83b"
-ALLOWED_ORIGINS = "https://freeze.edu.kg,http://localhost:8088,http://127.0.0.1:8088"
-RATE_LIMIT_IP_PER_MIN = "60"
+ALLOWED_ORIGINS = "https://freeze.edu.kg"
+TURNSTILE_ALLOWED_HOSTNAMES = "freeze.edu.kg"
+ADMIN_REQUIRE_ACCESS = "true"
+# Set the actual Access team issuer and application audience before enabling admin operations.
+ADMIN_ACCESS_ISSUER = ""
+ADMIN_ACCESS_AUD = ""
+RATE_LIMIT_IP_PER_MIN = "120"
 RATE_LIMIT_UID_PER_MIN = "30"
 RATE_LIMIT_WRITE_PER_HOUR = "25"
 
@@ -23,6 +28,22 @@ binding = "DB"
 database_name = "anu-campus-db"
 database_id = "44fe8355-8004-482c-84db-2c75c61b20ef"
 migrations_dir = "migrations"
+
+# Account-scoped namespaces; reserve these IDs for ANU only at deployment review.
+[[ratelimits]]
+name = "IP_RATE_LIMITER"
+namespace_id = "353403995691"
+simple = { limit = 120, period = 60 }
+
+[[ratelimits]]
+name = "UID_RATE_LIMITER"
+namespace_id = "353403995692"
+simple = { limit = 30, period = 60 }
+
+[[ratelimits]]
+name = "WRITE_RATE_LIMITER"
+namespace_id = "353403995693"
+simple = { limit = 10, period = 60 }
 
 # ============================================================================
 # Required Secrets (Set via `npx wrangler secret put <NAME>`, NEVER commit):

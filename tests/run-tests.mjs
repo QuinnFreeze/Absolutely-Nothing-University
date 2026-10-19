@@ -270,3 +270,9 @@ await runStudentAuthTests();
 const { runWorkerSecurityTests } = await import("./security-worker-tests.mjs");
 await runWorkerSecurityTests();
 console.log("\n=== ALL FRONTEND, WORKER & D1 SECURITY TESTS PASSED ===");
+
+const { runCanvasExportTests } = await import("./canvas-export-tests.mjs");
+await runCanvasExportTests();
+
+const { runReleaseGateTests } = await import("./release-gate-tests.mjs");
+runReleaseGateTests();

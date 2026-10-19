@@ -17,7 +17,14 @@ export interface Env {
   FIREBASE_PROJECT_ID: string;
   ALLOWED_ORIGINS: string;
   TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_ALLOWED_HOSTNAMES?: string;
   ADMIN_API_TOKEN?: string;
+  ADMIN_REQUIRE_ACCESS?: string;
+  ADMIN_ACCESS_ISSUER?: string;
+  ADMIN_ACCESS_AUD?: string;
+  IP_RATE_LIMITER?: EdgeRateLimiter;
+  UID_RATE_LIMITER?: EdgeRateLimiter;
+  WRITE_RATE_LIMITER?: EdgeRateLimiter;
   IP_HASH_SALT?: string;
   RATE_LIMIT_IP_PER_MIN?: string;
   RATE_LIMIT_UID_PER_MIN?: string;
@@ -25,7 +32,7 @@ export interface Env {
   /** Optional custom JWKS fetcher for unit/security testing */
   __TEST_JWKS_KEYS__?: JsonWebKeyWithKid[];
   /** Optional custom Turnstile verifier for unit/security testing */
-  __TEST_TURNSTILE_VERIFY__?: (token: string, ip: string) => Promise<boolean>;
+  __TEST_TURNSTILE_VERIFY__?: (token: string, ip: string, action: "register" | "paper" | "diploma" | "import") => Promise<boolean>;
 }
 
 export interface JsonWebKeyWithKid extends JsonWebKey {
@@ -42,12 +49,18 @@ export interface VerifiedFirebaseUser {
   picture?: string;
   signInProvider: string;
   iat: number;
+  authTime: number;
   exp: number;
   aud: string;
   iss: string;
 }
 
+export interface EdgeRateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 export interface StudentRecord {
+  revision: number;
   firebase_uid: string;
   student_number: string;
   nickname: string;

@@ -7,6 +7,12 @@ export function getAllowedOrigin(request: Request, env: Env): string | null {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+  if (env.ENVIRONMENT === "production") {
+    try {
+      const parsed = new URL(origin);
+      if (parsed.protocol !== "https:" || ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname) || parsed.hostname.endsWith(".localhost")) return null;
+    } catch { return null; }
+  }
   return whitelist.includes(origin) ? origin : null;
 }
 

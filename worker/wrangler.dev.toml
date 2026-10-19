@@ -1,0 +1,21 @@
+name = "anu-student-api-local"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+workers_dev = false
+
+[vars]
+ENVIRONMENT = "development"
+FIREBASE_PROJECT_ID = "project-8995408b-d1b3-4571-83b"
+ALLOWED_ORIGINS = "http://localhost:8088,http://127.0.0.1:8088"
+TURNSTILE_ALLOWED_HOSTNAMES = "localhost,127.0.0.1"
+ADMIN_REQUIRE_ACCESS = "true"
+RATE_LIMIT_IP_PER_MIN = "120"
+RATE_LIMIT_UID_PER_MIN = "30"
+RATE_LIMIT_WRITE_PER_HOUR = "25"
+
+# Local emulator only. This is deliberately not a production database ID.
+[[d1_databases]]
+binding = "DB"
+database_name = "anu-campus-db-local"
+database_id = "local-only-do-not-deploy"
+migrations_dir = "migrations"

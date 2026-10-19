@@ -18,6 +18,7 @@ import {
   verifyFirebaseIdToken
 } from "./middleware/firebaseAuth.ts";
 import {
+  SecurityServiceUnavailable,
   checkRateLimit,
   containsForbiddenClientIdentityField,
   isFeatureEnabled,
@@ -47,14 +48,23 @@ const MAX_DIPLOMAS_PER_STUDENT = 20;
 
 async function parseSafeJson(request: Request): Promise<Record<string, unknown> | null> {
   try {
-    const contentLength = parseInt(request.headers.get("Content-Length") || "0", 10);
-    if (contentLength > 65536) {
-      return null;
+    const contentLength = Number(request.headers.get("Content-Length") || "0");
+    if (!Number.isFinite(contentLength) || contentLength > 65536 || !request.body) return null;
+    const reader = request.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let byteLength = 0;
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      byteLength += chunk.value.byteLength;
+      if (byteLength > 65536) { await reader.cancel(); return null; }
+      chunks.push(chunk.value);
     }
-    const text = await request.text();
-    if (!text || text.length > 65536) {
-      return null;
-    }
+    const bytes = new Uint8Array(byteLength);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    if (!text) return null;
     const parsed = JSON.parse(text);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return null;
@@ -65,30 +75,21 @@ async function parseSafeJson(request: Request): Promise<Record<string, unknown> 
   }
 }
 
-async function grantBadgeIfAbsent(
-  env: Env,
-  uid: string,
-  badgeKey: string
-): Promise<boolean> {
-  const spec = OFFICIAL_BADGES[badgeKey];
-  if (!spec) return false;
-  const res = await env.DB.prepare(
+function prepareBadgeInsert(env: Env, uid: string, badgeKey: string): D1PreparedStatement | null {
+  const spec = Object.hasOwn(OFFICIAL_BADGES, badgeKey) ? OFFICIAL_BADGES[badgeKey] : undefined;
+  if (!spec) return null;
+  return env.DB.prepare(
     `INSERT OR IGNORE INTO honors_achievements
       (id, firebase_uid, badge_key, badge_category, title_zh, title_en, desc_zh, desc_en)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  )
-    .bind(
-      generateId(),
-      uid,
-      spec.key,
-      spec.category,
-      spec.titleZh,
-      spec.titleEn,
-      spec.descZh,
-      spec.descEn
-    )
-    .run();
-  return Boolean(res.meta && res.meta.changes && res.meta.changes > 0);
+  ).bind(generateId(), uid, spec.key, spec.category, spec.titleZh, spec.titleEn, spec.descZh, spec.descEn);
+}
+
+async function grantBadgeIfAbsent(env: Env, uid: string, badgeKey: string): Promise<boolean> {
+  const statement = prepareBadgeInsert(env, uid, badgeKey);
+  if (!statement) return false;
+  const result = await statement.run();
+  return Boolean(result.meta?.changes);
 }
 
 function gradeCourseExamServerSide(
@@ -103,7 +104,7 @@ function gradeCourseExamServerSide(
   verdictEn: string;
   normalizedAnswers: number[];
 } | null {
-  const spec = COURSE_EXAMS[courseCode];
+  const spec = Object.hasOwn(COURSE_EXAMS, courseCode) ? COURSE_EXAMS[courseCode] : undefined;
   if (!spec) return null;
   if (!Array.isArray(answers) || answers.length !== spec.validOptionScores.length) {
     return null;
@@ -205,11 +206,17 @@ async function fetchFullStudentBundle(env: Env, uid: string) {
       .all()
   ]);
 
+  for (const result of [transcriptsRes, papersRes, diplomasRes, honorsRes]) {
+    if (!result || result.success !== true || !Array.isArray(result.results)) {
+      throw new Error("ARCHIVE_READ_UNAVAILABLE");
+    }
+  }
   const collegeInfo = COLLEGE_NAMES[student.college] || COLLEGE_NAMES.retreat;
 
   return {
     profile: {
       studentNumber: student.student_number,
+      revision: student.revision,
       nickname: student.nickname,
       avatarSeed: student.avatar_seed,
       avatarUrl: student.avatar_url,
@@ -227,10 +234,10 @@ async function fetchFullStudentBundle(env: Env, uid: string) {
       createdAt: student.created_at,
       updatedAt: student.updated_at
     },
-    transcripts: transcriptsRes.results || [],
-    papers: papersRes.results || [],
-    diplomas: diplomasRes.results || [],
-    honors: honorsRes.results || []
+    transcripts: transcriptsRes.results,
+    papers: papersRes.results,
+    diplomas: diplomasRes.results,
+    honors: honorsRes.results
   };
 }
 
@@ -265,12 +272,16 @@ export default {
     try {
       const clientIp =
         request.headers.get("CF-Connecting-IP") ||
-        request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
+        (env.ENVIRONMENT !== "production" ? request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() : null) ||
         "0.0.0.0";
-      const ipHash = await sha256Hex(`${clientIp}:${env.IP_HASH_SALT || "anu-default-salt"}`);
+      const configuredIpSalt = (env.IP_HASH_SALT || "").trim();
+      if (env.ENVIRONMENT === "production" && configuredIpSalt.length < 16) {
+        throw new SecurityServiceUnavailable("IP_HASH_SALT_NOT_CONFIGURED");
+      }
+      const ipHash = await sha256Hex(`${clientIp}:${configuredIpSalt || "anu-default-salt"}`);
 
       // 2. IP-dimension Rate Limiting
-      const ipLimitPerMin = parseInt(env.RATE_LIMIT_IP_PER_MIN || "60", 10) || 60;
+      const ipLimitPerMin = parseInt(env.RATE_LIMIT_IP_PER_MIN || "120", 10) || 120;
       const ipRate = await checkRateLimit(env, "ip", ipHash, ipLimitPerMin, 60);
       if (!ipRate.allowed) {
         return errorResponse(
@@ -284,26 +295,31 @@ export default {
 
       // 3. Public Health & System Switches Endpoint
       if (method === "GET" && (path === "/api/v1/health" || path === "/api/v1/system/status")) {
-        const flagsRes = await env.DB.prepare(
+        let flagsAvailable = true;
+        const flagsRes = await Promise.resolve().then(() => env.DB.prepare(
           "SELECT flag_key, enabled FROM system_flags"
-        ).all<{ flag_key: string; enabled: number }>();
+        ).all<{ flag_key: string; enabled: number }>()).catch(() => {
+          flagsAvailable = false;
+          return { results: [], success: false };
+        });
         const flags: Record<string, boolean> = {};
-        for (const r of flagsRes.results || []) {
+        flagsAvailable = flagsAvailable && flagsRes.success;
+        for (const r of flagsAvailable ? flagsRes.results || [] : []) {
           flags[r.flag_key] = r.enabled === 1;
         }
         return jsonResponse(
           {
-            ok: true,
+            ok: flagsAvailable,
             service: "ANU Student Archive API",
             university: "Absolutely Nothing University (freeze.edu.kg)",
             features: {
-              registrationEnabled: flags.registration_enabled ?? true,
-              paperSubmissionEnabled: flags.paper_submission_enabled ?? true,
-              diplomaRegistrationEnabled: flags.diploma_registration_enabled ?? true,
-              publicDirectoryEnabled: flags.public_directory_enabled ?? true
+              registrationEnabled: flags.registration_enabled ?? false,
+              paperSubmissionEnabled: flags.paper_submission_enabled ?? false,
+              diplomaRegistrationEnabled: flags.diploma_registration_enabled ?? false,
+              publicDirectoryEnabled: flags.public_directory_enabled ?? false
             }
           },
-          200,
+          flagsAvailable ? 200 : 503,
           allowedOrigin,
           requestId
         );
@@ -323,7 +339,9 @@ export default {
           );
         }
 
-        const studentNumber = decodeURIComponent(path.slice("/api/v1/public/profile/".length)).trim();
+        let studentNumber = "";
+        try { studentNumber = decodeURIComponent(path.slice("/api/v1/public/profile/".length)).trim(); }
+        catch { return errorResponse("INVALID_STUDENT_NUMBER", "Invalid student number encoding.", 400, allowedOrigin, requestId); }
         if (!/^ANU-\d{4}-[A-Z0-9]{6}$/.test(studentNumber)) {
           return errorResponse(
             "INVALID_STUDENT_NUMBER",
@@ -374,7 +392,7 @@ export default {
 
       // 5. Strictly Restricted Admin Endpoints (/api/v1/admin/*)
       if (path.startsWith("/api/v1/admin")) {
-        if (!verifyAdminAuthorization(request, env)) {
+        if (!(await verifyAdminAuthorization(request, env))) {
           await recordAuditLog(env, "ADMIN_AUTH_REJECTED", "anonymous", ipHash, { path, method });
           return errorResponse(
             "ADMIN_FORBIDDEN",
@@ -458,7 +476,7 @@ export default {
           err instanceof AuthVerificationError
             ? err.message
             : "Authentication token verification failed.";
-        return errorResponse(code, msg, 401, allowedOrigin, requestId);
+        return errorResponse(code, msg, code === "AUTH_VERIFIER_UNAVAILABLE" || code === "AUTH_SERVER_MISCONFIG" ? 503 : 401, allowedOrigin, requestId);
       }
 
       const uid = verifiedUser.uid;
@@ -477,11 +495,8 @@ export default {
       }
 
       // Reject any query string attempting to pass a UID or student_number to override identity
-      if (
-        url.searchParams.has("uid") ||
-        url.searchParams.has("firebase_uid") ||
-        url.searchParams.has("user_id")
-      ) {
+      if (["uid", "firebase_uid", "firebaseUid", "user_id", "userId", "owner_uid", "student_uid"]
+        .some((key) => url.searchParams.has(key))) {
         return errorResponse(
           "IDENTITY_OVERRIDE_FORBIDDEN",
           "Client-supplied UID parameters are strictly forbidden.",
@@ -511,6 +526,14 @@ export default {
         );
       }
 
+      // Export is an authenticated owner-only snapshot and never accepts a target UID.
+      if (method === "GET" && path === "/api/v1/me/export") {
+        const bundle = await fetchFullStudentBundle(env, uid);
+        if (!bundle) return errorResponse("PROFILE_NOT_REGISTERED", "No student archive exists for this account.", 404, allowedOrigin, requestId);
+        return jsonResponse({ ok: true, data: bundle }, 200, allowedOrigin, requestId,
+          { "Content-Disposition": 'attachment; filename="my-anu-archive.json"' });
+      }
+
       // Write rate limit check for POST / PATCH / PUT / DELETE under /api/v1/me
       if (["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
         const writeLimitPerHour = parseInt(env.RATE_LIMIT_WRITE_PER_HOUR || "25", 10) || 25;
@@ -518,7 +541,7 @@ export default {
         if (!writeRate.allowed) {
           return errorResponse(
             "WRITE_QUOTA_EXCEEDED",
-            "Hourly write limit reached for this student account.",
+            "Too many archive writes. Please wait before trying again.",
             429,
             allowedOrigin,
             requestId
@@ -546,6 +569,10 @@ export default {
             allowedOrigin,
             requestId
           );
+        }
+
+        if (Math.floor(Date.now() / 1000) - verifiedUser.authTime > 300) {
+          return errorResponse("AUTH_REQUIRES_RECENT_LOGIN", "Please sign in to Google again before deleting your archive.", 403, allowedOrigin, requestId);
         }
 
         // Explicit ownership deletion across all tables (also enforced by ON DELETE CASCADE)
@@ -607,11 +634,22 @@ export default {
           );
         }
 
+        // The legacy archive table has a >=6 character UID constraint. Firebase
+        // itself permits shorter subjects; reject them explicitly without an
+        // unsafe table rebuild or an opaque database error.
+        if (uid.length < 6) {
+          return errorResponse("UID_NOT_SUPPORTED", "The archive currently requires a Firebase UID of at least 6 characters.", 400, allowedOrigin, requestId);
+        }
+
+        if (Math.floor(Date.now() / 1000) - verifiedUser.authTime > 300) {
+          return errorResponse("AUTH_REQUIRES_RECENT_LOGIN", "Please sign in to Google again before registering.", 403, allowedOrigin, requestId);
+        }
+
         // Verify Turnstile token on registration
         const turnstileToken =
           request.headers.get("X-Turnstile-Token") ||
           (typeof body.turnstileToken === "string" ? body.turnstileToken : "");
-        const turnstileOk = await verifyTurnstileToken(env, turnstileToken, clientIp);
+        const turnstileOk = await verifyTurnstileToken(env, turnstileToken, clientIp, "register");
         if (!turnstileOk) {
           return errorResponse(
             "TURNSTILE_VERIFICATION_FAILED",
@@ -714,13 +752,14 @@ export default {
         for (let attempt = 0; attempt < 5; attempt++) {
           studentNumber = generateStudentNumber(enrollmentYear);
           try {
-            await env.DB.prepare(
+            const studentInsert = env.DB.prepare(
               `INSERT INTO students (
                 firebase_uid, student_number, nickname, avatar_seed, avatar_url,
                 college, major, enrollment_year, enrollment_date, fictional_honor,
                 visibility, public_consent, public_consent_at,
                 terms_accepted_at, privacy_accepted_at, idle_seconds, created_at, updated_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+              ON CONFLICT(firebase_uid) DO NOTHING`
             )
               .bind(
                 uid,
@@ -740,12 +779,17 @@ export default {
                 nowIso,
                 nowIso,
                 nowIso
-              )
-              .run();
+              );
+            const [insertedStudent] = await env.DB.batch<{ meta?: { changes?: number } }>([
+              studentInsert, prepareBadgeInsert(env, uid, "milestone_enrolled")!
+            ]);
+            if (!insertedStudent.meta?.changes) {
+              return errorResponse("PROFILE_ALREADY_EXISTS", "A student profile is already bound to this Google account.", 409, allowedOrigin, requestId);
+            }
             inserted = true;
             break;
           } catch (err) {
-            const msg = String(err);
+            const msg = String(err) + (err instanceof Error ? String(err.cause || "") : "");
             if (msg.includes("students.firebase_uid")) {
               return errorResponse(
                 "PROFILE_ALREADY_EXISTS",
@@ -755,6 +799,7 @@ export default {
                 requestId
               );
             }
+            if (!msg.includes("students.student_number")) throw err;
           }
         }
 
@@ -768,8 +813,6 @@ export default {
           );
         }
 
-        // Grant matriculation badge
-        await grantBadgeIfAbsent(env, uid, "milestone_enrolled");
         await recordAuditLog(env, "STUDENT_REGISTERED", await sha256Hex(uid), ipHash, {
           studentNumber
         });
@@ -797,6 +840,10 @@ export default {
 
       // 10. PATCH /api/v1/me/profile - Update Student Profile & Privacy Visibility
       if (method === "PATCH" && path === "/api/v1/me/profile") {
+        if (body.expectedRevision !== undefined &&
+            (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision !== currentStudent.revision)) {
+          return errorResponse("PROFILE_UPDATE_CONFLICT", "Your profile changed since it was loaded. Refresh before saving.", 409, allowedOrigin, requestId);
+        }
         const nickname =
           body.nickname !== undefined
             ? sanitizePlainText(body.nickname, 36, currentStudent.nickname)
@@ -860,12 +907,12 @@ export default {
           idleSeconds = Math.min(999999999, currentStudent.idle_seconds + delta);
         }
 
-        await env.DB.prepare(
+        const profileUpdate = await env.DB.prepare(
           `UPDATE students
            SET nickname = ?, avatar_seed = ?, avatar_url = ?, college = ?, major = ?,
                fictional_honor = ?, visibility = ?, public_consent = ?, public_consent_at = ?,
-               idle_seconds = ?, updated_at = ?
-           WHERE firebase_uid = ?`
+               idle_seconds = ?, updated_at = ?, revision = revision + 1
+           WHERE firebase_uid = ? AND revision = ?`
         )
           .bind(
             nickname,
@@ -879,9 +926,13 @@ export default {
             publicConsentAt,
             idleSeconds,
             nowIso,
-            uid
+            uid,
+            currentStudent.revision
           )
           .run();
+        if (!profileUpdate.meta?.changes) {
+          return errorResponse("PROFILE_UPDATE_CONFLICT", "Your profile changed during this update. Refresh and try again.", 409, allowedOrigin, requestId);
+        }
 
         const bundle = await fetchFullStudentBundle(env, uid);
         return jsonResponse({ ok: true, data: bundle }, 200, allowedOrigin, requestId);
@@ -913,12 +964,13 @@ export default {
           .first<{ id: string }>();
 
         if (!existingExam) {
-          await env.DB.prepare(
-            `INSERT OR IGNORE INTO transcripts (
+          const transcriptInsert = env.DB.prepare(
+            `INSERT INTO transcripts (
               id, firebase_uid, course_code, course_title_zh, course_title_en,
               score, grade, grade_label_zh, grade_label_en, verdict_zh, verdict_en,
               answers_json, dedupe_hash
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(firebase_uid, dedupe_hash) DO NOTHING`
           )
             .bind(
               generateId(),
@@ -934,11 +986,11 @@ export default {
               graded.verdictEn,
               JSON.stringify(graded.normalizedAnswers),
               dedupeHash
-            )
-            .run();
+            );
+          await env.DB.batch([transcriptInsert, prepareBadgeInsert(env, uid, "milestone_first_exam")!]);
+        } else {
+          await grantBadgeIfAbsent(env, uid, "milestone_first_exam");
         }
-
-        await grantBadgeIfAbsent(env, uid, "milestone_first_exam");
         const bundle = await fetchFullStudentBundle(env, uid);
         return jsonResponse(
           {
@@ -976,7 +1028,7 @@ export default {
         const turnstileToken =
           request.headers.get("X-Turnstile-Token") ||
           (typeof body.turnstileToken === "string" ? body.turnstileToken : "");
-        const turnstileOk = await verifyTurnstileToken(env, turnstileToken, clientIp);
+        const turnstileOk = await verifyTurnstileToken(env, turnstileToken, clientIp, "paper");
         if (!turnstileOk) {
           return errorResponse(
             "TURNSTILE_VERIFICATION_FAILED",
@@ -1025,6 +1077,7 @@ export default {
           .first<{ void_id: string }>();
 
         if (existingPaper) {
+          await grantBadgeIfAbsent(env, uid, "milestone_first_paper");
           const bundle = await fetchFullStudentBundle(env, uid);
           return jsonResponse(
             { ok: true, deduplicated: true, voidId: existingPaper.void_id, data: bundle },
@@ -1034,12 +1087,11 @@ export default {
           );
         }
 
-        const randSuffix = Math.floor(100000 + Math.random() * 899999);
-        const voidId = `VOID-ID: ANU.NULL.2026.${randSuffix}`;
+        const voidId = `VOID-ID: ANU.NULL.2026.${generateId().replace(/-/g, "").toUpperCase()}`;
         const reviewIdx = (journalIdx + methodologyIdx) % PEER_REVIEW_POOL.zh.length;
         const citIdx = journalIdx % CITATIONS_POOL.zh.length;
 
-        await env.DB.prepare(
+        const papersInsert = env.DB.prepare(
           `INSERT INTO papers (
             id, firebase_uid, void_id, title, author_display,
             journal_idx, journal_zh, journal_en, methodology_idx,
@@ -1070,10 +1122,9 @@ export default {
             CITATIONS_POOL.zh[citIdx],
             CITATIONS_POOL.en[citIdx],
             dedupeHash
-          )
-          .run();
+          );
 
-        await grantBadgeIfAbsent(env, uid, "milestone_first_paper");
+        await env.DB.batch([papersInsert, prepareBadgeInsert(env, uid, "milestone_first_paper")!]);
         const savedPaper = await env.DB.prepare(
           "SELECT void_id FROM papers WHERE firebase_uid = ? AND dedupe_hash = ?"
         ).bind(uid, dedupeHash).first<{ void_id: string }>();
@@ -1097,7 +1148,7 @@ export default {
         const turnstileToken =
           request.headers.get("X-Turnstile-Token") ||
           (typeof body.turnstileToken === "string" ? body.turnstileToken : "");
-        const turnstileOk = await verifyTurnstileToken(env, turnstileToken, clientIp);
+        const turnstileOk = await verifyTurnstileToken(env, turnstileToken, clientIp, "diploma");
         if (!turnstileOk) {
           return errorResponse(
             "TURNSTILE_VERIFICATION_FAILED",
@@ -1163,6 +1214,7 @@ export default {
           .first<{ serial_number: string }>();
 
         if (existingDip) {
+          await grantBadgeIfAbsent(env, uid, "milestone_first_diploma");
           const bundle = await fetchFullStudentBundle(env, uid);
           return jsonResponse(
             {
@@ -1177,11 +1229,10 @@ export default {
           );
         }
 
-        const randSerial = Math.floor(100000 + Math.random() * 899999);
-        const serialNumber = `ANU-2026-VOID-${randSerial}`;
+        const serialNumber = `ANU-2026-VOID-${generateId().replace(/-/g, "").toUpperCase()}`;
         const issuedDate = new Date().toISOString().slice(0, 10);
 
-        await env.DB.prepare(
+        const diplomasInsert = env.DB.prepare(
           `INSERT INTO diplomas (
             id, firebase_uid, serial_number, recipient_name,
             degree_idx, degree_zh, degree_en,
@@ -1210,10 +1261,9 @@ export default {
             certLang,
             issuedDate,
             dedupeHash
-          )
-          .run();
+          );
 
-        await grantBadgeIfAbsent(env, uid, "milestone_first_diploma");
+        await env.DB.batch([diplomasInsert, prepareBadgeInsert(env, uid, "milestone_first_diploma")!]);
         const savedDiploma = await env.DB.prepare(
           "SELECT serial_number FROM diplomas WHERE firebase_uid = ? AND dedupe_hash = ?"
         ).bind(uid, dedupeHash).first<{ serial_number: string }>();
@@ -1225,7 +1275,7 @@ export default {
       if (method === "POST" && path === "/api/v1/me/honors") {
         const action = body.action === "remove" ? "remove" : "add";
         const badgeKey = typeof body.badgeKey === "string" ? body.badgeKey.trim() : "";
-        const spec = OFFICIAL_BADGES[badgeKey];
+        const spec = Object.hasOwn(OFFICIAL_BADGES, badgeKey) ? OFFICIAL_BADGES[badgeKey] : undefined;
         if (!spec) {
           return errorResponse(
             "INVALID_BADGE_KEY",
@@ -1256,7 +1306,7 @@ export default {
           request.headers.get("X-Idempotency-Key") ||
           (typeof body.idempotencyKey === "string" ? body.idempotencyKey.trim() : "");
 
-        if (!idemKey || idemKey.length < 8 || idemKey.length > 128) {
+        if (!/^[A-Za-z0-9._:-]{8,128}$/.test(idemKey)) {
           return errorResponse(
             "IDEMPOTENCY_KEY_REQUIRED",
             "A valid X-Idempotency-Key header is required for local archive import.",
@@ -1266,28 +1316,49 @@ export default {
           );
         }
 
-        // Check idempotency ledger to avoid duplicate imports or concurrent replay
-        const priorImport = await env.DB.prepare(
-          "SELECT status_code, response_json FROM idempotency_keys WHERE firebase_uid = ? AND idem_key = ? AND endpoint = 'import'"
-        )
-          .bind(uid, idemKey)
-          .first<{ status_code: number; response_json: string }>();
-
-        if (priorImport) {
-          return jsonResponse(
-            JSON.parse(priorImport.response_json),
-            priorImport.status_code,
-            allowedOrigin,
-            requestId
-          );
+        for (const field of ["exams", "papers", "diplomas", "badges"] as const) {
+          if (body[field] !== undefined && !Array.isArray(body[field])) {
+            return errorResponse("INVALID_IMPORT_PAYLOAD", "Archive collections must be arrays.", 400, allowedOrigin, requestId);
+          }
+          if (Array.isArray(body[field]) && body[field].length > 128) {
+            return errorResponse("IMPORT_PAYLOAD_TOO_LARGE", "Each import collection is limited to 128 entries.", 413, allowedOrigin, requestId);
+          }
         }
+        // Fingerprint meaningful content, excluding the single-use challenge and key.
+        const stableJson = (value: unknown, depth = 0): string => {
+          if (depth > 12) throw new Error("IMPORT_NESTING_LIMIT");
+          if (Array.isArray(value)) return `[${value.map((entry) => stableJson(entry, depth + 1)).join(",")}]`;
+          if (value && typeof value === "object") return `{${Object.keys(value).sort().map((key) =>
+            `${JSON.stringify(key)}:${stableJson((value as Record<string, unknown>)[key], depth + 1)}`).join(",")}}`;
+          return JSON.stringify(value);
+        };
+        let fingerprint: string;
+        try { fingerprint = stableJson({ exams: body.exams || [], papers: body.papers || [], diplomas: body.diplomas || [], badges: body.badges || [] }); }
+        catch { return errorResponse("INVALID_IMPORT_PAYLOAD", "Archive payload nesting exceeds the supported limit.", 400, allowedOrigin, requestId); }
+        const requestHash = await sha256Hex(fingerprint);
+        type ImportReceipt = { status_code: number; response_json: string; request_hash: string };
+        const readReceipt = () => env.DB.prepare(
+          "SELECT status_code, response_json, request_hash FROM idempotency_keys WHERE firebase_uid = ? AND idem_key = ? AND endpoint = 'import'"
+        ).bind(uid, idemKey).first<ImportReceipt>();
+        const replyReceipt = async (receipt: ImportReceipt) => {
+          if (receipt.request_hash && receipt.request_hash !== requestHash) {
+            return errorResponse("IDEMPOTENCY_KEY_CONFLICT", "This import key already belongs to a different archive payload.", 409, allowedOrigin, requestId);
+          }
+          const payload = JSON.parse(receipt.response_json) as Record<string, unknown>;
+          // Older receipts include a historical bundle; new ones retain only counts.
+          // Always return the authenticated owner's current archive, never stale data.
+          payload.data = await fetchFullStudentBundle(env, uid);
+          return jsonResponse(payload, receipt.status_code, allowedOrigin, requestId);
+        };
+        const priorImport = await readReceipt();
+        if (priorImport) return replyReceipt(priorImport);
 
         // Successful replays above must not consume a second single-use challenge.
         // Every new import requires the same human verification as direct submissions.
         const turnstileToken =
           request.headers.get("X-Turnstile-Token") ||
           (typeof body.turnstileToken === "string" ? body.turnstileToken : "");
-        if (!(await verifyTurnstileToken(env, turnstileToken, clientIp))) {
+        if (!(await verifyTurnstileToken(env, turnstileToken, clientIp, "import"))) {
           return errorResponse(
             "TURNSTILE_VERIFICATION_FAILED",
             "Human verification (Cloudflare Turnstile) is required for archive import.",
@@ -1320,6 +1391,7 @@ export default {
 
         // Prepare all candidate records before any mutation. A full archive or a
         // paused subsystem must reject the whole request without partial writes.
+        const recordIds = new Map<string, string>();
         const examWrites = new Map<string, D1PreparedStatement>();
         const paperWrites = new Map<string, D1PreparedStatement>();
         const diplomaWrites = new Map<string, D1PreparedStatement>();
@@ -1336,15 +1408,18 @@ export default {
             const dedupeHash = await sha256Hex(
               `${uid}:exam:${cCode}:${graded.normalizedAnswers.join(",")}`
             );
+            const recordId = generateId();
+            recordIds.set(dedupeHash, recordId);
             const statement = env.DB.prepare(
-              `INSERT OR IGNORE INTO transcripts (
+              `INSERT INTO transcripts (
                 id, firebase_uid, course_code, course_title_zh, course_title_en,
                 score, grade, grade_label_zh, grade_label_en, verdict_zh, verdict_en,
                 answers_json, dedupe_hash
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(firebase_uid, dedupe_hash) DO NOTHING`
             )
               .bind(
-                generateId(),
+                recordId,
                 uid,
                 cCode,
                 spec.titleZh,
@@ -1392,22 +1467,24 @@ export default {
             const dedupeHash = await sha256Hex(
               `${uid}:paper:${title.toLowerCase()}:${jIdx}:${mIdx}`
             );
-            const randSuffix = Math.floor(100000 + Math.random() * 899999);
-            const voidId = `VOID-ID: ANU.NULL.2026.${randSuffix}`;
+            const voidId = `VOID-ID: ANU.NULL.2026.${generateId().replace(/-/g, "").toUpperCase()}`;
             const reviewIdx = (jIdx + mIdx) % PEER_REVIEW_POOL.zh.length;
             const citIdx = jIdx % CITATIONS_POOL.zh.length;
 
+            const recordId = generateId();
+            recordIds.set(dedupeHash, recordId);
             const statement = env.DB.prepare(
-              `INSERT OR IGNORE INTO papers (
+              `INSERT INTO papers (
                 id, firebase_uid, void_id, title, author_display,
                 journal_idx, journal_zh, journal_en, methodology_idx,
                 content_zh, content_en, footnote_zh, footnote_en,
                 reviewer_header_zh, reviewer_header_en, review_zh, review_en,
                 citations_zh, citations_en, dedupe_hash
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(firebase_uid, dedupe_hash) DO NOTHING`
             )
               .bind(
-                generateId(),
+                recordId,
                 uid,
                 voidId,
                 title,
@@ -1484,21 +1561,23 @@ export default {
             const dedupeHash = await sha256Hex(
               `${uid}:diploma:${recipientName.toLowerCase()}:${degreeIdx}:${majorIdx}:${honorIdx}:${templateId}`
             );
-            const randSerial = Math.floor(100000 + Math.random() * 899999);
-            const serialNumber = `ANU-2026-VOID-${randSerial}`;
+            const serialNumber = `ANU-2026-VOID-${generateId().replace(/-/g, "").toUpperCase()}`;
             const issuedDate = new Date().toISOString().slice(0, 10);
 
+            const recordId = generateId();
+            recordIds.set(dedupeHash, recordId);
             const statement = env.DB.prepare(
-              `INSERT OR IGNORE INTO diplomas (
+              `INSERT INTO diplomas (
                 id, firebase_uid, serial_number, recipient_name,
                 degree_idx, degree_zh, degree_en,
                 major_idx, major_zh, major_en,
                 honor_idx, honor_zh, honor_en,
                 citation_idx, template_id, cert_lang, is_stamped, issued_date, dedupe_hash
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+              ON CONFLICT(firebase_uid, dedupe_hash) DO NOTHING`
             )
               .bind(
-                generateId(),
+                recordId,
                 uid,
                 serialNumber,
                 recipientName,
@@ -1542,54 +1621,70 @@ export default {
           }
         }
 
-        const writes = [...examWrites.values(), ...paperWrites.values(), ...diplomaWrites.values()];
-        const results = writes.length
-          ? await env.DB.batch<{ meta?: { changes?: number } }>(writes)
-          : [];
-        const countChanges = (start: number, count: number) => results
-          .slice(start, start + count)
-          .reduce((sum, result) => sum + (result.meta?.changes || 0), 0);
-        const importedExams = countChanges(0, examWrites.size);
-        const importedPapers = countChanges(examWrites.size, paperWrites.size);
-        const importedDiplomas = countChanges(examWrites.size + paperWrites.size, diplomaWrites.size);
-
-        let importedClubs = 0;
-        if (Array.isArray(body.badges)) {
-          for (const rawKey of body.badges) {
-            if (typeof rawKey === "string" && OFFICIAL_BADGES[rawKey]) {
-              if (await grantBadgeIfAbsent(env, uid, rawKey)) importedClubs++;
-            }
-          }
-        }
-        if (importedExams > 0) await grantBadgeIfAbsent(env, uid, "milestone_first_exam");
-        if (importedPapers > 0) await grantBadgeIfAbsent(env, uid, "milestone_first_paper");
-        if (importedDiplomas > 0) await grantBadgeIfAbsent(env, uid, "milestone_first_diploma");
-
-        const bundle = await fetchFullStudentBundle(env, uid);
-        const responsePayload = {
-          ok: true,
-          importedSummary: {
-            clubsAndBadges: importedClubs,
-            exams: importedExams,
-            papers: importedPapers,
-            diplomas: importedDiplomas
-          },
-          data: bundle
+        const badgeWrites = new Map<string, { id: string; statement: D1PreparedStatement }>();
+        const addBadgeWrite = (key: string) => {
+          if (!Object.hasOwn(OFFICIAL_BADGES, key) || badgeWrites.has(key)) return;
+          const spec = OFFICIAL_BADGES[key];
+          const id = generateId();
+          badgeWrites.set(key, { id, statement: env.DB.prepare(
+            `INSERT OR IGNORE INTO honors_achievements
+              (id, firebase_uid, badge_key, badge_category, title_zh, title_en, desc_zh, desc_en)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          ).bind(id, uid, key, spec.category, spec.titleZh, spec.titleEn, spec.descZh, spec.descEn) });
         };
+        if (Array.isArray(body.badges)) for (const key of body.badges) {
+          if (typeof key === "string") addBadgeWrite(key);
+        }
+        const importedBadgeIds = [...badgeWrites.values()].map((entry) => entry.id);
+        if (examWrites.size) addBadgeWrite("milestone_first_exam");
+        if (paperWrites.size) addBadgeWrite("milestone_first_paper");
+        if (diplomaWrites.size) addBadgeWrite("milestone_first_diploma");
 
-        await env.DB.prepare(
-          `INSERT OR IGNORE INTO idempotency_keys
-            (idem_key, firebase_uid, endpoint, status_code, response_json, created_at)
-           VALUES (?, ?, 'import', 200, ?, ?)`
-        )
-          .bind(idemKey, uid, JSON.stringify(responsePayload), Math.floor(Date.now() / 1000))
-          .run();
-
-        return jsonResponse(responsePayload, 200, allowedOrigin, requestId);
+        const writes = [...examWrites.values(), ...paperWrites.values(), ...diplomaWrites.values(),
+          ...[...badgeWrites.values()].map((entry) => entry.statement)];
+        const summaryWrites: D1PreparedStatement[] = [];
+        const summaryGroups = [
+          { table: "transcripts", field: "exams", ids: [...examWrites.keys()].map((hash) => recordIds.get(hash)!) },
+          { table: "papers", field: "papers", ids: [...paperWrites.keys()].map((hash) => recordIds.get(hash)!) },
+          { table: "diplomas", field: "diplomas", ids: [...diplomaWrites.keys()].map((hash) => recordIds.get(hash)!) },
+          { table: "honors_achievements", field: "clubsAndBadges", ids: importedBadgeIds }
+        ];
+        for (const group of summaryGroups) {
+          if (!group.ids.length) continue;
+          // Fixed table/path names only. Count IDs generated by this attempt so a
+          // concurrent deduplicated write is never reported as newly imported.
+          summaryWrites.push(env.DB.prepare(
+            `UPDATE idempotency_keys SET response_json = json_set(response_json,
+              '$.importedSummary.${group.field}',
+              (SELECT COUNT(*) FROM ${group.table} WHERE firebase_uid = ? AND id IN (${group.ids.map(() => "?").join(",")})))
+             WHERE firebase_uid = ? AND idem_key = ? AND endpoint = 'import'`
+          ).bind(uid, ...group.ids, uid, idemKey));
+        }
+        try {
+          // The unique receipt is reserved FIRST. A competing identical key rolls
+          // back every archive mutation, while any later failure rolls it back too.
+          await env.DB.batch([
+            env.DB.prepare(
+              `INSERT INTO idempotency_keys (idem_key, firebase_uid, endpoint, status_code, response_json, created_at, request_hash)
+               VALUES (?, ?, 'import', 200, ?, ?, ?)`
+            ).bind(idemKey, uid, JSON.stringify({ ok: true, importedSummary: { clubsAndBadges: 0, exams: 0, papers: 0, diplomas: 0 } }), Math.floor(Date.now() / 1000), requestHash),
+            ...writes, ...summaryWrites
+          ]);
+        } catch (err) {
+          const competingReceipt = await readReceipt();
+          if (competingReceipt) return replyReceipt(competingReceipt);
+          throw err;
+        }
+        const committedReceipt = await readReceipt();
+        if (!committedReceipt) throw new Error("IMPORT_RECEIPT_MISSING");
+        return replyReceipt(committedReceipt);
       }
 
       return errorResponse("NOT_FOUND", "Endpoint not found.", 404, allowedOrigin, requestId);
     } catch (err) {
+      if (err instanceof SecurityServiceUnavailable) {
+        return errorResponse("SECURITY_SERVICE_UNAVAILABLE", "Request protection is temporarily unavailable. Please retry later.", 503, allowedOrigin, requestId);
+      }
       // D1 can wrap a trigger exception in Error.cause. Only our three explicit
       // quota sentinels become 429; all other SQL/internal details stay private.
       const quotaMessages = {

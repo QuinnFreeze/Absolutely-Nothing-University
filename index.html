@@ -993,6 +993,15 @@
 
                 <!-- Right Column: 5 Archive Tabs (Transcripts, Papers, Diplomas, Honors, Settings) -->
                 <div class="my-anu-records-panel">
+                  <div class="archive-source-control">
+                    <label for="archive-source-select" data-i18n="my_source_label">档案来源</label>
+                    <select id="archive-source-select" class="form-control">
+                      <option value="cloud" data-i18n="my_source_cloud">当前账号云端档案</option>
+                      <option value="local" data-i18n="my_source_local">本机游客记录</option>
+                    </select>
+                    <p id="archive-source-note" class="form-panel-note" aria-live="polite"></p>
+                    <button type="button" id="export-archive-btn" class="btn-secondary" data-i18n="my_export_json">导出所选档案 JSON</button>
+                  </div>
                   <div class="dept-filter-bar" role="tablist" aria-label="My ANU Sections" style="margin-bottom: 1.25rem;">
                     <button type="button" class="dept-tab active" data-my-tab="transcripts" data-i18n="my_tab_transcripts">个人成绩单</button>
                     <button type="button" class="dept-tab" data-my-tab="papers" data-i18n="my_tab_papers">零字数论文成果</button>

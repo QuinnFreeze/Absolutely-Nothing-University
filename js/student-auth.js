@@ -36,14 +36,6 @@
     };
   }
 
-  function isMobileSafariOrEmbedded() {
-    const ua = (navigator.userAgent || "").toLowerCase();
-    const isIOS = /iphone|ipad|ipod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const isSafari = /safari/.test(ua) && !/chrome|crios|fxios|edgios/.test(ua);
-    const isInApp = /micromessenger|weibo|qq\/|instagram|fbav|line\//.test(ua);
-    return { isIOS, isSafari, isInApp };
-  }
-
   // Deterministic SVG University Crest Avatar Generator (Zero external network leak)
   const AVATAR_PALETTES = {
     "crest-oxford": { bg: "#0B2E59", ring: "#93C5FD", accent: "#2563EB", text: "#FFFFFF", icon: "🎓" },
@@ -119,33 +111,60 @@
   let isRegistered = false;
   let authReady = false;
   let authInitPromise = null;
+  let sdkInitialized = false;
+  let authInitializing = false;
+  let authSigningIn = false;
+  let authSigningOut = false;
+  let signOutPromise = null;
+  let authIntent = 0;
+  let signInPromise = null;
+  let signedOutByUser = false;
   let authError = null;
   let bundleLoaded = false;
   let cloudLoading = false;
   let cloudError = null;
+  let cloudSaving = false;
+  let cloudRetryable = false;
+  let bundleRevision = 0;
+  let pendingMutation = null;
   let authSession = 0;
   let bundleRefresh = null;
   let turnstileWidgetId = null;
   let turnstileContainer = null;
   let turnstileTheme = null;
+  let turnstileAction = "";
   let turnstileMountPending = false;
   let turnstileGeneration = 0;
   let latestTurnstileToken = "";
-  let protectedWritePending = false;
+  const activePrivateRequests = new Set();
   const consumedTurnstileTokens = new Set();
   const stateListeners = [];
 
-  function errorWithCode(code, message) {
+  const REQUEST_TIMEOUT_MS = 12000;
+  const AUTH_POPUP_TIMEOUT_MS = 90000;
+
+  function errorWithCode(code, message, retryable = false) {
     const error = new Error(message || code);
     error.code = code;
+    error.retryable = retryable;
     return error;
+  }
+
+  function authFailure(error) {
+    const code = (error && error.code) || "AUTH_LOGIN_FAILED";
+    if (error && typeof error.retryable === "boolean") return error;
+    return errorWithCode(code, (error && error.message) || "Google 登录失败，请重试。", [
+      "auth/network-request-failed", "auth/popup-blocked", "AUTH_REDIRECT_UNAVAILABLE",
+      "AUTH_INIT_TIMEOUT", "AUTH_POPUP_TIMEOUT", "AUTH_NOT_READY"
+    ].includes(code));
   }
 
   function errorSnapshot(error) {
     return {
       code: (error && error.code) || "NETWORK_ERROR",
       message: (error && error.message) || "云端请求失败，请稍后重试。",
-      status: (error && error.status) || null
+      status: (error && error.status) || null,
+      retryable: Boolean(error && error.retryable)
     };
   }
 
@@ -165,7 +184,12 @@
       bundleLoaded,
       cloudLoading,
       cloudError,
-      authError
+      authError,
+      authInitializing,
+      authSigningIn,
+      authSigningOut,
+      cloudSaving,
+      cloudRetryable
     };
     stateListeners.forEach((fn) => {
       try {
@@ -190,58 +214,92 @@
   }
 
   function adoptUser(user) {
-    if ((currentUser && currentUser.uid) !== (user && user.uid) || Boolean(currentUser) !== Boolean(user)) {
+    const changed = (currentUser && currentUser.uid) !== (user && user.uid) || Boolean(currentUser) !== Boolean(user);
+    if (changed) {
       authSession += 1;
+      bundleRevision += 1;
+      activePrivateRequests.forEach((controller) => controller.abort());
       studentBundle = null;
       isRegistered = false;
       bundleLoaded = false;
       cloudLoading = false;
       cloudError = null;
+      cloudRetryable = false;
+      cloudSaving = false;
+      pendingMutation = null;
       bundleRefresh = null;
       resetTurnstile();
+      // Session-bound callbacks from a previous account must never revive a
+      // challenge. The next UI render mounts a widget for the current session.
+      if (global.turnstile && turnstileWidgetId !== null) {
+        try { global.turnstile.remove(turnstileWidgetId); } catch (_) {}
+      }
+      turnstileWidgetId = null;
+      turnstileGeneration += 1;
     }
     currentUser = user || null;
+    return changed;
   }
 
   function initAuth() {
-    if (!authInitPromise) authInitPromise = initializeAuth();
+    if (sdkInitialized) return Promise.resolve();
+    if (!authInitPromise) authInitPromise = Promise.resolve().then(initializeAuth);
     return authInitPromise;
   }
 
+  function prepareSignIn() {
+    return initAuth();
+  }
+
+  function withDeadline(promise, code, message, timeout = REQUEST_TIMEOUT_MS) {
+    let timer;
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(errorWithCode(code, message, true)), timeout);
+      })
+    ]).finally(() => clearTimeout(timer));
+  }
+
   async function initializeAuth() {
+    authInitializing = true;
+    authError = null;
+    notifyListeners();
     if (!isFirebaseConfigured()) {
       authReady = true;
+      authInitializing = false;
       notifyListeners();
       return;
     }
 
     try {
-      const { appMod, authMod } = await loadFirebaseSdk();
+      const { appMod, authMod } = await withDeadline(loadFirebaseSdk(), "AUTH_INIT_TIMEOUT", "登录服务加载超时，请检查网络后重试。");
       const cfg = getRuntimeConfig().firebase;
-      firebaseApp = appMod.initializeApp(cfg);
+      firebaseApp = firebaseApp || appMod.initializeApp(cfg);
       firebaseAuth = authMod.getAuth(firebaseApp);
 
       // Prefer IndexedDB + browserLocalPersistence managed by Firebase SDK (never custom localStorage token storage)
       try {
-        await authMod.setPersistence(firebaseAuth, authMod.indexedDBLocalPersistence);
+        await withDeadline(authMod.setPersistence(firebaseAuth, authMod.indexedDBLocalPersistence), "AUTH_INIT_TIMEOUT", "登录服务初始化超时，请重试。");
       } catch {
-        await authMod.setPersistence(firebaseAuth, authMod.browserLocalPersistence);
+        await withDeadline(authMod.setPersistence(firebaseAuth, authMod.browserLocalPersistence), "AUTH_INIT_TIMEOUT", "登录服务初始化超时，请重试。");
       }
 
-      // Handle redirect result on iPhone Safari / Mobile after signInWithRedirect
+      // Recover an earlier same-origin redirect. Cross-origin redirect is never a fallback.
       try {
-        await authMod.getRedirectResult(firebaseAuth);
+        await withDeadline(authMod.getRedirectResult(firebaseAuth), "AUTH_INIT_TIMEOUT", "登录结果读取超时，请重试登录。");
       } catch (error) {
-        authError = errorSnapshot(error);
+        authError = errorSnapshot(authFailure(error));
       }
 
       authMod.onAuthStateChanged(firebaseAuth, async (user) => {
-        adoptUser(user);
+        if (user && signedOutByUser) return;
+        const changed = adoptUser(user);
         authReady = true;
         if (currentUser) {
           // Firebase does not consume rejected async observer promises.
           try {
-            await refreshStudentBundle();
+            if (changed || !bundleLoaded) await refreshStudentBundle();
           } catch (_) {
             // refreshStudentBundle has already published cloudError for the UI.
           }
@@ -249,115 +307,174 @@
           notifyListeners();
         }
       });
+      sdkInitialized = true;
     } catch (error) {
       firebaseAuth = null;
-      authError = errorSnapshot(error);
+      sdkInitialized = false;
+      authInitPromise = null;
+      authError = errorSnapshot(authFailure(error));
       authReady = true;
+      notifyListeners();
+    } finally {
+      authInitializing = false;
       notifyListeners();
     }
   }
 
-  async function getFreshIdToken(forceRefresh = false) {
-    if (!currentUser || typeof currentUser.getIdToken !== "function") {
-      throw errorWithCode("NOT_AUTHENTICATED", "请先登录 Google 账号。");
+  function assertSession(session) {
+    if (session !== authSession || !currentUser) {
+      throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
     }
-    return currentUser.getIdToken(forceRefresh);
+  }
+
+  function isRecord(value) {
+    return Boolean(value && typeof value === "object" && !Array.isArray(value));
+  }
+
+  function validateBundle(bundle) {
+    if (!isRecord(bundle) || !isRecord(bundle.profile) ||
+        typeof bundle.profile.studentNumber !== "string" || !bundle.profile.studentNumber.trim() ||
+        typeof bundle.profile.nickname !== "string" ||
+        (bundle.profile.revision !== undefined && (!Number.isSafeInteger(bundle.profile.revision) || bundle.profile.revision < 0)) ||
+        !["transcripts", "papers", "diplomas", "honors"].every((key) =>
+          Array.isArray(bundle[key]) && bundle[key].every(isRecord))) {
+      throw errorWithCode("INVALID_SERVER_RESPONSE", "云端档案响应不完整，请重试同步。", true);
+    }
+    return bundle;
   }
 
   async function apiRequest(path, options = {}) {
-    const requestSession = options.requireAuth === false ? null : authSession;
-    const assertCurrentSession = () => {
-      if (requestSession !== null && requestSession !== authSession) {
-        throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
+    const authenticated = options.requireAuth !== false;
+    const requestSession = authenticated ? authSession : null;
+    const requestUser = authenticated ? currentUser : null;
+    const method = options.method || "GET";
+    if (authenticated && (!requestUser || typeof requestUser.getIdToken !== "function")) {
+      throw errorWithCode("NOT_AUTHENTICATED", "请先登录 Google 账号。");
+    }
+    const controller = new AbortController();
+    if (authenticated) activePrivateRequests.add(controller);
+    let timedOut = false;
+    let timer;
+    let onAbort;
+    const assertActive = () => {
+      if (requestSession !== null) assertSession(requestSession);
+      if (timedOut) throw errorWithCode("API_REQUEST_TIMEOUT", "云端请求超时，请检查网络后重试。", true);
+    };
+    const work = async () => {
+      const send = async (forceRefresh) => {
+        const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+        if (authenticated) {
+          const idToken = await requestUser.getIdToken(forceRefresh);
+          assertActive();
+          headers.Authorization = `Bearer ${idToken}`;
+        }
+        if (options.turnstileToken) headers["X-Turnstile-Token"] = options.turnstileToken;
+        if (options.idempotencyKey) headers["X-Idempotency-Key"] = options.idempotencyKey;
+        assertActive();
+        if (options.onSend) options.onSend();
+        const resp = await fetch(`${getRuntimeConfig().apiBaseUrl}${path}`, {
+          method, headers, body: options.body ? JSON.stringify(options.body) : undefined,
+          credentials: "omit", signal: controller.signal
+        });
+        assertActive();
+        let payload;
+        try { payload = await resp.json(); }
+        catch (_) { throw errorWithCode("INVALID_SERVER_RESPONSE", "云端响应格式错误，请稍后重试。", true); }
+        assertActive();
+        if (!resp.ok || !isRecord(payload) || payload.ok !== true) {
+          const code = (payload && payload.error && payload.error.code) || (resp.ok ? "INVALID_SERVER_RESPONSE" : `HTTP_${resp.status}`);
+          const error = errorWithCode(code, (payload && payload.error && payload.error.message) || "云端请求失败。",
+            resp.status === 408 || resp.status === 429 || resp.status >= 500 || code === "INVALID_SERVER_RESPONSE");
+          error.status = resp.status;
+          throw error;
+        }
+        return payload;
+      };
+      try { return await send(false); }
+      catch (error) {
+        assertActive();
+        // Retry only a definite authentication rejection, never a timeout,
+        // an infrastructure error, or an ambiguous write result.
+        if (!authenticated || error.status !== 401 || !/^AUTH_(?!SERVER_)/.test(error.code || "")) throw error;
+        if (method === "GET") return send(true);
+        await requestUser.getIdToken(true);
+        assertActive();
+        throw errorWithCode("AUTH_RETRY_REQUIRED", "登录凭证已刷新，请重新验证后再次提交。", true);
       }
     };
-    const cfg = getRuntimeConfig();
-    const url = `${cfg.apiBaseUrl}${path}`;
-    const headers = Object.assign(
-      {
-        "Content-Type": "application/json"
-      },
-      options.headers || {}
-    );
-
-    if (options.requireAuth !== false) {
-      const idToken = await getFreshIdToken(false);
-      assertCurrentSession();
-      headers["Authorization"] = `Bearer ${idToken}`;
-    }
-
-    if (options.turnstileToken) {
-      headers["X-Turnstile-Token"] = options.turnstileToken;
-    }
-
-    if (options.idempotencyKey) {
-      headers["X-Idempotency-Key"] = options.idempotencyKey;
-    }
-
-    if (options.onSend) options.onSend();
-    const resp = await fetch(url, {
-      method: options.method || "GET",
-      headers,
-      body: options.body ? JSON.stringify(options.body) : undefined,
-      credentials: "omit"
-    });
-
-    let payload = null;
     try {
-      payload = await resp.json();
-    } catch {
-      payload = { ok: false, error: { code: "NETWORK_PARSE_ERROR", message: "Invalid server response." } };
+      return await Promise.race([
+        work(),
+        new Promise((_, reject) => {
+          onAbort = () => reject(requestSession !== null && requestSession !== authSession
+            ? errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。")
+            : errorWithCode("API_REQUEST_TIMEOUT", "云端请求超时，请检查网络后重试。", true));
+          controller.signal.addEventListener("abort", onAbort, { once: true });
+        }),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            timedOut = true;
+            controller.abort();
+            reject(errorWithCode("API_REQUEST_TIMEOUT", "云端请求超时，请检查网络后重试。", true));
+          }, REQUEST_TIMEOUT_MS);
+        })
+      ]);
+    } catch (error) {
+      assertActive();
+      if (!error || !error.code || error.name === "AbortError") {
+        throw errorWithCode("NETWORK_ERROR", "无法连接云端，请检查网络后重试。", true);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      controller.signal.removeEventListener("abort", onAbort);
+      activePrivateRequests.delete(controller);
     }
-    assertCurrentSession();
-
-    if (!resp.ok || !payload || payload.ok !== true) {
-      const errCode = (payload && payload.error && payload.error.code) || (resp.ok ? "INVALID_SERVER_RESPONSE" : `HTTP_${resp.status}`);
-      const errMsg = (payload && payload.error && payload.error.message) || "Request failed.";
-      const err = new Error(errMsg);
-      err.code = errCode;
-      err.status = resp.status;
-      throw err;
-    }
-
-    return payload;
   }
 
   function refreshStudentBundle() {
     if (!currentUser) {
-      studentBundle = null;
-      isRegistered = false;
-      bundleLoaded = false;
-      cloudLoading = false;
-      cloudError = null;
       notifyListeners();
       return Promise.resolve(null);
     }
-    if (bundleRefresh && bundleRefresh.session === authSession) return bundleRefresh.promise;
+    if (pendingMutation && pendingMutation.session === authSession) {
+      return pendingMutation.promise.then(() => studentBundle);
+    }
+    if (bundleRefresh && bundleRefresh.session === authSession && bundleRefresh.revision === bundleRevision) {
+      return bundleRefresh.promise;
+    }
     const session = authSession;
-    const promise = fetchStudentBundle(session);
-    bundleRefresh = { session, promise };
+    const revision = bundleRevision;
+    const promise = fetchStudentBundle(session, revision);
+    bundleRefresh = { session, revision, promise };
     return promise;
   }
 
-  async function fetchStudentBundle(session) {
+  async function fetchStudentBundle(session, revision) {
     cloudLoading = true;
     cloudError = null;
+    cloudRetryable = false;
     notifyListeners();
     try {
       const res = await apiRequest("/api/v1/me", { method: "GET" });
-      if (typeof res.registered !== "boolean" || (res.registered && (!res.data || typeof res.data !== "object"))) {
-        throw errorWithCode("INVALID_SERVER_RESPONSE", "云端档案响应不完整，请稍后重试。");
+      if (typeof res.registered !== "boolean" || (!res.registered && res.data !== null)) {
+        throw errorWithCode("INVALID_SERVER_RESPONSE", "云端档案响应不完整，请稍后重试。", true);
       }
-      if (session !== authSession) return null;
-      isRegistered = Boolean(res.registered && res.data);
-      studentBundle = res.data || null;
+      const bundle = res.registered ? validateBundle(res.data) : null;
+      assertSession(session);
+      if (revision !== bundleRevision) return studentBundle;
+      isRegistered = res.registered;
+      studentBundle = bundle;
       bundleLoaded = true;
       return studentBundle;
     } catch (error) {
-      if (session === authSession) cloudError = errorSnapshot(error);
+      if (session === authSession && revision === bundleRevision) {
+        cloudError = errorSnapshot(error);
+        cloudRetryable = cloudError.retryable;
+      }
       throw error;
     } finally {
-      if (session === authSession) {
+      if (session === authSession && revision === bundleRevision) {
         cloudLoading = false;
         bundleRefresh = null;
         notifyListeners();
@@ -368,38 +485,72 @@
   async function protectedWrite(path, body, turnstileToken, options = {}) {
     const token = typeof turnstileToken === "string" ? turnstileToken.trim() : getTurnstileToken();
     if (!token) throw errorWithCode("TURNSTILE_REQUIRED", "请先完成人机验证，再提交云端存档。");
-    if (protectedWritePending) throw errorWithCode("CLOUD_WRITE_IN_PROGRESS", "上一笔云端提交尚未完成，请稍候。");
     if (consumedTurnstileTokens.has(token)) throw errorWithCode("TURNSTILE_TOKEN_USED", "人机验证已使用，请重新验证。");
-    protectedWritePending = true;
     const session = authSession;
     let sent = false;
     try {
-      const response = await apiRequest(path, Object.assign({}, options, {
-        method: "POST",
-        turnstileToken: token,
+      return await apiRequest(path, Object.assign({}, options, {
+        method: "POST", turnstileToken: token,
         body: Object.assign({}, body, { turnstileToken: token }),
         onSend() {
-          if (session !== authSession) throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
+          assertSession(session);
           sent = true;
           consumedTurnstileTokens.add(token);
           // Only recent in-memory tokens are relevant; never persist credentials.
           if (consumedTurnstileTokens.size > 32) consumedTurnstileTokens.delete(consumedTurnstileTokens.values().next().value);
         }
       }));
-      if (session !== authSession) throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
-      return response;
     } finally {
-      protectedWritePending = false;
-      if (sent) resetTurnstile();
+      if (sent && session === authSession) resetTurnstile();
     }
   }
 
-  function acceptBundle(bundle) {
-    studentBundle = bundle;
-    isRegistered = Boolean(bundle);
-    bundleLoaded = true;
+  function runMutation(key, task) {
+    if (!currentUser) return Promise.reject(errorWithCode("NOT_AUTHENTICATED", "请先登录 Google 账号。"));
+    if (pendingMutation && pendingMutation.session === authSession) {
+      if (pendingMutation.key === key) return pendingMutation.promise;
+      return Promise.reject(errorWithCode("CLOUD_WRITE_IN_PROGRESS", "上一笔云端提交尚未完成，请稍候。"));
+    }
+    const session = authSession;
+    const revision = ++bundleRevision;
+    bundleRefresh = null;
+    cloudLoading = false;
+    cloudSaving = true;
     cloudError = null;
+    cloudRetryable = false;
+    const operation = { session, key, promise: null };
+    pendingMutation = operation;
+    operation.promise = Promise.resolve().then(() => {
+      assertSession(session);
+      return task(() => assertSession(session));
+    }).catch((error) => {
+      if (session === authSession && revision === bundleRevision) {
+        cloudError = errorSnapshot(error);
+        cloudRetryable = cloudError.retryable;
+      }
+      throw error;
+    }).finally(() => {
+      if (pendingMutation === operation) {
+        pendingMutation = null;
+        cloudSaving = false;
+        notifyListeners();
+      }
+    });
     notifyListeners();
+    return operation.promise;
+  }
+
+  function mutateBundle(key, send, returnResponse = false) {
+    return runMutation(key, async (assertActive) => {
+      const res = await send(assertActive);
+      assertActive();
+      studentBundle = validateBundle(res.data);
+      isRegistered = true;
+      bundleLoaded = true;
+      cloudError = null;
+      cloudRetryable = false;
+      return returnResponse ? res : studentBundle;
+    });
   }
 
   function requireRegisteredStudent() {
@@ -415,65 +566,94 @@
    * - Redirect fallback requires same-origin auth helpers to avoid third-party storage failures.
    * See https://firebase.google.com/docs/auth/web/redirect-best-practices
    */
-  async function signInWithGoogle() {
-    if (!isFirebaseConfigured()) {
-      const err = new Error("FIREBASE_NOT_CONFIGURED");
-      err.code = "FIREBASE_NOT_CONFIGURED";
-      throw err;
-    }
-
-    await initAuth();
-    if (!firebaseAuth || !firebaseModules) {
-      const error = errorWithCode((authError && authError.code) || "AUTH_NOT_READY", (authError && authError.message) || "登录服务尚未准备完成，请刷新页面后重试。");
-      throw error;
-    }
-    const { authMod } = firebaseModules;
-    const provider = new authMod.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-
-    const envInfo = isMobileSafariOrEmbedded();
-    let result;
-    try {
-      result = await authMod.signInWithPopup(firebaseAuth, provider);
-    } catch (err) {
-      const code = (err && err.code) || "";
-      if (
-        code === "auth/popup-blocked" ||
-        code === "auth/operation-not-supported-in-this-environment" ||
-        (envInfo.isIOS && code === "auth/popup-closed-by-user" && envInfo.isInApp)
-      ) {
-        const authOrigin = new URL(`https://${getRuntimeConfig().firebase.authDomain}`).origin;
-        if (!global.location || global.location.origin !== authOrigin) {
-          throw errorWithCode("AUTH_REDIRECT_UNAVAILABLE", "登录弹窗无法打开。请允许此网站的弹窗，并在 Safari 或 Chrome 中重新登录；当前站点尚未配置同源登录跳转。");
-        }
-        await authMod.signInWithRedirect(firebaseAuth, provider);
-        return { mode: "redirect", user: null };
-      }
-      throw err;
-    }
-    adoptUser(result.user);
-    authReady = true;
+  function signInWithGoogle() {
+    if (!isFirebaseConfigured()) return Promise.reject(errorWithCode("FIREBASE_NOT_CONFIGURED", "Google 登录尚未配置。"));
+    if (authSigningOut) return Promise.reject(errorWithCode("AUTH_SIGNOUT_IN_PROGRESS", "正在退出上一账号，请稍后再登录。", true));
+    if (authSigningIn && signInPromise) return signInPromise;
+    signedOutByUser = false;
+    const intent = ++authIntent;
+    authSigningIn = true;
     authError = null;
-    // A cloud outage does not undo successful Google authentication; state exposes
-    // cloudError and the caller can distinguish this from an unfinished redirect.
-    try {
-      await refreshStudentBundle();
-    } catch (_) {}
-    return { mode: "popup", user: currentUser, cloudError };
+    notifyListeners();
+    const launch = () => {
+      if (intent !== authIntent) throw errorWithCode("AUTH_SESSION_CHANGED", "登录操作已取消，请重新操作。");
+      if (!sdkInitialized || !firebaseAuth || !firebaseModules) {
+        throw errorWithCode((authError && authError.code) || "AUTH_NOT_READY", (authError && authError.message) || "登录服务尚未准备完成，请重试。", true);
+      }
+      const { authMod } = firebaseModules;
+      const provider = new authMod.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      // Invoke popup synchronously when prewarmed: awaiting even an already
+      // resolved init promise loses transient user activation on some browsers.
+      return withDeadline(authMod.signInWithPopup(firebaseAuth, provider), "AUTH_POPUP_TIMEOUT", "Google 登录等待超时，请重试。", AUTH_POPUP_TIMEOUT_MS)
+        .catch(async (error) => {
+          if (intent !== authIntent) throw errorWithCode("AUTH_SESSION_CHANGED", "登录操作已取消，请重新操作。");
+          if (!["auth/popup-blocked", "auth/operation-not-supported-in-this-environment"].includes(error && error.code)) throw error;
+          let sameOrigin = false;
+          try { sameOrigin = global.location && global.location.origin === new URL(`https://${getRuntimeConfig().firebase.authDomain}`).origin; }
+          catch (_) {}
+          if (!sameOrigin) throw errorWithCode("AUTH_REDIRECT_UNAVAILABLE", "请允许此网站的登录弹窗，并在 Safari 或 Chrome 中重试。当前站点未配置同源登录跳转。", true);
+          await withDeadline(authMod.signInWithRedirect(firebaseAuth, provider), "AUTH_POPUP_TIMEOUT", "登录跳转超时，请重试。");
+          return { redirect: true };
+        });
+    };
+    let started;
+    try { started = sdkInitialized ? launch() : initAuth().then(launch); }
+    catch (error) { started = Promise.reject(error); }
+    signInPromise = Promise.resolve(started).then(async (result) => {
+      if (intent !== authIntent) throw errorWithCode("AUTH_SESSION_CHANGED", "登录操作已取消，请重新操作。");
+      if (result && result.redirect) return { mode: "redirect", user: null };
+      if (!result || !result.user) throw errorWithCode("AUTH_LOGIN_FAILED", "Google 登录未返回账号，请重试。");
+      const changed = adoptUser(result.user);
+      authReady = true;
+      authError = null;
+      try { if (changed || !bundleLoaded || cloudError) await refreshStudentBundle(); }
+      catch (_) {}
+      if (intent !== authIntent) throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
+      return { mode: "popup", user: currentUser, cloudError };
+    }).catch((error) => {
+      const normalized = authFailure(error);
+      if (intent === authIntent) authError = errorSnapshot(normalized);
+      throw normalized;
+    }).finally(() => {
+      if (intent === authIntent) {
+        authSigningIn = false;
+        signInPromise = null;
+        notifyListeners();
+      }
+    });
+    return signInPromise;
   }
 
-  async function signOutStudent() {
-    if (firebaseAuth && firebaseModules) {
-      await firebaseModules.authMod.signOut(firebaseAuth);
-    }
+  function signOutStudent() {
+    if (signOutPromise) return signOutPromise;
+    ++authIntent;
+    signedOutByUser = true;
+    authSigningIn = false;
+    authSigningOut = true;
+    signInPromise = null;
+    // Detach local state immediately, before any SDK/network await can finish.
     adoptUser(null);
     authError = null;
     resetTurnstile();
+    signOutPromise = Promise.resolve().then(() => {
+      if (firebaseAuth && firebaseModules) {
+        return withDeadline(firebaseModules.authMod.signOut(firebaseAuth), "AUTH_SIGNOUT_TIMEOUT", "云端退出超时，请重试退出。");
+      }
+    }).catch((error) => {
+      authError = errorSnapshot(authFailure(error));
+      throw error;
+    }).finally(() => {
+      authSigningOut = false;
+      signOutPromise = null;
+      notifyListeners();
+    });
     notifyListeners();
+    return signOutPromise;
   }
 
   async function registerStudentProfile(formPayload, turnstileToken) {
-    const res = await protectedWrite("/api/v1/me/register", {
+    return mutateBundle("register", () => protectedWrite("/api/v1/me/register", {
         nickname: formPayload.nickname,
         college: formPayload.college,
         majorIdx: formPayload.majorIdx,
@@ -487,45 +667,40 @@
         publicConsent: Boolean(formPayload.publicConsent),
         acceptTerms: Boolean(formPayload.acceptTerms),
         acceptPrivacy: Boolean(formPayload.acceptPrivacy)
-    }, turnstileToken);
-    acceptBundle(res.data);
-    return res.data;
+    }, turnstileToken));
   }
 
   async function updateStudentProfile(patchPayload) {
-    const res = await apiRequest("/api/v1/me/profile", {
-      method: "PATCH",
-      body: patchPayload
-    });
-    acceptBundle(res.data);
-    return res.data;
+    requireRegisteredStudent();
+    const body = Object.assign({}, patchPayload);
+    const revision = studentBundle && studentBundle.profile.revision;
+    // Older deployed APIs omit revision; new APIs reject a stale tab's snapshot.
+    if (Number.isSafeInteger(revision) && revision >= 0) body.expectedRevision = revision;
+    return mutateBundle(`profile:${stableJson(body)}`, () => apiRequest("/api/v1/me/profile", {
+      method: "PATCH", body
+    }));
   }
 
   async function submitExamToCloud(courseCode, answers) {
     if (!currentUser || !isRegistered) return null;
-    const res = await apiRequest("/api/v1/me/exams", {
-      method: "POST",
-      body: { courseCode, answers }
-    });
-    acceptBundle(res.data);
-    return res;
+    return mutateBundle(`exam:${stableJson({ courseCode, answers })}`, () => apiRequest("/api/v1/me/exams", {
+      method: "POST", body: { courseCode, answers }
+    }), true);
   }
 
   async function submitPaperToCloud(paperPayload, turnstileToken) {
     requireRegisteredStudent();
-    const res = await protectedWrite("/api/v1/me/papers", {
+    return mutateBundle(`paper:${stableJson(paperPayload)}`, () => protectedWrite("/api/v1/me/papers", {
         title: paperPayload.title,
         author: paperPayload.author,
         journalIdx: paperPayload.journalIdx,
         methodologyIdx: paperPayload.methodologyIdx
-    }, turnstileToken);
-    acceptBundle(res.data);
-    return res;
+    }, turnstileToken), true);
   }
 
   async function submitDiplomaToCloud(diplomaPayload, turnstileToken) {
     requireRegisteredStudent();
-    const res = await protectedWrite("/api/v1/me/diplomas", {
+    return mutateBundle(`diploma:${stableJson(diplomaPayload)}`, () => protectedWrite("/api/v1/me/diplomas", {
         recipientName: diplomaPayload.recipientName,
         degreeIdx: diplomaPayload.degreeIdx,
         majorIdx: diplomaPayload.majorIdx,
@@ -533,19 +708,14 @@
         citationIdx: diplomaPayload.citationIdx,
         templateId: diplomaPayload.templateId,
         certLang: diplomaPayload.certLang
-    }, turnstileToken);
-    acceptBundle(res.data);
-    return res;
+    }, turnstileToken), true);
   }
 
   async function syncHonorOrClubToCloud(badgeKey, action = "add") {
     if (!currentUser || !isRegistered) return null;
-    const res = await apiRequest("/api/v1/me/honors", {
-      method: "POST",
-      body: { badgeKey, action }
-    });
-    acceptBundle(res.data);
-    return res.data;
+    return mutateBundle(`honor:${stableJson({ badgeKey, action })}`, () => apiRequest("/api/v1/me/honors", {
+      method: "POST", body: { badgeKey, action }
+    }));
   }
 
   function stableJson(value) {
@@ -558,38 +728,44 @@
 
   async function importLocalArchiveToCloud(localArchivePayload, turnstileToken) {
     requireRegisteredStudent();
-    // Normalize exactly the JSON content being transferred, then hash every field.
-    // Sorting object keys keeps equivalent archives stable without ignoring edits.
     const payload = JSON.parse(JSON.stringify(localArchivePayload));
     const serialized = stableJson(payload);
-    if (!global.crypto || !global.crypto.subtle) throw errorWithCode("SECURE_CONTEXT_REQUIRED", "请使用 HTTPS 网站导入本地存档。");
-    const digest = await global.crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
-    const hash = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
-    const res = await protectedWrite("/api/v1/me/import", payload, turnstileToken, { idempotencyKey: `anu-import-v1-${hash}` });
-    acceptBundle(res.data);
+    return mutateBundle(`import:${serialized}`, async (assertActive) => {
+      if (!global.crypto || !global.crypto.subtle) throw errorWithCode("SECURE_CONTEXT_REQUIRED", "请使用 HTTPS 网站导入本地存档。");
+      const digest = await global.crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
+      assertActive();
+      const hash = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+      return protectedWrite("/api/v1/me/import", payload, turnstileToken, { idempotencyKey: `anu-import-v1-${hash}` });
+    }, true);
+  }
+
+  async function exportStudentArchive() {
+    requireRegisteredStudent();
+    const session = authSession;
+    const res = await apiRequest("/api/v1/me/export", { method: "GET" });
+    assertSession(session);
+    validateBundle(res.data);
     return res;
   }
 
   async function deleteStudentAccount() {
-    const res = await apiRequest("/api/v1/me", {
-      method: "DELETE",
-      body: { confirmDelete: "DELETE_MY_ANU_ARCHIVE" }
+    requireRegisteredStudent();
+    return runMutation("delete", async (assertActive) => {
+      const res = await apiRequest("/api/v1/me", {
+        method: "DELETE", body: { confirmDelete: "DELETE_MY_ANU_ARCHIVE" }
+      });
+      assertActive();
+      if (res.deleted !== true) throw errorWithCode("INVALID_SERVER_RESPONSE", "云端未确认档案删除，请重试同步确认。", true);
+      // This endpoint deletes the ANU archive. The Google account and Firebase
+      // identity remain intact; a new profile still requires normal registration.
+      studentBundle = null;
+      isRegistered = false;
+      bundleLoaded = true;
+      cloudError = null;
+      cloudRetryable = false;
+      resetTurnstile();
+      return res;
     });
-    if (currentUser && typeof currentUser.delete === "function") {
-      try {
-        await currentUser.delete();
-      } catch {
-        await signOutStudent();
-      }
-    } else {
-      await signOutStudent();
-    }
-    studentBundle = null;
-    isRegistered = false;
-    bundleLoaded = false;
-    cloudError = null;
-    notifyListeners();
-    return res;
   }
 
   async function lookupPublicStudentProfile(studentNumber) {
@@ -599,14 +775,18 @@
     });
   }
 
-  function mountTurnstileWidget(containerSelector) {
+  function mountTurnstileWidget(containerSelector, action) {
+    if (!["register", "paper", "diploma", "import"].includes(action)) {
+      resetTurnstile();
+      return;
+    }
     const cfg = getRuntimeConfig();
     if (!cfg.turnstileSiteKey) return;
     const el = document.querySelector(containerSelector);
     if (!el) return;
 
     const theme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-    if (turnstileContainer === el && turnstileTheme === theme && turnstileWidgetId !== null) return;
+    if (turnstileContainer === el && turnstileTheme === theme && turnstileAction === action && turnstileWidgetId !== null) return;
     if (turnstileWidgetId !== null && global.turnstile) {
       try {
         global.turnstile.remove(turnstileWidgetId);
@@ -616,6 +796,7 @@
     latestTurnstileToken = "";
     turnstileContainer = el;
     turnstileTheme = theme;
+    turnstileAction = action;
     turnstileGeneration += 1;
 
     const renderWidget = () => {
@@ -626,6 +807,7 @@
       turnstileWidgetId = global.turnstile.render(turnstileContainer, {
         sitekey: cfg.turnstileSiteKey,
         theme: turnstileTheme,
+        action: turnstileAction,
         callback: function (token) {
           if (generation === turnstileGeneration) latestTurnstileToken = token;
         },
@@ -691,6 +873,7 @@
 
   global.ANU_AUTH = {
     initAuth,
+    prepareSignIn,
     onStateChange,
     isFirebaseConfigured,
     signInWithGoogle,
@@ -704,6 +887,7 @@
     syncHonorOrClubToCloud,
     importLocalArchiveToCloud,
     deleteStudentAccount,
+    exportStudentArchive,
     lookupPublicStudentProfile,
     renderCrestAvatarSvg,
     mountTurnstileWidget,
@@ -718,7 +902,12 @@
       bundleLoaded,
       cloudLoading,
       cloudError,
-      authError
+      authError,
+      authInitializing,
+      authSigningIn,
+      authSigningOut,
+      cloudSaving,
+      cloudRetryable
     })
   };
 })(window);

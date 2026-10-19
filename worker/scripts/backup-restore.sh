@@ -1,54 +1,50 @@
 #!/usr/bin/env bash
-# ============================================================================
-# ANU (Absolutely Nothing University) · Cloudflare D1 Backup & Restore Script
-# Usage:
-#   ./worker/scripts/backup-restore.sh backup          # Export remote D1 to timestamped SQL
-#   ./worker/scripts/backup-restore.sh restore <file>  # Restore SQL dump to remote D1
-#   ./worker/scripts/backup-restore.sh migrate-local   # Apply migrations to local D1
-#   ./worker/scripts/backup-restore.sh migrate-prod    # Apply migrations to remote D1
-# ============================================================================
+# Private backups; never print Wrangler export logs (they can contain signed URLs).
 set -euo pipefail
-
-DB_NAME="${D1_DB_NAME:-anu-campus-db}"
-BACKUP_DIR="$(cd "$(dirname "$0")/.." && pwd)/backups"
-mkdir -p "$BACKUP_DIR"
-
+umask 077
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WORKER_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$WORKER_DIR"
+WRANGLER="$WORKER_DIR/node_modules/.bin/wrangler"
+DB_NAME="anu-campus-db"
+BACKUP_DIR="${ANU_BACKUP_DIR:-${HOME}/.codex/backups/anu}"
 ACTION="${1:-help}"
-
 case "$ACTION" in
   backup)
-    TIMESTAMP="$(date -u +"%Y%m%dT%H%M%SZ")"
-    OUT_FILE="${BACKUP_DIR}/${DB_NAME}-${TIMESTAMP}.sql"
-    echo "[ANU D1] Exporting remote D1 database '${DB_NAME}' to ${OUT_FILE}..."
-    npx wrangler d1 export "$DB_NAME" --remote --output="$OUT_FILE"
-    shasum -a 256 "$OUT_FILE" > "${OUT_FILE}.sha256"
-    echo "[ANU D1] Backup complete: ${OUT_FILE}"
-    echo "[ANU D1] SHA-256 checksum saved to: ${OUT_FILE}.sha256"
-    ;;
-  restore)
-    SQL_FILE="${2:-}"
-    if [[ -z "$SQL_FILE" || ! -f "$SQL_FILE" ]]; then
-      echo "Error: Please specify a valid backup .sql file to restore." >&2
+    mkdir -p "$BACKUP_DIR"
+    chmod 700 "$BACKUP_DIR"
+    OUT_FILE="$BACKUP_DIR/anu-campus-db-$(date -u +%Y%m%dT%H%M%SZ).sql"
+    LOG_FILE="$(mktemp "${TMPDIR:-/tmp}/anu-backup.XXXXXX")"
+    trap 'rm -f "$LOG_FILE"' EXIT
+    if ! "$WRANGLER" d1 export "$DB_NAME" --config wrangler.toml --remote --output="$OUT_FILE" >"$LOG_FILE" 2>&1; then
+      echo 'Backup failed. No database changes performed. Provider logs suppressed to protect signed URLs.' >&2
       exit 1
     fi
-    if [[ -f "${SQL_FILE}.sha256" ]]; then
-      echo "[ANU D1] Verifying SHA-256 integrity checksum..."
-      shasum -a 256 -c "${SQL_FILE}.sha256"
-    fi
-    echo "[ANU D1] Restoring ${SQL_FILE} into remote D1 database '${DB_NAME}'..."
-    npx wrangler d1 execute "$DB_NAME" --remote --file="$SQL_FILE"
-    echo "[ANU D1] Restore completed successfully."
+    test -s "$OUT_FILE"
+    chmod 600 "$OUT_FILE"
+    (cd "$BACKUP_DIR" && shasum -a 256 "$(basename "$OUT_FILE")" >"$(basename "$OUT_FILE").sha256")
+    echo "Backup: $OUT_FILE"
+    cat "$OUT_FILE.sha256"
+    ;;
+  restore-local)
+    SQL_FILE="${2:-}"
+    test -f "$SQL_FILE" && test -f "$SQL_FILE.sha256" || { echo 'SQL backup and checksum are required.' >&2; exit 1; }
+    SQL_FILE="$(cd "$(dirname "$SQL_FILE")" && pwd)/$(basename "$SQL_FILE")"
+    (cd "$(dirname "$SQL_FILE")" && shasum -a 256 -c "$SQL_FILE.sha256")
+    # A fresh isolated emulator; never execute a dump over the production database.
+    RESTORE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/anu-restore.XXXXXX")"
+    "$WRANGLER" d1 execute anu-campus-db-local --config wrangler.dev.toml --local --persist-to "$RESTORE_DIR" --file "$SQL_FILE"
+    echo "Isolated local restore: $RESTORE_DIR"
     ;;
   migrate-local)
-    echo "[ANU D1] Applying migrations to local D1 database '${DB_NAME}'..."
-    npx wrangler d1 migrations apply "$DB_NAME" --local
+    exec "$WRANGLER" d1 migrations apply anu-campus-db-local --config wrangler.dev.toml --local
     ;;
   migrate-prod)
-    echo "[ANU D1] Applying migrations to production D1 database '${DB_NAME}'..."
-    npx wrangler d1 migrations apply "$DB_NAME" --remote
+    exec node scripts/release-gate.mjs migrate
     ;;
-  *)
-    echo "Usage: $0 {backup|restore <backup.sql>|migrate-local|migrate-prod}"
+  restore)
+    echo 'Remote in-place dump restore is disabled. Use restore-local for verification; review D1 Time Travel or a new database cutover for production recovery.' >&2
     exit 1
     ;;
+  *) echo "Usage: $0 {backup|restore-local <absolute-backup.sql>|migrate-local|migrate-prod}"; exit 1 ;;
 esac

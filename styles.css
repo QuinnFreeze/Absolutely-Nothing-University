@@ -2188,7 +2188,7 @@ html[data-theme="dark"] .btn-contribute-nothing {
 
 .my-anu-dashboard {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 1.5fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -2254,6 +2254,22 @@ html[data-theme="dark"] .btn-contribute-nothing {
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: var(--shadow-soft);
+}
+
+.my-anu-dashboard > *, .my-anu-id-meta, .my-anu-auth-info { min-width: 0; }
+.my-anu-dashboard, .my-anu-auth-banner, #my-anu-global-feedback { overflow-wrap: anywhere; }
+.archive-source-control { display: grid; gap: 0.65rem; margin-bottom: 1.25rem; }
+.archive-source-control label { font-weight: 600; color: var(--ink); }
+.archive-source-control button { justify-self: start; }
+.archive-png-btn { margin-top: 0.75rem; }
+.my-anu-records-panel .dept-filter-bar { flex-wrap: wrap; }
+.my-anu-records-panel .dept-tab { white-space: normal; }
+button:disabled { cursor: wait; opacity: 0.65; }
+@media (max-width: 600px) {
+  .my-anu-auth-banner, .my-anu-id-card, .my-anu-records-panel, .my-anu-registration-panel { padding: 1rem; }
+  .my-anu-auth-actions, .my-anu-auth-actions button { width: 100%; }
+  .my-anu-id-header { align-items: flex-start; }
+  .my-anu-records-panel .dept-tab { flex: 1 1 42%; }
 }
 
 .my-anu-tab-pane {

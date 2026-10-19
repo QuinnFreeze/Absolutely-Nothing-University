@@ -1,210 +1,90 @@
-# Absolutely Nothing University (ANU · 绝对虚无大学)
+# Absolutely Nothing University · 绝对虚无大学
 
 > *Nihil Agere, Omnia Esse* — 什么都不做，即是一切。
 
-Official satirical website & cloud student portal of **Absolutely Nothing University (ANU)**, founded in ∞ B.C., proudly ranked `NaN` across all global university rankings.
+ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、零字论文、荣誉证书及 My ANU 学生中心。保留牛津蓝白主题、手动深色模式与中英文界面；游客无需登录即可使用校园功能。
 
-- **Production Frontend (GitHub Pages)**: `https://freeze.edu.kg`
-- **Production Student API (Cloudflare Workers + D1)**: `https://api.freeze.edu.kg`
+- 网站：[freeze.edu.kg](https://freeze.edu.kg)
+- 学生 API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)
+- [安全审计与验收边界](docs/SECURITY_AUDIT_REPORT.md)
+- [生产发布影响与回滚方案](docs/PRODUCTION_ROLLOUT.md)
 
----
+## 当前状态（2026-10-19）
 
-## 1. Architecture Overview (技术架构)
+**本轮安全加固代码尚未推送或部署，`0003` 迁移尚未应用到生产。** 已在仓库外私有备份后关闭新用户注册，并从线上 health 确认关闭；其余现有功能开关保持原状态。通过安全验收并获得开放批准前，注册保持关闭。
 
-| Layer | Technology | Responsibility |
-| :--- | :--- | :--- |
-| **Static Frontend** | GitHub Pages (`index.html`, `styles.css`, `app.js`, `js/*`) | 8 interactive campus portals, Oxford Royal Blue design, dark mode, bilingual (`zh`/`en`), 100% open to guests |
-| **Identity & Auth** | Firebase Authentication Web SDK (`js/student-auth.js`) | Google-only client and Worker provider checks; Firebase SDK manages persistence, with no application-written raw tokens; popup sign-in is the current production path |
-| **Edge API** | Cloudflare Workers TypeScript (`worker/src/index.ts`) | RS256 Firebase JWT verification (`aud`, `iss`, `exp`, `iat`, `sub`), strict CORS & CSP, IP + UID rate limiting, server-side exam grading, idempotent import |
-| **Database** | Cloudflare D1 SQLite (`worker/migrations/`) | Unique Firebase UID and ANU Student ID, private profiles, academic archives, database-enforced capacity limits |
-| **Abuse Defense** | Cloudflare Turnstile + Admin Kill-Switches | Server-side Turnstile verification on registration, paper/diploma writes and archive import; fixed-window request limits; switches to pause registration, paper submissions, diploma registrations or public lookup |
+GitHub Pages 已有站点仍正常构建，正式域启用 HTTPS。线上 Worker 仍为已有版本 `4e829602-af8d-4c75-ab59-1cb09c1eea76`，不代表本轮改动已上线。真人 Google OAuth、真实 Turnstile、生产账户写入和物理 iPhone Safari 尚未验收，不能以本地模拟代替。
 
-### Current release status (2026-10-18)
+## 技术架构
 
-- The existing Firebase project is `project-8995408b-d1b3-4571-83b`. Its public Web App configuration is already in `js/anu-config.js`, with `authDomain: "project-8995408b-d1b3-4571-83b.firebaseapp.com"`.
-- The Worker is reachable at `https://api.freeze.edu.kg/api/v1/health` (HTTP 200), and `worker/wrangler.toml` already contains the production D1 binding. Wrangler account authorization is available. Health alone does not verify authenticated writes, secrets or the deployed code version.
-- Wrangler's secret-name listing confirms `ADMIN_API_TOKEN`, `IP_HASH_SALT` and `TURNSTILE_SECRET_KEY` are present. Their values were not read; live Turnstile and administrator operations still require separate validation.
-- Firebase Console now shows Google as the only configured sign-in provider, with status **Enabled**. `freeze.edu.kg` is saved as a custom authorized domain; an independent public project-configuration check confirms all four domains: `localhost`, the project's `firebaseapp.com` and `web.app` domains, and `freeze.edu.kg`.
-- Production Google OAuth with a real user, the complete authenticated archive workflow and physical iPhone Safari remain release checks. Local automated tests do not establish that these production flows work.
-- GitHub Pages currently has no Firebase `/__/auth/*` helper or reverse proxy. Keep the existing Firebase `authDomain` and popup flow. Redirect fallback is permitted only after a working same-origin auth helper is configured and verified; changing `authDomain` alone does not provide that helper.
+| 层 | 实现与责任 |
+| --- | --- |
+| 前端 | GitHub Pages；`index.html`、`styles.css`、`app.js` 和 `js/`；校园内容、游客模式与 My ANU |
+| 身份 | Firebase Authentication 官方 Web SDK；仅 Google；SDK 管理持久化，应用不自行保存原始 token |
+| API | Cloudflare Workers TypeScript；Firebase JWT 验签、CORS、本人资源权限、后端判分与云端归档 |
+| 数据 | Cloudflare D1；UID 一人一档、学号唯一、默认私有、成绩/论文/证书额度和导入去重 |
+| 防护 | Turnstile success/hostname/action/时效及一次性校验；边缘限流与 D1 写配额；Access + 管理 secret 和功能开关 |
 
----
+## 本地运行
 
-## 2. Local Preview & Automated Security Tests (本地运行与安全测试)
-
-### 2.1 Run Static Frontend Locally
+前端预览：
 
 ```bash
 python3 -m http.server 8088
 ```
 
-Visit `http://localhost:8088`. The 8 public campus portals and Guest Mode in **VIII. My ANU · 我的校园** can be previewed without signing in. Cloud account features require Firebase, Turnstile and the API to be configured and reachable.
+打开 [localhost:8088](http://localhost:8088)。游客功能可独立预览；生产 API 拒绝 localhost 来源，本地开发应使用独立 Worker 配置及本地数据库，不向生产扩大 CORS。
 
-### 2.2 Run Automated Frontend + Worker + SQLite Security Checks
-
-Use Node.js v24+ (the tests import TypeScript and use built-in `node:sqlite` and Web Crypto RS256):
+Worker 需要 Node.js 24+：
 
 ```bash
+cd worker
+npm ci
+npm run db:migrate:local
+npm run dev
+```
+
+`npm run dev` 使用 `wrangler.dev.toml` 的本地模拟器和伪数据库标识；生产配置独立保存在 `wrangler.toml`。如需联调，将前端公开 runtime config 指向本地 API，并使用合适的本地 Firebase/Turnstile 测试配置；不得把服务端 secret 写入前端。
+
+## 自动化检查
+
+```bash
+# 从仓库根目录运行
 node --no-warnings tests/run-tests.mjs
+node tests/student-auth-tests.mjs
+node tests/canvas-export-tests.mjs
+node tests/browser-regression.cjs
+git diff --check
+
+# 在 worker/ 目录运行
+npm run typecheck
+npm run deploy:dry-run
 ```
 
-The suite covers:
-1. GitHub Pages `CNAME` (`freeze.edu.kg`), `.nojekyll`, `404.html`, bilingual dictionaries and HTML bindings.
-2. PNG exporter code paths for all 3 diploma templates and *Nature: Nothing* acceptance letters, using a mocked canvas.
-3. Static checks for user-input `innerHTML` assignments and application-written `localStorage` token storage, plus mocked client behavior checks.
-4. Both SQLite migrations and actual Worker handlers through an in-memory D1-compatible adapter:
-   - CORS origin whitelist & strict CSP/HSTS headers
-   - Firebase JWT RS256 signature, `aud`, `iss`, `exp`, `iat`, and `google.com` provider enforcement
-   - Rejection of client-supplied `uid` / `firebase_uid` spoofing attempts
-   - Missing/invalid Cloudflare Turnstile rejection using a test verifier
-   - 1-Firebase-UID-to-1-Student-Profile uniqueness & default `private` visibility
-   - Explicit public consent lifecycle & instant revocation
-   - Server-side exam grading, zero-word paper archiving, diploma registration, and idempotent local data import
-   - Cross-account isolation, concurrent IP/UID/write-limit reservations, fixed-window reset, archive quota races and batch rollback, admin switches and archive deletion (`DELETE /api/v1/me`).
+覆盖 JWT 假签名/声明、跨账号权限、Turnstile action 和重放、并发注册、revision 冲突、导入原子性、限流故障、档案导出/删除、登录切换及超时恢复。静态检查同时核对双语绑定、公开配置和 secret 边界；PNG 使用 Canvas mocks，Safari 客户端包含 UA 模拟。
 
-These are local checks with test JWT signing keys and mocked external services, not live Firebase OAuth or remote D1 end-to-end tests. Isolated Wrangler D1 checks also verified both migrations, the three quota triggers and atomic limiter SQL. Browser checks at 1440×1000 and 390×844 cover guest features, sync error/retry, security widgets and cloud save feedback; authenticated UI fixtures replace external services. Archive deletion removes the application's D1 records, not the Google account or Firebase identity. See `docs/SECURITY_AUDIT_REPORT.md` for the verification boundary.
+Worker 测试运行实际处理器、内存 SQLite 和 RSA 签名，外部 Firebase、Turnstile、Access 及边缘服务为模拟。客户端测试替换 SDK 和 API；因此测试通过不代表真人 OAuth、真实挑战、远程 D1 或物理 Safari 通过。本轮最终全集、TypeScript、dry-run 与 Chrome 390/768/1440 px 中英/深色回归已通过，包含 4 张实际 PNG 下载；浏览器身份及 API 为 fixtures，详见安全报告。
 
----
+## 配置与隐私
 
-## 3. Production Configuration & Release Checklist (现有云端配置与发布检查)
+沿用已有 Firebase 项目及 `js/anu-config.js` 中的公开标识，Google 提供方和正式授权域已在前次核对。GitHub Pages 未部署 Firebase 同源 `/__/auth/*` helper，登录使用 popup；不得只修改 authDomain 来尝试修复 Safari redirect。[Firebase 官方说明](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-> Never commit private keys, Cloudflare API tokens, `TURNSTILE_SECRET_KEY`, `ADMIN_API_TOKEN` or `IP_HASH_SALT`. Firebase Web `apiKey` and other Web App identifiers are public configuration, not administrator secrets; apply appropriate API restrictions in Google Cloud. [Firebase API key guidance](https://firebase.google.com/docs/projects/api-keys).
+生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；当前 issuer/audience 留空，部署前需核实真实 Access 应用与 MFA，不能绕过要求。三个边缘限流 namespace 仍需核对账户内唯一性；生产缺 binding 将返回 503。
 
-### Step 1: Configure Firebase Authentication & Google OAuth (`freeze.edu.kg`)
+遗留数据库学籍表要求 UID 至少 6 字符；JWT 验证遵守 Firebase 的 1–128 字符规则，短 UID 新建学籍明确返回 `UID_NOT_SUPPORTED`，完整兼容需后续安全迁移。
 
-1. Open the existing project `project-8995408b-d1b3-4571-83b` in [Firebase Console](https://console.firebase.google.com/). Do not create a replacement project for this release.
-2. In **Project Settings → General → Your apps**, verify that the Web App configuration matches `js/anu-config.js` and that Worker `FIREBASE_PROJECT_ID` matches the same project.
-3. In **Authentication → Sign-in method**, Google is already the only configured provider and is **Enabled** (verified 2026-10-18). Preserve this Google-only setup. Review the public-facing project name (`Absolutely Nothing University`) and support email if changing OAuth presentation.
-4. In **Authentication → Settings → Authorized domains**, `freeze.edu.kg` has already been saved and independently verified in the public project configuration. Preserve it alongside `localhost` and the project's default `firebaseapp.com` / `web.app` domains.
-5. Keep the current `authDomain: "project-8995408b-d1b3-4571-83b.firebaseapp.com"` and test Google login from a user click with `signInWithPopup`. Verify the Firebase-domain handler in the Google OAuth client's authorized redirect URIs if needed.
-6. **Safari / redirect boundary**: Firebase redirect login relies on a helper domain and can fail when third-party storage is blocked. GitHub Pages does not currently serve that helper at `https://freeze.edu.kg/__/auth/*`. A future redirect setup requires the same-origin helper to work first, then its `authDomain` and OAuth redirect URI configuration, followed by browser verification. A 302 redirect is not a transparent auth proxy. See [Firebase's redirect best practices](https://firebase.google.com/docs/auth/web/redirect-best-practices). This release does not establish Safari redirect support.
+学生档案默认 private，公开需明确同意，可撤回。所有私有操作由服务端验签 UID 定位资源。档案删除需要明确确认和最近五分钟 Google 认证，只删除 ANU D1 档案及关联记录，保留 Google 账户与 Firebase 身份。
 
-### Step 2: Configure Cloudflare Turnstile (Anti-Abuse)
+Firebase Web `apiKey`、app/project IDs、authDomain 和 Turnstile site key 为客户端公开参数。`TURNSTILE_SECRET_KEY`、`ADMIN_API_TOKEN`、`IP_HASH_SALT`、Cloudflare token、私钥及 SQL 备份必须保持私有，不提交到 Git。[Firebase API key 指南](https://firebase.google.com/docs/projects/api-keys)。
 
-1. In [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Turnstile**, locate the existing widget matching `turnstileSiteKey` in `js/anu-config.js`.
-2. Verify `freeze.edu.kg` and local test hostnames, and use **Managed** mode.
-3. Verify the corresponding server-side `TURNSTILE_SECRET_KEY` exists on `anu-student-api`, then complete a real challenge and authenticated write. The public site key alone does not verify this pairing.
-
-### Step 3: Update Frontend Public Runtime Config (`js/anu-config.js`)
-
-The real public identifiers are already configured. If replacing them intentionally, copy the Web App configuration from Firebase Console and keep the project ID consistent with the Worker. The shape is:
-
-```javascript
-window.ANU_CONFIG = {
-  apiBaseUrl: "https://api.freeze.edu.kg",
-  turnstileSiteKey: "<YOUR_CLOUDFLARE_TURNSTILE_SITE_KEY>",
-  firebase: {
-    apiKey: "<YOUR_FIREBASE_WEB_API_KEY>",
-    authDomain: "project-8995408b-d1b3-4571-83b.firebaseapp.com",
-    projectId: "<YOUR_FIREBASE_PROJECT_ID>",
-    appId: "<YOUR_FIREBASE_APP_ID>"
-  }
-};
-```
-
-### Step 4: Verify Existing Cloudflare D1 & Migrations
-
-1. Install dependencies inside `worker/`:
-   ```bash
-   cd worker
-   npm ci
-   npx wrangler whoami
-   ```
-2. Verify the existing `anu-campus-db` binding before changing anything:
-   ```bash
-   npx wrangler d1 info anu-campus-db
-   npx wrangler d1 migrations list anu-campus-db --remote
-   ```
-3. `worker/wrangler.toml` already includes the production `database_id`. Do not create another database or replace this binding as a routine release step.
-4. Apply any pending schema migrations locally first. Back up the existing remote database before an authorized production migration:
-   ```bash
-   npm run db:migrate:local
-   npm run db:migrate:prod
-   ```
-5. If a launch pause is required, set it explicitly; the initial schema currently seeds registration as enabled and does not imply a production pause:
-   ```bash
-   npx wrangler d1 execute anu-campus-db --remote --command="UPDATE system_flags SET enabled = 0 WHERE flag_key = 'registration_enabled';"
-   ```
-
-### Step 5: Configure Cloudflare Worker Secrets
-
-First check secret names without printing their values:
+## 备份与发布
 
 ```bash
-cd worker
-npx wrangler secret list
-```
-
-As of 2026-10-18, all three required names (`TURNSTILE_SECRET_KEY`, `ADMIN_API_TOKEN`, `IP_HASH_SALT`) are present. Name presence does not establish value validity. Existing secrets should not be overwritten during verification. If one is missing in a future environment, set it through Wrangler (never place the value in source or logs):
-
-```bash
-cd worker
-npx wrangler secret put TURNSTILE_SECRET_KEY
-# Paste your Cloudflare Turnstile Secret Key
-
-npx wrangler secret put ADMIN_API_TOKEN
-# Enter a high-entropy random administrator token
-
-npx wrangler secret put IP_HASH_SALT
-# Enter a cryptographically random salt
-```
-
-### Step 6: Configure Custom Domain DNS (`api.freeze.edu.kg`) & Deploy Worker
-
-1. Ensure the zone `freeze.edu.kg` is active in your Cloudflare account.
-2. In `worker/wrangler.toml`, the custom domain route is already configured:
-   ```toml
-   routes = [
-     { pattern = "api.freeze.edu.kg", custom_domain = true }
-   ]
-   ```
-   When you deploy, Cloudflare Workers Custom Domains automatically creates the proxied DNS record and issues the TLS certificate for `api.freeze.edu.kg`. (Alternatively, in Cloudflare Dashboard → **Workers & Pages → anu-student-api → Settings → Domains & Routes**, click **Add → Custom Domain** and enter `api.freeze.edu.kg`).
-3. Verify that GitHub Pages custom domain DNS records for `freeze.edu.kg` (Apex `A`/`AAAA` or `CNAME`) remain untouched so `https://freeze.edu.kg` continues serving the GitHub Pages frontend.
-4. After the local checks pass and production release is authorized, deploy the Worker:
-   ```bash
-   cd worker
-   npm run deploy
-   ```
-
-### Step 7: Post-Deploy Verification & Opening Public Registration
-
-1. Verify API health & CORS headers:
-   ```bash
-   curl -i -H "Origin: https://freeze.edu.kg" https://api.freeze.edu.kg/api/v1/health
-   ```
-2. Complete Google login, registration with a real Turnstile challenge, archive sync/import, visibility opt-in/revocation and account archive deletion in a dedicated test account. Check production behavior separately from the local suite, including a physical iPhone Safari test.
-3. Inspect the current system flags before changing them. If registration was paused for launch, enable it only after the release checks pass via the authenticated Admin API:
-   ```bash
-   curl -X PUT https://api.freeze.edu.kg/api/v1/admin/flags \
-     -H "Content-Type: application/json" \
-     -H "X-Admin-Token: <YOUR_ADMIN_API_TOKEN>" \
-     -d '{"flagKey":"registration_enabled","enabled":true,"note":"Production launch verified"}'
-   ```
-
----
-
-## 4. Database Backup, Restore & Emergency Admin Switches (备份恢复与紧急开关)
-
-### 4.1 Automated Backup & Restore Script
-
-Use `worker/scripts/backup-restore.sh` to export timestamped SQL backups with SHA-256 integrity checksums or restore from a backup:
-
-```bash
+# 从仓库根目录运行：私有导出，生成 SHA-256
 ./worker/scripts/backup-restore.sh backup
-./worker/scripts/backup-restore.sh restore ./worker/backups/anu-campus-db-<TIMESTAMP>.sql
+
+# 仅恢复到新的隔离本地模拟器，不覆盖生产
+./worker/scripts/backup-restore.sh restore-local /absolute/private/backup.sql
 ```
 
-### 4.2 Emergency Admin Switches (`/api/v1/admin/flags`)
-
-Administrators can immediately pause or resume any of the 4 campus subsystems without redeploying:
-- `registration_enabled` (New student registrations)
-- `paper_submission_enabled` (Zero-word manuscript submissions)
-- `diploma_registration_enabled` (Honorary diploma cloud registrations)
-- `public_directory_enabled` (Public Student ID lookup)
-
-```bash
-curl -X PUT https://api.freeze.edu.kg/api/v1/admin/flags \
-  -H "Content-Type: application/json" \
-  -H "X-Admin-Token: <YOUR_ADMIN_API_TOKEN>" \
-  -d '{"flagKey":"paper_submission_enabled","enabled":false,"note":"Maintenance"}'
-```
+旧的远程原地 `restore` 已禁用。`npm run deploy` 和 `npm run db:migrate:prod` 默认阻止生产变更，要求明确批准标记及一小时内经过权限/hash 校验的备份；这些标记不能代替用户批准和验收。发布前先评审 [PRODUCTION_ROLLOUT.md](docs/PRODUCTION_ROLLOUT.md)，核对 frontend action、Access、边缘限流及迁移依赖，再按批准的顺序操作。
