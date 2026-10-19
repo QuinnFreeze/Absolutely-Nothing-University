@@ -30,7 +30,7 @@
 | 管理接口仅依赖共享 secret | 生产要求高熵管理员 token 与独立验签的 Access JWT；校验 issuer、audience、有效期 | 已核对唯一邮箱 Allow 策略及每次登录 MFA，保护管理子树；真实 issuer/audience 已填入，真人第二因素仍待验收 |
 | 生产/开发混用 | 独立 `wrangler.dev.toml` 使用本地数据库标识及 localhost 来源；生产仅允许正式 HTTPS 来源，额外拒绝 loopback；生产缺少有效 IP hash salt 时返回 503 | dry-run、真实 binding/路由及 secrets 名称核对；不替换已有 D1 |
 | 越权和隐私泄漏 | 所有私有查询从已验签 UID 派生身份；拒绝前端身份覆盖；默认 private；公开必须明确同意，可撤回；导出仅本人档案 | 两账号交叉测试、公开撤回和导出不可含内部 UID |
-| 并发注册、旧表单覆盖和导入部分提交 | UID 主键防一号多档；注册冲突明确返回 409；档案 revision 预条件；导入 receipt、归档和徽章放在同一 batch，payload fingerprint 防同 key 异内容 | 同 UID 并发、跨标签旧 revision、并发重复导入、故障整批回滚；保留原生产数据 |
+| 并发注册、旧表单覆盖和导入部分提交 | UID 主键防一号多档；注册冲突明确返回 409；档案 revision 预条件；导入 receipt、归档和徽章放在同一 batch，payload fingerprint 防同 key 异内容 | 同 UID 并发、跨标签旧 revision、并发重复导入、故障整批回滚；保留原生产数据。新 receipt 响应补全协议与旧 Worker 不完全兼容，回滚必须隔离导入或使用兼容版本 |
 | 档案删除语义和凭据时效 | 明确确认口令；注册/删除要求五分钟内真实 Google 认证；删除 D1 档案及关联记录，保留 Google 账户和 Firebase 身份 | recent-auth 使用 403，刷新 ID token 不等于重新 Google 认证；导出/删除均需真实账户验收 |
 | 登录和同步竞争 | 意图预热；SDK 就绪后在点击同一调用栈开启 popup；失败可重试；阻止跨域盲目 redirect；退出/切账号隔离迟到 token、请求和挑战 | 弹窗取消/受阻、网络失败、退出等待、恢复会话；登录失败不能影响游客 |
 | 无界请求、重复写和不完整响应 | 所有 API 请求有 Abort 超时；明确 401 GET 强刷后最多重试一次；写入不自动重放；严格检查 profile 和四类集合；旧 GET 不覆盖新 mutation，同业务双击复用请求 | Worker 不可用仍保留已知档案，显示同步错误和手动重试 |
@@ -66,7 +66,7 @@ npm run deploy:dry-run
 **最终本地验收：通过。** 2026-10-19 对最终代码运行 `node --no-warnings tests/run-tests.mjs`、Worker TypeScript 和 `git diff --check`，退出码均为 0；Wrangler 4.151.1 已实际安装，部署 dry-run 成功（未上传）。`npm install` 审计 38 个包，报告 0 个已知漏洞；这不是完整依赖安全保证。
 
 - 20 组认证客户端模拟测试、23 组 Worker 本地测试；Worker 测试使用真实 SQLite/RSA 与模拟外部网络，覆盖随机编号固定、全局唯一冲突整批回滚、归档读失败不伪装空数据，以及注册/记录/徽章同批提交。
-- Canvas 5 组模拟用例；发布门禁以临时 Wrangler stub 验证无批准、备份过期/权限不私有/hash 不符均拒绝，未运行真实生产发布。
+- Canvas 5 组模拟用例；备份导出和发布门禁使用隔离仓库布局、真实文件系统及临时 Wrangler stub。验证无批准、备份过期/权限不私有/hash 不符、仓库根目录/子目录、符号链接及父级遍历均拒绝；拒绝发生在目录创建、chmod 或 CLI 之前，相邻同名前缀目录与含空格路径可正常使用。SQL 与校验文件的链接目标均复核；没有运行真实生产发布或导出真实用户数据。
 - `node tests/browser-regression.cjs`：真实 Chrome 渲染、本地静态站点、Firebase/API/Turnstile fixtures、系统字体。390/768/1440 px × 中英文 × 手动浅/深色均无横向溢出；20 张截图，4 张实际 PNG，覆盖成绩单/论文/证书及 2400×3058 长内容。验证来源切换、账号切换、删除失败/未确认不清本机、成功仅删云端保留 Google 身份、JSON 导出、ARIA 键盘、错误语言切换和同步重试。
 - 使用真实 Firebase SDK 的独立 Chrome 游客检查通过：初始化无认证错误，本机论文/证书功能正常，无页面运行异常；没有执行 Google OAuth 或生产账户写入。
 - 3 次隔离 Wrangler 本地迁移成功；今日备份已恢复至全新私有临时本地数据库，验证导出可恢复，未覆盖生产。
@@ -77,7 +77,7 @@ npm run deploy:dry-run
 
 GitHub Pages 当前没有同源 `/__/auth/*` helper。保留既有 `firebaseapp.com` authDomain，先使用 popup；只有部署并验证同源 helper、OAuth redirect URI 后才允许 redirect 回退。单独修改 authDomain 或增加 302 跳转不能提供该 helper。[Firebase redirect 最佳实践](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 Allow 规则，使用受支持的 IdP MFA 或独立 MFA，并检查更具体的策略是否覆盖上级要求；实际登录也必须验证第二因素。当前策略 API 403，已通过控制台完成独立 MFA 方法开启及应用/策略的强制要求配置；保存后重新读取确认。生物识别、安全密钥或 TOTP 的实际用户注册与真人第二因素验证仍未完成。应用会话 1h；“每次登录 MFA”不是每个 API 请求再次验证。[Cloudflare MFA 配置](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/)。
+Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 Allow 规则，使用受支持的 IdP MFA 或独立 MFA，并检查更具体的策略是否覆盖上级要求；实际登录也必须验证第二因素。当前策略 API 403，已通过控制台完成独立 MFA 方法开启及应用/策略的强制要求配置；保存后重新读取确认。生物识别、安全密钥或 TOTP 的实际用户注册与真人第二因素验证仍未完成；注册门户尚未启用，见第 7 节。应用会话 1h；“每次登录 MFA”不是每个 API 请求再次验证。[Cloudflare MFA 配置](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/)。
 
 ## 5. 开放注册前必须解决的事项
 
@@ -92,6 +92,8 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 
 云端删除会级联删除本人学生档案及业务记录；安全审计仅保留哈希身份，私有备份是独立灾备副本，不由该接口立即清除。保留期限与备份到期清理规则仍需运营者确定，本轮未擅自删除历史备份。前端隐私说明已明确这一边界。
 
+备份导出在创建目录前核对真实路径，发布门禁独立核对 SQL、父目录及校验文件；仓库内路径及指向仓库的符号链接均不能作为生产备份。旧 Worker 回滚可保留新增表列和数据，但不能直接兼容本轮仅保存计数的新导入 receipt。生产没有独立 import 开关；需另行评审精确导入路由维护规则，或准备保留本轮安全校验的兼容回滚版本。不得删账本、覆盖生产数据库或关闭认证/Access 来换取兼容，具体步骤见发布方案第 7 节。
+
 ## 7. 本日 Access 边缘验证
 
 - 应用 `ANU Admin API`（ID `b4e5841c-4e8c-41db-b248-de8595cf850d`），关联唯一邮箱白名单策略，未允许整个邮箱域、Everyone、Bypass 或 Service Auth 业务通行。管理员邮箱只保存在 Cloudflare，未写入公开源码或报告。
@@ -104,4 +106,5 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 - 管理员首次 Cloudflare SSO 返回拒绝，未扩宽白名单；已添加 One-time PIN 作为该应用的指定邮箱验证方式，仍保留应用及唯一策略的独立 MFA 要求。一次性邮箱码本身不计为第二因素；管理员需另行注册并验证生物识别、安全密钥或 TOTP。[官方 OTP 说明](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/)。
 
 - 管理员报告已完成邮箱验证码后，使用同一 Chrome 会话访问管理 flags，实际进入独立 MFA 页面，显示 `No authentication methods set up` 与 `Setup MFA`。邮箱身份验证已进入下一阶段，第二因素注册和成功登录尚未完成；已交由管理员本人处理，未读取验证码、登录令牌或 MFA 密钥。
+- 后续排查 `Setup MFA` 无法继续：按钮实际跳到团队 App Launcher 的 `#/NoAuth`，页面明确要求管理员启用门户；官方 `/AddMfaDevice` 直链也落到同一提示。已准备只允许指定管理员邮箱、30 分钟会话的门户策略草稿，尚未保存，新增入口等待用户确认。计划仅使用邮箱 OTP 引导首次设备注册，不修改管理 API 的 MFA 规则；认证器创建仍由本人操作。门户规则不授予所保护应用的新权限，已有设备的增删还需验证原有 MFA。[门户设置](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/app-launcher/)、[独立 MFA 注册](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/independent-mfa/)。
 - 只读账户 API 成功检查三个 Worker 的当前上传设置，均无 Rate Limiting binding；拟用 `353403995691`、`353403995692`、`353403995693` 当前无匹配。此结论不涵盖历史未启用版本，不表示新 binding 已部署，也未修改其它 Worker。
