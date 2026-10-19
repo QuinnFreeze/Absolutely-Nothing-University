@@ -25,7 +25,7 @@
 | --- | --- | --- |
 | 挑战结果缺少上下文检查及持久重放记录 | 服务端校验 `success === true`、明确 hostname 白名单、`register/paper/diploma/import` action、挑战时间；完整响应超时；只保存 token 的 SHA-256，D1 唯一写入拒绝并发重放 | 无效、过期、错域、错 action、重复 token；真实 site key/secret 配对仍待验收 |
 | 缺配置或读取失败时功能仍可能开放 | 缺少开关或 D1 读取失败均关闭；health 降级时四功能均返回关闭 | 不把读取失败解释为“新用户未注册”或服务可用 |
-| 高频 API 请求消耗 D1 配额 | IP/UID 优先使用边缘 Rate Limiting binding；写入先过边缘，再由 D1 原子占位限制每 UID 每小时 25 次；生产缺 binding 或服务异常返回 503 | namespace 必须核对账户内唯一性；不能将边缘计数当作精确全局配额 |
+| 高频 API 请求消耗 D1 配额 | IP/UID 优先使用边缘 Rate Limiting binding；写入先过边缘，再由 D1 原子占位限制每 UID 每小时 25 次；生产缺 binding 或服务异常返回 503 | 已核对账户内三个 Worker 当前设置，拟用 namespace 无复用；未检查历史未启用版本，发布前复核。不能将边缘计数当作精确全局配额 |
 | 身份伪造、时间声明和密钥轮换处理不足 | RS256、固定 JWKS 来源、`kid/aud/iss/sub/user_id/iat/exp/auth_time/nbf` 校验，Google provider 限制；有界缓存、轮换刷新及外部响应超时 | 假签名、错误声明、未知 key、外部不可用；仅签名校验不承诺撤销令牌即时失效 |
 | 管理接口仅依赖共享 secret | 生产要求高熵管理员 token 与独立验签的 Access JWT；校验 issuer、audience、有效期 | 已核对唯一邮箱 Allow 策略及每次登录 MFA，保护管理子树；真实 issuer/audience 已填入，真人第二因素仍待验收 |
 | 生产/开发混用 | 独立 `wrangler.dev.toml` 使用本地数据库标识及 localhost 来源；生产仅允许正式 HTTPS 来源，额外拒绝 loopback；生产缺少有效 IP hash salt 时返回 503 | dry-run、真实 binding/路由及 secrets 名称核对；不替换已有 D1 |
@@ -82,7 +82,7 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 ## 5. 开放注册前必须解决的事项
 
 1. 本地自动化、TypeScript、dry-run 和 Chrome 桌面/移动布局回归已通过；正式发布时仍需对批准的最终提交重新运行。
-2. 核对三个边缘限流 namespace；Access 应用与 issuer/audience 已配置，仍需由管理员本人注册并验证第二因素，完成 MFA 实际验收。
+2. 三个边缘限流 namespace 已与账户内当前 Worker 配置核对无复用，发布前复核；Access 应用与 issuer/audience 已配置，仍需由管理员本人注册并验证第二因素，完成 MFA 实际验收。
 3. 按发布方案重新备份、评审影响和回滚，再协调前端 action 与后端版本，执行必要的 `0003` 增量迁移；本轮尚未执行。
 4. 在隔离环境完成新注册，并用明确授权的验收账号完成真实 Google、Turnstile、档案同步/导出/删除、隐私公开及撤回。当前没有仅验收账号注册通道，不得为测试自行全局开放注册。
 5. 使用物理 iPhone Safari 验证登录、取消/受阻提示、退出切换、刷新恢复及 PNG 保存。确认生产错误恢复和已有用户数据后，再取得开放注册批准。
@@ -103,4 +103,5 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 
 - 管理员首次 Cloudflare SSO 返回拒绝，未扩宽白名单；已添加 One-time PIN 作为该应用的指定邮箱验证方式，仍保留应用及唯一策略的独立 MFA 要求。一次性邮箱码本身不计为第二因素；管理员需另行注册并验证生物识别、安全密钥或 TOTP。[官方 OTP 说明](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/)。
 
-- 已在真实管理员入口确认出现邮箱验证码表单，并向指定邮箱提交一次发送请求；当前停在验证码输入/本人 MFA 注册步骤。未读取验证码、登录令牌或 MFA 密钥，未据此把真人 MFA 登录标记为通过。
+- 管理员报告已完成邮箱验证码后，使用同一 Chrome 会话访问管理 flags，实际进入独立 MFA 页面，显示 `No authentication methods set up` 与 `Setup MFA`。邮箱身份验证已进入下一阶段，第二因素注册和成功登录尚未完成；已交由管理员本人处理，未读取验证码、登录令牌或 MFA 密钥。
+- 只读账户 API 成功检查三个 Worker 的当前上传设置，均无 Rate Limiting binding；拟用 `353403995691`、`353403995692`、`353403995693` 当前无匹配。此结论不涵盖历史未启用版本，不表示新 binding 已部署，也未修改其它 Worker。
