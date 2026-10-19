@@ -69,7 +69,7 @@ Worker 测试运行实际处理器、内存 SQLite 和 RSA 签名，外部 Fireb
 
 沿用已有 Firebase 项目及 `js/anu-config.js` 中的公开标识，Google 提供方和正式授权域已在前次核对。GitHub Pages 未部署 Firebase 同源 `/__/auth/*` helper，登录使用 popup；不得只修改 authDomain 来尝试修复 Safari redirect。[Firebase 官方说明](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；真实 issuer/audience 已从本日创建的 ANU Admin API Access 应用填入；边缘限定指定管理员邮箱并要求 MFA，邮箱验证已到达独立 MFA 注册步骤，真人第二因素注册/登录仍待验收。不能绕过要求。三个边缘限流 namespace 已与账户内三个 Worker 当前设置核对，无复用；未检查历史未启用版本，发布前仍须复核。生产缺 binding 将返回 503。
+生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；真实 issuer/audience 已从本日创建的 ANU Admin API Access 应用填入；边缘限定指定管理员邮箱并要求 MFA。经用户单独确认，认证器自助门户已保存并刷新核验：仅允许精确单邮箱和 One-time PIN，门户应用及策略会话均为 30 分钟，只关联 App Launcher，不改变 Admin API 的 MFA 要求。真实 `/AddMfaDevice` 已显示认证器注册选项，先前 `NoAuth` 阻断已修复；本人第二因素注册及实际登录仍待验收，不能标为通过。三个边缘限流 namespace 已与账户内三个 Worker 当前设置核对，无复用；未检查历史未启用版本，发布前仍须复核。生产缺 binding 将返回 503。
 
 遗留数据库学籍表要求 UID 至少 6 字符；JWT 验证遵守 Firebase 的 1–128 字符规则，短 UID 新建学籍明确返回 `UID_NOT_SUPPORTED`，完整兼容需后续安全迁移。
 

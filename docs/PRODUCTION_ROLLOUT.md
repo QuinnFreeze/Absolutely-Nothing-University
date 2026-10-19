@@ -110,6 +110,8 @@ ANU_PRODUCTION_APPROVED=1 ANU_VERIFIED_BACKUP=/absolute/private/backup.sql npm r
 
 2026-10-19 用户明确批准免费 Zero Trust 与管理员防护，并指定唯一管理员邮箱。本日已创建 ANU Admin API 应用（`b4e5841c-4e8c-41db-b248-de8595cf850d`），保护 `/api/v1/admin` 及其继承子路径；应用和唯一策略要求独立 MFA，应用会话 1h。邮箱保存在控制台，不进入公开仓库。该授权不等于新 Worker/Pages 部署、生产 0003 迁移或注册开放授权。
 
-管理员应用使用精确邮箱 OTP 身份验证，并继续要求独立 MFA。一次性邮箱码不代替第二因素，也不取消 Worker 管理 secret。管理员报告完成邮箱验证后，同一浏览器的真实入口已进入 MFA 页面，但显示 `No authentication methods set up`；尚待本人完成第二因素注册与实际登录，不能记为 MFA 通过。
+管理员应用使用精确邮箱 OTP 身份验证，并继续要求独立 MFA。一次性邮箱码不代替第二因素，也不取消 Worker 管理 secret。管理员完成邮箱验证后，初次入口显示 `No authentication methods set up`；后续经单独授权启用自助门户，认证器注册页现已可达。本人第二因素注册与实际登录仍待完成，不能记为 MFA 通过。
 
-`Setup MFA` 后续跳转到尚未启用的 App Launcher，官方直接注册入口也被同一门户设置阻断。已准备单个管理员邮箱、30 分钟会话的门户策略草稿，尚未保存，正等待新增认证器自助入口的明确确认。启用时仅允许邮箱 OTP；管理 API 的独立 MFA 与 secret 要求继续保留。本人创建认证器之后，须重新访问管理入口验证第二因素确实生效，才可解除该发布前阻断。
+`Setup MFA` 和官方 `/AddMfaDevice` 先前因 App Launcher 未启用而落到 `#/NoAuth`；该阻断现已修复。用户本轮明确确认启用，浏览器保存后刷新重新读取，唯一 Allow 策略为 `ANU administrator MFA enrollment`（ID `f419fc5a-9592-4508-ab52-9db39d344e0e`），只允许精确单个管理员邮箱、仅 One-time PIN，`acceptAllIdPs=false`，门户应用与策略会话均为 30 分钟。策略只关联一个 App Launcher 应用，不修改 Admin API 原策略、独立 MFA、1h 应用会话或 Worker 管理 secret 要求；不将管理员邮箱写入 Git。
+
+真实 `/AddMfaDevice` 已显示 `Secure your account with MFA` 及 `Biometrics`、`Security key`、`Authenticator application` 选项，已交由本人操作。未读取二维码、OTP 或登录令牌；本人创建认证器之后，仍须重新访问管理入口验证第二因素确实生效，才可解除 MFA 实际验收的发布前阻断。新代码和 `0003` 仍未部署到生产，注册保持关闭。

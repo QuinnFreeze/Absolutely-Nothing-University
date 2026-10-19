@@ -14,7 +14,7 @@
 | D1 | 保留既有数据；`0003_security_hardening.sql` 尚未应用到生产 | 新列和 token ledger 仍是待发布结构 |
 | 注册开关 | 完成私有备份后，只将 `registration_enabled` 关闭；线上 health 已读回 `false`，其余三个开关为 `true` | 注册须保持关闭，直至安全验收和开放批准 |
 | 备份 | 2026-10-19 02:07:40 UTC 导出到仓库外私有位置；10,901 bytes，权限 `0600`；SHA-256 为 `573a67f54852d52ddfd46d0a878ee4cb97e2fdff4aa1a89cffe33384dfebb376` | 不公开 SQL 内容、私有路径或任何凭据；正式变更前须另取一小时内的新备份 |
-| 管理保护 | 已按用户授权创建 ANU Admin API Access 应用，保护 `/api/v1/admin` 及其子路径；限定指定邮箱、每次登录独立 MFA、1h 应用会话；真实 issuer/AUD 已填入待发布配置 | CLI token 读取 Access 策略仍为 403；通过已登录控制台保存并重新读取应用/MFA 设置。匿名管理请求跳转团队登录页；真人第二因素注册/登录未验收 |
+| 管理保护 | 已按用户授权创建 ANU Admin API Access 应用，保护 `/api/v1/admin` 及其子路径；限定指定邮箱、每次登录独立 MFA、1h 应用会话；真实 issuer/AUD 已填入待发布配置。经另行确认启用单邮箱、仅 OTP、30 分钟的 App Launcher 自助注册门户 | CLI token 读取 Access 策略仍为 403；控制台保存并刷新核验。门户仅关联 App Launcher，未改变 Admin API 原策略/MFA；真实认证器注册页已可达，本人第二因素注册/登录未验收 |
 | 真实账户流程 | 尚未完成真人 Google OAuth、真实 Turnstile、生产账户写入及物理 iPhone Safari 验收 | 不计为通过；响应式尺寸、UA 模拟和本地 fixtures 均不能替代 |
 
 公开 Firebase Web `apiKey`、项目标识和 Turnstile site key 用于客户端配置，不是管理员凭据。服务端 secret、Cloudflare API token、私钥、原始用户令牌和备份 SQL 不应进入 Git、公开文档或浏览器日志。[Firebase API key 指南](https://firebase.google.com/docs/projects/api-keys)。
@@ -77,12 +77,12 @@ npm run deploy:dry-run
 
 GitHub Pages 当前没有同源 `/__/auth/*` helper。保留既有 `firebaseapp.com` authDomain，先使用 popup；只有部署并验证同源 helper、OAuth redirect URI 后才允许 redirect 回退。单独修改 authDomain 或增加 302 跳转不能提供该 helper。[Firebase redirect 最佳实践](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 Allow 规则，使用受支持的 IdP MFA 或独立 MFA，并检查更具体的策略是否覆盖上级要求；实际登录也必须验证第二因素。当前策略 API 403，已通过控制台完成独立 MFA 方法开启及应用/策略的强制要求配置；保存后重新读取确认。生物识别、安全密钥或 TOTP 的实际用户注册与真人第二因素验证仍未完成；注册门户尚未启用，见第 7 节。应用会话 1h；“每次登录 MFA”不是每个 API 请求再次验证。[Cloudflare MFA 配置](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/)。
+Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 Allow 规则，使用受支持的 IdP MFA 或独立 MFA，并检查更具体的策略是否覆盖上级要求；实际登录也必须验证第二因素。当前策略 API 403，已通过控制台完成独立 MFA 方法开启及应用/策略的强制要求配置；保存后重新读取确认。用户另行确认后，30 分钟会话的自助注册门户已启用，真实 `/AddMfaDevice` 页面已显示注册方式，先前 `NoAuth` 阻断已修复；生物识别、安全密钥或 TOTP 的本人注册与实际第二因素登录仍未完成，见第 7 节。Admin API 应用会话仍为 1h；“每次登录 MFA”不是每个 API 请求再次验证。[Cloudflare MFA 配置](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/)。
 
 ## 5. 开放注册前必须解决的事项
 
 1. 本地自动化、TypeScript、dry-run 和 Chrome 桌面/移动布局回归已通过；正式发布时仍需对批准的最终提交重新运行。
-2. 三个边缘限流 namespace 已与账户内当前 Worker 配置核对无复用，发布前复核；Access 应用与 issuer/audience 已配置，仍需由管理员本人注册并验证第二因素，完成 MFA 实际验收。
+2. 三个边缘限流 namespace 已与账户内当前 Worker 配置核对无复用，发布前复核；Access 应用与 issuer/audience 已配置，单邮箱自助门户已启用且认证器注册页可达，仍需由管理员本人注册并验证第二因素，完成 MFA 实际验收。
 3. 按发布方案重新备份、评审影响和回滚，再协调前端 action 与后端版本，执行必要的 `0003` 增量迁移；本轮尚未执行。
 4. 在隔离环境完成新注册，并用明确授权的验收账号完成真实 Google、Turnstile、档案同步/导出/删除、隐私公开及撤回。当前没有仅验收账号注册通道，不得为测试自行全局开放注册。
 5. 使用物理 iPhone Safari 验证登录、取消/受阻提示、退出切换、刷新恢复及 PNG 保存。确认生产错误恢复和已有用户数据后，再取得开放注册批准。
@@ -106,5 +106,6 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 - 管理员首次 Cloudflare SSO 返回拒绝，未扩宽白名单；已添加 One-time PIN 作为该应用的指定邮箱验证方式，仍保留应用及唯一策略的独立 MFA 要求。一次性邮箱码本身不计为第二因素；管理员需另行注册并验证生物识别、安全密钥或 TOTP。[官方 OTP 说明](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/)。
 
 - 管理员报告已完成邮箱验证码后，使用同一 Chrome 会话访问管理 flags，实际进入独立 MFA 页面，显示 `No authentication methods set up` 与 `Setup MFA`。邮箱身份验证已进入下一阶段，第二因素注册和成功登录尚未完成；已交由管理员本人处理，未读取验证码、登录令牌或 MFA 密钥。
-- 后续排查 `Setup MFA` 无法继续：按钮实际跳到团队 App Launcher 的 `#/NoAuth`，页面明确要求管理员启用门户；官方 `/AddMfaDevice` 直链也落到同一提示。已准备只允许指定管理员邮箱、30 分钟会话的门户策略草稿，尚未保存，新增入口等待用户确认。计划仅使用邮箱 OTP 引导首次设备注册，不修改管理 API 的 MFA 规则；认证器创建仍由本人操作。门户规则不授予所保护应用的新权限，已有设备的增删还需验证原有 MFA。[门户设置](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/app-launcher/)、[独立 MFA 注册](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/independent-mfa/)。
+- 后续排查曾确认 `Setup MFA` 和官方 `/AddMfaDevice` 入口被未启用的 App Launcher 阻断至 `#/NoAuth`。用户本轮已明确确认启用自助入口；浏览器保存后刷新重新读取，唯一 Allow 策略为 `ANU administrator MFA enrollment`（ID `f419fc5a-9592-4508-ab52-9db39d344e0e`），限制精确单邮箱、仅 One-time PIN，`acceptAllIdPs=false`，门户应用与策略会话均为 30 分钟。该策略只关联一个 App Launcher 应用，不修改 ANU Admin API 原策略、独立 MFA 或管理 secret 要求；管理员邮箱不写入 Git。门户规则不授予所保护应用的新权限。[门户设置](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/app-launcher/)、[独立 MFA 注册](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/independent-mfa/)。
+- 保存并刷新核验后，真实 `/AddMfaDevice` 已显示 `Secure your account with MFA`，提供 `Biometrics`、`Security key`、`Authenticator application` 三种选项，先前 `NoAuth` 阻断已修复。已交由本人创建认证器；未读取二维码、OTP、登录令牌或 MFA 密钥。本人认证器注册与实际第二因素登录仍待完成，不能将注册入口可达标为 MFA 验收通过。
 - 只读账户 API 成功检查三个 Worker 的当前上传设置，均无 Rate Limiting binding；拟用 `353403995691`、`353403995692`、`353403995693` 当前无匹配。此结论不涵盖历史未启用版本，不表示新 binding 已部署，也未修改其它 Worker。
