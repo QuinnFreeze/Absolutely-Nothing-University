@@ -2,6 +2,7 @@ name = "anu-student-api"
 main = "src/index.ts"
 compatibility_date = "2026-01-01"
 workers_dev = false
+preview_urls = false
 
 # Target custom domain route: https://api.freeze.edu.kg/*
 routes = [
@@ -14,9 +15,9 @@ FIREBASE_PROJECT_ID = "project-8995408b-d1b3-4571-83b"
 ALLOWED_ORIGINS = "https://freeze.edu.kg"
 TURNSTILE_ALLOWED_HOSTNAMES = "freeze.edu.kg"
 ADMIN_REQUIRE_ACCESS = "true"
-# Set the actual Access team issuer and application audience before enabling admin operations.
-ADMIN_ACCESS_ISSUER = ""
-ADMIN_ACCESS_AUD = ""
+# Public verifier identifiers copied from the ANU Admin API Access application.
+ADMIN_ACCESS_ISSUER = "https://quiet-water-b981.cloudflareaccess.com"
+ADMIN_ACCESS_AUD = "60e7dfa8a0b49413a78121123850efa79cfda3b640ba936b232eaa00bf015a81"
 RATE_LIMIT_IP_PER_MIN = "120"
 RATE_LIMIT_UID_PER_MIN = "30"
 RATE_LIMIT_WRITE_PER_HOUR = "25"

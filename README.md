@@ -69,7 +69,7 @@ Worker 测试运行实际处理器、内存 SQLite 和 RSA 签名，外部 Fireb
 
 沿用已有 Firebase 项目及 `js/anu-config.js` 中的公开标识，Google 提供方和正式授权域已在前次核对。GitHub Pages 未部署 Firebase 同源 `/__/auth/*` helper，登录使用 popup；不得只修改 authDomain 来尝试修复 Safari redirect。[Firebase 官方说明](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；当前 issuer/audience 留空，部署前需核实真实 Access 应用与 MFA，不能绕过要求。三个边缘限流 namespace 仍需核对账户内唯一性；生产缺 binding 将返回 503。
+生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；真实 issuer/audience 已从本日创建的 ANU Admin API Access 应用填入；边缘限定指定管理员邮箱并要求 MFA，真人第二因素注册/登录仍待验收。不能绕过要求。三个边缘限流 namespace 仍需核对账户内唯一性；生产缺 binding 将返回 503。
 
 遗留数据库学籍表要求 UID 至少 6 字符；JWT 验证遵守 Firebase 的 1–128 字符规则，短 UID 新建学籍明确返回 `UID_NOT_SUPPORTED`，完整兼容需后续安全迁移。
 

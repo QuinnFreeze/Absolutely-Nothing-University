@@ -19,7 +19,7 @@
 | `0003` 增量迁移 | 新增 `turnstile_tokens` 及过期索引；`idempotency_keys.request_hash`、`students.revision` 默认值兼容旧行；保持注册关闭 | 新 Worker 依赖这些结构，不能先部署后端再补迁移 |
 | Turnstile | 新后端要求 hostname/action/时效和一次性使用 | 旧前端未带 action 的写入将被拒绝，须协调发布及缓存刷新 |
 | 边缘 Rate Limiting | IP/UID 减少 D1 访问，写入保留 D1 25/hour 硬限额 | 生产缺少/失效 binding 返回 503，不能降级放行；三个 namespace 仍需核对账户内未被其它 Worker 复用 |
-| Access + 管理 secret | 管理接口同时要求有效 token 和 Access JWT；Access 策略必须配置 MFA | 当前 issuer/audience 为空，新后端会锁住管理接口；部署前必须完成配置或保持本轮待发布 |
+| Access + 管理 secret | 管理接口同时要求有效 token 和 Access JWT；Access 策略必须配置 MFA | 真实 issuer/audience 已配置；已保存限定邮箱和每次登录 MFA 的应用/策略，仍需真人第二因素注册与验收 |
 | Firebase | 保留现有 Google 提供方、项目、授权域和 popup 路径 | 不切换到不存在的同源 helper，不新建替代项目 |
 | 档案删除 | 显式确认且最近五分钟 Google 认证；只删除本人 ANU D1 档案及其关联记录 | 认证过旧返回 403，需重新 Google 登录；不删除 Google/Firebase 身份 |
 
@@ -44,7 +44,7 @@ npm run deploy:dry-run
 2. 使用 `wrangler.dev.toml` 的独立本地数据库验证三次迁移与原数据保留，不向生产 ID 写入；开发配置只有 localhost 来源和非生产数据库标识。
 3. 对照现有 Worker 版本、D1 migration list、Pages 发布记录，记录部署前基线；读取 secret 名称即可，不输出其值。
 4. 核对 Rate Limiting namespace、正式域 CORS、Turnstile hostname/secret 配对和 action；生产不增加 localhost 白名单。
-5. 读取并验证 Access 的管理路径应用、受限管理员规则、实际 MFA；填入正确 issuer/audience。当前 token 对 Access 策略读取返回 403；已登录控制台显示首次启用 Zero Trust 向导，免费计划订阅及相关服务条款尚未确认。需先由用户确认该服务启用，再配置管理应用与 MFA。
+5. 读取并验证 Access 的管理路径应用、受限管理员规则、实际 MFA；填入正确 issuer/audience。当前 token 对 Access 策略读取返回 403；用户已另行明确授权免费方案与管理员防护，已通过控制台创建限定管理子树的应用并重新读取 MFA 设置。后续应复核该应用，不能重复创建或绕过 MFA。
 6. 完成真实浏览器回归，分别标注本地 fixtures、真实 SDK 初始化、真实 OAuth、物理设备。当前真人 OAuth、真实挑战和物理 Safari 均未验收。
 7. 展示本方案、最终 diff、测试结果、数据库影响和回滚版本，交由用户评审；发布授权必须对应这一具体版本。
 
@@ -72,7 +72,7 @@ npm run deploy:dry-run
 2. 先发布包含明确 Turnstile action 的前端并验证线上文件；旧后端忽略新增 action，因而可先兼容运行。保持注册关闭，检查游客及已有账号错误反馈。
 3. 对仍打开旧页面的用户提供刷新提示；在新后端上线后旧无 action 挑战会失败，需刷新页面并重新验证，不得临时放宽服务端检查。
 4. 在授权窗口应用 `0003`，检查列/索引、原记录计数及注册关闭状态；若失败，停止后端发布并读取迁移状态，不重复盲跑 `ALTER TABLE`。
-5. 确认 Rate Limiting、Access/MFA、secrets 与正式路由已就绪，再发布新 Worker，记录新 version ID。
+5. 确认 Rate Limiting、已创建的 Access 应用、真人 MFA 验收、secrets 与正式路由已就绪，再发布新 Worker，记录新 version ID。
 
 ```bash
 # 仅在以上检查、私有备份和用户批准齐备后；从 worker/ 目录执行
@@ -99,9 +99,15 @@ ANU_PRODUCTION_APPROVED=1 ANU_VERIFIED_BACKUP=/absolute/private/backup.sql npm r
 ## 7. 回滚方案
 
 - **前端异常**：回退到记录的上一 Pages 提交，验证正式 HTTPS 内容及游客功能。若后端已升级，旧前端缺 action 的受保护写入会被拒绝；需要同时回滚 Worker，或保留兼容的新前端修复版，不能放松 Turnstile。
-- **Worker 异常**：回滚到部署前确认的旧版本；现记录为 `4e829602-af8d-4c75-ab59-1cb09c1eea76`，执行前再次核对。新增列/ledger 可保留，旧代码无需逆删列。保持注册关闭。
+- **Worker 异常**：回滚到部署前确认的旧版本；现记录为 `4e829602-af8d-4c75-ab59-1cb09c1eea76`，执行前再次核对。新增列/ledger 可保留，旧代码无需逆删列。保持注册关闭，并保留独立边缘 Access/MFA。旧 Worker 不含新 JWT/挑战/默认拒绝加固；回滚仅用于隔离故障，受影响写入应保持暂停。
 - **迁移异常**：停止后续发布、检查应用记录；不要删除生产表、逆删列或用 dump 覆盖现库。加法迁移已完成时，优先回滚应用并保留新增结构。
 - **数据异常**：冻结受影响写入，先备份异常后的现状；评审 D1 Time Travel 恢复点或新数据库切换方案，并说明可能影响恢复点之后的写入。生产恢复需要单独授权及核验，不能由通用 restore 命令自动执行。
 - **Access/边缘配置异常**：停止部署；若已影响生产，回滚应用版本或修复受审查的配置。不得删除 Access 要求、放宽管理员权限或缺 binding 时放行。
 
 备份回滚与代码回滚是不同动作。恢复旧代码通常不需要恢复旧数据库；无理由执行数据库恢复可能覆盖本轮之后的合法数据。[D1 Time Travel 官方说明](https://developers.cloudflare.com/d1/reference/time-travel/)。
+
+## 8. 已获单独授权的边缘配置
+
+2026-10-19 用户明确批准免费 Zero Trust 与管理员防护，并指定唯一管理员邮箱。本日已创建 ANU Admin API 应用（`b4e5841c-4e8c-41db-b248-de8595cf850d`），保护 `/api/v1/admin` 及其继承子路径；应用和唯一策略要求独立 MFA，应用会话 1h。邮箱保存在控制台，不进入公开仓库。该授权不等于新 Worker/Pages 部署、生产 0003 迁移或注册开放授权。
+
+管理员应用使用精确邮箱 OTP 身份验证，并继续要求独立 MFA。一次性邮箱码不代替第二因素，也不取消 Worker 管理 secret。正式发布前需本人完成第二因素注册与实际登录。

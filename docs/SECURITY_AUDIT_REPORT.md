@@ -14,7 +14,7 @@
 | D1 | 保留既有数据；`0003_security_hardening.sql` 尚未应用到生产 | 新列和 token ledger 仍是待发布结构 |
 | 注册开关 | 完成私有备份后，只将 `registration_enabled` 关闭；线上 health 已读回 `false`，其余三个开关为 `true` | 注册须保持关闭，直至安全验收和开放批准 |
 | 备份 | 2026-10-19 02:07:40 UTC 导出到仓库外私有位置；10,901 bytes，权限 `0600`；SHA-256 为 `573a67f54852d52ddfd46d0a878ee4cb97e2fdff4aa1a89cffe33384dfebb376` | 不公开 SQL 内容、私有路径或任何凭据；正式变更前须另取一小时内的新备份 |
-| 管理保护 | 新配置要求管理员 secret 与已签名的 Access JWT；当前配置的 Access issuer/audience 为空，会拒绝管理操作 | 当前 Cloudflare API token 读取 Access 策略返回 403；已登录控制台进入首次 Zero Trust 启用向导，尚未完成免费计划订阅或 MFA 配置。不能通过去掉 Access 要求恢复管理接口 |
+| 管理保护 | 已按用户授权创建 ANU Admin API Access 应用，保护 `/api/v1/admin` 及其子路径；限定指定邮箱、每次登录独立 MFA、1h 应用会话；真实 issuer/AUD 已填入待发布配置 | CLI token 读取 Access 策略仍为 403；通过已登录控制台保存并重新读取应用/MFA 设置。匿名管理请求跳转团队登录页；真人第二因素注册/登录未验收 |
 | 真实账户流程 | 尚未完成真人 Google OAuth、真实 Turnstile、生产账户写入及物理 iPhone Safari 验收 | 不计为通过；响应式尺寸、UA 模拟和本地 fixtures 均不能替代 |
 
 公开 Firebase Web `apiKey`、项目标识和 Turnstile site key 用于客户端配置，不是管理员凭据。服务端 secret、Cloudflare API token、私钥、原始用户令牌和备份 SQL 不应进入 Git、公开文档或浏览器日志。[Firebase API key 指南](https://firebase.google.com/docs/projects/api-keys)。
@@ -27,7 +27,7 @@
 | 缺配置或读取失败时功能仍可能开放 | 缺少开关或 D1 读取失败均关闭；health 降级时四功能均返回关闭 | 不把读取失败解释为“新用户未注册”或服务可用 |
 | 高频 API 请求消耗 D1 配额 | IP/UID 优先使用边缘 Rate Limiting binding；写入先过边缘，再由 D1 原子占位限制每 UID 每小时 25 次；生产缺 binding 或服务异常返回 503 | namespace 必须核对账户内唯一性；不能将边缘计数当作精确全局配额 |
 | 身份伪造、时间声明和密钥轮换处理不足 | RS256、固定 JWKS 来源、`kid/aud/iss/sub/user_id/iat/exp/auth_time/nbf` 校验，Google provider 限制；有界缓存、轮换刷新及外部响应超时 | 假签名、错误声明、未知 key、外部不可用；仅签名校验不承诺撤销令牌即时失效 |
-| 管理接口仅依赖共享 secret | 生产要求高熵管理员 token 与独立验签的 Access JWT；校验 issuer、audience、有效期 | Access 应仅覆盖管理路径并强制 MFA；实际策略未核实，issuer/audience 不得猜填 |
+| 管理接口仅依赖共享 secret | 生产要求高熵管理员 token 与独立验签的 Access JWT；校验 issuer、audience、有效期 | 已核对唯一邮箱 Allow 策略及每次登录 MFA，保护管理子树；真实 issuer/audience 已填入，真人第二因素仍待验收 |
 | 生产/开发混用 | 独立 `wrangler.dev.toml` 使用本地数据库标识及 localhost 来源；生产仅允许正式 HTTPS 来源，额外拒绝 loopback；生产缺少有效 IP hash salt 时返回 503 | dry-run、真实 binding/路由及 secrets 名称核对；不替换已有 D1 |
 | 越权和隐私泄漏 | 所有私有查询从已验签 UID 派生身份；拒绝前端身份覆盖；默认 private；公开必须明确同意，可撤回；导出仅本人档案 | 两账号交叉测试、公开撤回和导出不可含内部 UID |
 | 并发注册、旧表单覆盖和导入部分提交 | UID 主键防一号多档；注册冲突明确返回 409；档案 revision 预条件；导入 receipt、归档和徽章放在同一 batch，payload fingerprint 防同 key 异内容 | 同 UID 并发、跨标签旧 revision、并发重复导入、故障整批回滚；保留原生产数据 |
@@ -61,7 +61,7 @@ npm run deploy:dry-run
 | 认证客户端模拟 | 20 组测试覆盖初始化重试、点击同步 popup、会话恢复/切换/退出、GET 401、写入不重放、超时、错误 shape、revision 409、竞态、导出/删除；Safari 为 UA 模拟 | Google 真登录、弹窗策略的实机行为、物理 iPhone Safari |
 | Worker 本地集成 | 实际 TypeScript 处理器、实际内存 SQLite 和 Web Crypto RSA 签名；覆盖所有权、声明伪造、重放、限流、Access、并发注册/更新、导入及删除 | 外部 Firebase/Google/Turnstile/Access/边缘 binding 使用模拟；不是远程 D1 或生产 E2E |
 | Wrangler 本地/dry-run | 隔离本地 D1 三次迁移完成；最终打包 dry-run、TypeScript 通过，三个 Rate Limiting binding 被正确识别 | 本地成功不说明生产 binding 已创建、Access 配置完成或新版本已发布 |
-| 生产只读/防护动作 | 本日 Pages/Worker 状态读取；私有备份后关闭注册并读回结果 | 未执行新版本生产发布、`0003` 迁移或测试用户写入 |
+| 生产只读/防护动作 | 本日 Pages/Worker 状态读取；私有备份后关闭注册；按后续明确授权配置边缘 Access/MFA 并检查公共接口 | 未执行新版本生产发布、`0003` 迁移或测试用户写入 |
 
 **最终本地验收：通过。** 2026-10-19 对最终代码运行 `node --no-warnings tests/run-tests.mjs`、Worker TypeScript 和 `git diff --check`，退出码均为 0；Wrangler 4.151.1 已实际安装，部署 dry-run 成功（未上传）。`npm install` 审计 38 个包，报告 0 个已知漏洞；这不是完整依赖安全保证。
 
@@ -77,12 +77,12 @@ npm run deploy:dry-run
 
 GitHub Pages 当前没有同源 `/__/auth/*` helper。保留既有 `firebaseapp.com` authDomain，先使用 popup；只有部署并验证同源 helper、OAuth redirect URI 后才允许 redirect 回退。单独修改 authDomain 或增加 302 跳转不能提供该 helper。[Firebase redirect 最佳实践](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 Allow 规则，使用受支持的 IdP MFA 或独立 MFA，并检查更具体的策略是否覆盖上级要求；实际登录也必须验证第二因素。当前策略 API 403，控制台要求先启用 Zero Trust 免费方案，因此本轮只完成代码能力及评估，没有确认生产 MFA。[Cloudflare MFA 配置](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/)。
+Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 Allow 规则，使用受支持的 IdP MFA 或独立 MFA，并检查更具体的策略是否覆盖上级要求；实际登录也必须验证第二因素。当前策略 API 403，已通过控制台完成独立 MFA 方法开启及应用/策略的强制要求配置；保存后重新读取确认。生物识别、安全密钥或 TOTP 的实际用户注册与真人第二因素验证仍未完成。应用会话 1h；“每次登录 MFA”不是每个 API 请求再次验证。[Cloudflare MFA 配置](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/)。
 
 ## 5. 开放注册前必须解决的事项
 
 1. 本地自动化、TypeScript、dry-run 和 Chrome 桌面/移动布局回归已通过；正式发布时仍需对批准的最终提交重新运行。
-2. 核对三个边缘限流 namespace；完成 Access 应用、issuer/audience 和 MFA 验收，避免新 Worker 上线后无法管理开关。
+2. 核对三个边缘限流 namespace；Access 应用与 issuer/audience 已配置，仍需由管理员本人注册并验证第二因素，完成 MFA 实际验收。
 3. 按发布方案重新备份、评审影响和回滚，再协调前端 action 与后端版本，执行必要的 `0003` 增量迁移；本轮尚未执行。
 4. 在隔离环境完成新注册，并用明确授权的验收账号完成真实 Google、Turnstile、档案同步/导出/删除、隐私公开及撤回。当前没有仅验收账号注册通道，不得为测试自行全局开放注册。
 5. 使用物理 iPhone Safari 验证登录、取消/受阻提示、退出切换、刷新恢复及 PNG 保存。确认生产错误恢复和已有用户数据后，再取得开放注册批准。
@@ -91,3 +91,16 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 ## 6. 数据保留边界
 
 云端删除会级联删除本人学生档案及业务记录；安全审计仅保留哈希身份，私有备份是独立灾备副本，不由该接口立即清除。保留期限与备份到期清理规则仍需运营者确定，本轮未擅自删除历史备份。前端隐私说明已明确这一边界。
+
+## 7. 本日 Access 边缘验证
+
+- 应用 `ANU Admin API`（ID `b4e5841c-4e8c-41db-b248-de8595cf850d`），关联唯一邮箱白名单策略，未允许整个邮箱域、Everyone、Bypass 或 Service Auth 业务通行。管理员邮箱只保存在 Cloudflare，未写入公开源码或报告。
+- `https://quiet-water-b981.cloudflareaccess.com` 的公开 JWKS 返回 200、两把 RSA 公钥；应用 AUD 已从保存后的应用页面复制，未使用策略 ID 代替。
+- 独立 curl 检查：公共 health 200 且注册 false，未登录 `/me` 401，管理 flags 302 到团队登录域。Python urllib 的一轮请求全部出现 403，未计入通过；独立 curl 能正常读取，因此没有按该客户端现象扩大来源或移除保护。
+- 仅 OPTIONS 转发给 Worker 原有严格 CORS；合法来源 PUT 预检 204 且精确 Allow-Origin，非白名单来源 403。HttpOnly 和管理路径 Cookie 属性开启；裸管理路径与 flags 匿名访问均 302，实际管理方法仍由 Access 验证。
+- 当前生产 `workers.dev` 和 preview URLs 均为关闭；本地配置显式 `workers_dev=false`、`preview_urls=false`，避免后续发布意外恢复旁路。
+- 新 Worker 尚未部署，因此当前是边缘 Access 加已有 Worker 管理 secret。新版本上线后才增加 Worker 对 Access JWT 的独立验签。回滚必须保留边缘 Access/MFA，不能因回滚删除该应用。
+
+- 管理员首次 Cloudflare SSO 返回拒绝，未扩宽白名单；已添加 One-time PIN 作为该应用的指定邮箱验证方式，仍保留应用及唯一策略的独立 MFA 要求。一次性邮箱码本身不计为第二因素；管理员需另行注册并验证生物识别、安全密钥或 TOTP。[官方 OTP 说明](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/)。
+
+- 已在真实管理员入口确认出现邮箱验证码表单，并向指定邮箱提交一次发送请求；当前停在验证码输入/本人 MFA 注册步骤。未读取验证码、登录令牌或 MFA 密钥，未据此把真人 MFA 登录标记为通过。
