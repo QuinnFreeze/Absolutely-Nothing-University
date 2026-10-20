@@ -9,11 +9,11 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 - [安全审计与验收边界](docs/SECURITY_AUDIT_REPORT.md)
 - [生产发布影响与回滚方案](docs/PRODUCTION_ROLLOUT.md)
 
-## 当前状态（2026-10-19）
+## 当前状态（2026-10-20）
 
-**本轮安全加固代码尚未推送或部署，`0003` 迁移尚未应用到生产。** 已在仓库外私有备份后关闭新用户注册，并从线上 health 确认关闭；其余现有功能开关保持原状态。通过安全验收并获得开放批准前，注册保持关闭。
+**本轮安全加固代码尚未推送或部署，`0003` 迁移尚未应用到生产。** 已在仓库外私有备份后关闭新用户注册；2026-10-20 再次读取线上 health 为 `ok:true`、注册 `false`，论文、证书和公开目录开关均为 `true`，本次未改开关。通过安全验收并获得开放批准前，注册保持关闭。
 
-GitHub Pages 已有站点仍正常构建，正式域启用 HTTPS。线上 Worker 仍为已有版本 `4e829602-af8d-4c75-ab59-1cb09c1eea76`，不代表本轮改动已上线。真人 Google OAuth、真实 Turnstile、生产账户写入和物理 iPhone Safari 尚未验收，不能以本地模拟代替。
+2026-10-20 复核 GitHub Pages 为 `built`、来源为 `main` 根目录、正式域强制 HTTPS；远程 `main` 仍为 `d02aceb509fbef8dc2ad5866f0d07731f3077451`。线上 Worker 仍为已有版本 `4e829602-af8d-4c75-ab59-1cb09c1eea76`（100% 流量），不代表本轮改动已上线。当天已重新私有备份，发布时仍须满足一小时内及权限/hash 门禁。真人 Google OAuth、真实 Turnstile、生产账户写入和物理 iPhone Safari 尚未验收，不能以本地模拟代替；开放注册尚未授权。
 
 ## 技术架构
 
@@ -69,7 +69,7 @@ Worker 测试运行实际处理器、内存 SQLite 和 RSA 签名，外部 Fireb
 
 沿用已有 Firebase 项目及 `js/anu-config.js` 中的公开标识，Google 提供方和正式授权域已在前次核对。GitHub Pages 未部署 Firebase 同源 `/__/auth/*` helper，登录使用 popup；不得只修改 authDomain 来尝试修复 Safari redirect。[Firebase 官方说明](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；真实 issuer/audience 已从本日创建的 ANU Admin API Access 应用填入；边缘限定指定管理员邮箱并要求 MFA。经用户单独确认，认证器自助门户已保存并刷新核验：仅允许精确单邮箱和 One-time PIN，门户应用及策略会话均为 30 分钟，只关联 App Launcher，不改变 Admin API 的 MFA 要求。真实 `/AddMfaDevice` 已显示认证器注册选项，先前 `NoAuth` 阻断已修复；本人第二因素注册及实际登录仍待验收，不能标为通过。三个边缘限流 namespace 已与账户内三个 Worker 当前设置核对，无复用；未检查历史未启用版本，发布前仍须复核。生产缺 binding 将返回 503。
+生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；真实 issuer/audience 已从 2026-10-19 创建的 ANU Admin API Access 应用填入；边缘限定指定管理员邮箱并要求 MFA。经用户单独确认，认证器自助门户已保存并刷新核验：仅允许精确单邮箱和 One-time PIN，门户应用及策略会话均为 30 分钟，只关联 App Launcher，不改变 Admin API 的 MFA 要求。2026-10-20 门户设备表已确认一个 Biometrics 设备，创建及最近使用日期均为当天；管理入口仍停在实际生物识别挑战，尚未成功返回 API，真人 MFA 登录不能标为通过。三个边缘限流 namespace 在 2026-10-20 再次与账户内三个 Worker 当前设置核对，无复用；未检查历史未启用版本，发布前仍须复核。生产缺 binding 将返回 503。
 
 遗留数据库学籍表要求 UID 至少 6 字符；JWT 验证遵守 Firebase 的 1–128 字符规则，短 UID 新建学籍明确返回 `UID_NOT_SUPPORTED`，完整兼容需后续安全迁移。
 

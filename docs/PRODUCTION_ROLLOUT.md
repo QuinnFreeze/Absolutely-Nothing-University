@@ -1,13 +1,14 @@
 # ANU 生产发布影响、验收与回滚方案
 
-日期：2026-10-19。适用于本轮安全加固，保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1。**这是待评审的方案，本轮新代码尚未部署、未推送，`0003` 尚未应用到生产。**
+日期：2026-10-19 制定，2026-10-20 更新生产预检、备份与 MFA 进展。适用于本轮安全加固，保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1。**这是待评审的方案，本轮新代码尚未部署、未推送，`0003` 尚未应用到生产；开放注册尚未授权。**
 
 ## 1. 当前基线
 
-- 生产 Worker：`4e829602-af8d-4c75-ab59-1cb09c1eea76`，为本轮修改前的版本。
-- GitHub Pages：已有 `main` 构建 `built`，CNAME `freeze.edu.kg`，强制 HTTPS，证书批准且到期日为 2027-01-16。
-- 生产注册已在 2026-10-19 私有备份后关闭；health 显示注册 `false`，论文、证书、公开目录三个开关仍为 `true`。
-- 备份为 10,901 bytes、`0600`、仓库外保存；SHA-256 为 `573a67f54852d52ddfd46d0a878ee4cb97e2fdff4aa1a89cffe33384dfebb376`。正式发布时必须重新导出一小时内备份并核验，不能沿用过期备份通过门禁。
+- 2026-10-20 只读复核生产 Worker：`4e829602-af8d-4c75-ab59-1cb09c1eea76`，100% 流量，为本轮修改前的版本；正式域 `api.freeze.edu.kg`，无额外 zone route，`workers.dev` 及 preview 均关闭。
+- 2026-10-20 GitHub CLI 复核 Pages：`built`，来源 `main` 根目录，CNAME `freeze.edu.kg`，强制 HTTPS；远程 `main` 仍为 `d02aceb509fbef8dc2ad5866f0d07731f3077451`。证书在 2026-10-19 已核实批准，到期日为 2027-01-16。
+- 生产注册已在 2026-10-19 私有备份后关闭；2026-10-20 再次公开读取 health 为 `ok:true`、注册 `false`，论文、证书、公开目录三个开关均为 `true`，本次未改开关。
+- 最新私有备份导出时间为 2026-10-20 00:14:19 UTC；10,906 bytes，文件 `0600`、目录 `0700`，SHA-256 `28a4734eeabb97bfeb4b1b7741369006f7e66011db0af444d73f16338490de33` 已匹配。历史 2026-10-19 备份为 10,901 bytes、`0600`，SHA-256 `573a67f54852d52ddfd46d0a878ee4cb97e2fdff4aa1a89cffe33384dfebb376`。备份均在仓库外；实际发布时仍须满足一小时内门禁，过期须重新导出。
+- 2026-10-20 仅 SELECT 迁移账本确认 `0001/0002` 已应用、`0003` 待应用，`rows_written=0`；只核对 `ADMIN_API_TOKEN`、`IP_HASH_SALT`、`TURNSTILE_SECRET_KEY` 三个 secret 名称存在，不读取值或证明配对有效。
 
 不删除生产记录，不重建现有 D1，不打印/提交服务端密钥或备份 SQL。不通过关闭挑战、JWT、Access、限流或所有权校验来修复异常。
 
@@ -19,7 +20,7 @@
 | `0003` 增量迁移 | 新增 `turnstile_tokens` 及过期索引；`idempotency_keys.request_hash`、`students.revision` 默认值兼容旧行；保持注册关闭 | 新 Worker 依赖这些结构，不能先部署后端再补迁移 |
 | Turnstile | 新后端要求 hostname/action/时效和一次性使用 | 旧前端未带 action 的写入将被拒绝，须协调发布及缓存刷新 |
 | 边缘 Rate Limiting | IP/UID 减少 D1 访问，写入保留 D1 25/hour 硬限额 | 生产缺少/失效 binding 返回 503，不能降级放行；三个 namespace 已与账户内三个 Worker 当前设置核对无复用，发布前仍须复核，未检查历史未启用版本 |
-| Access + 管理 secret | 管理接口同时要求有效 token 和 Access JWT；Access 策略必须配置 MFA | 真实 issuer/audience 已配置；已保存限定邮箱和每次登录 MFA 的应用/策略，仍需真人第二因素注册与验收 |
+| Access + 管理 secret | 管理接口同时要求有效 token 和 Access JWT；Access 策略必须配置 MFA | 真实 issuer/audience 已配置；已保存限定邮箱和每次登录 MFA 的应用/策略。2026-10-20 已确认 Biometrics 设备绑定，管理入口仍需完成实际第二因素挑战并返回 API |
 | Firebase | 保留现有 Google 提供方、项目、授权域和 popup 路径 | 不切换到不存在的同源 helper，不新建替代项目 |
 | 档案删除 | 显式确认且最近五分钟 Google 认证；只删除本人 ANU D1 档案及其关联记录 | 认证过旧返回 403，需重新 Google 登录；不删除 Google/Firebase 身份 |
 
@@ -110,8 +111,8 @@ ANU_PRODUCTION_APPROVED=1 ANU_VERIFIED_BACKUP=/absolute/private/backup.sql npm r
 
 2026-10-19 用户明确批准免费 Zero Trust 与管理员防护，并指定唯一管理员邮箱。本日已创建 ANU Admin API 应用（`b4e5841c-4e8c-41db-b248-de8595cf850d`），保护 `/api/v1/admin` 及其继承子路径；应用和唯一策略要求独立 MFA，应用会话 1h。邮箱保存在控制台，不进入公开仓库。该授权不等于新 Worker/Pages 部署、生产 0003 迁移或注册开放授权。
 
-管理员应用使用精确邮箱 OTP 身份验证，并继续要求独立 MFA。一次性邮箱码不代替第二因素，也不取消 Worker 管理 secret。管理员完成邮箱验证后，初次入口显示 `No authentication methods set up`；后续经单独授权启用自助门户，认证器注册页现已可达。本人第二因素注册与实际登录仍待完成，不能记为 MFA 通过。
+管理员应用使用精确邮箱 OTP 身份验证，并继续要求独立 MFA。一次性邮箱码不代替第二因素，也不取消 Worker 管理 secret。管理员完成邮箱验证后，初次入口曾显示 `No authentication methods set up`；后续经单独授权启用自助门户，2026-10-20 已从设备表确认一个 Biometrics 设备，创建和最近使用日期均为当天。设备绑定已确认，管理入口实际第二因素登录仍未成功返回 API，不能记为 MFA 通过。
 
 `Setup MFA` 和官方 `/AddMfaDevice` 先前因 App Launcher 未启用而落到 `#/NoAuth`；该阻断现已修复。用户本轮明确确认启用，浏览器保存后刷新重新读取，唯一 Allow 策略为 `ANU administrator MFA enrollment`（ID `f419fc5a-9592-4508-ab52-9db39d344e0e`），只允许精确单个管理员邮箱、仅 One-time PIN，`acceptAllIdPs=false`，门户应用与策略会话均为 30 分钟。策略只关联一个 App Launcher 应用，不修改 Admin API 原策略、独立 MFA、1h 应用会话或 Worker 管理 secret 要求；不将管理员邮箱写入 Git。
 
-真实 `/AddMfaDevice` 已显示 `Secure your account with MFA` 及 `Biometrics`、`Security key`、`Authenticator application` 选项，已交由本人操作。未读取二维码、OTP 或登录令牌；本人创建认证器之后，仍须重新访问管理入口验证第二因素确实生效，才可解除 MFA 实际验收的发布前阻断。新代码和 `0003` 仍未部署到生产，注册保持关闭。
+真实 `/AddMfaDevice` 已显示 `Secure your account with MFA` 及 `Biometrics`、`Security key`、`Authenticator application` 选项。2026-10-20 管理 flags 入口实际显示 `Authenticate your identity` 和 `Use your device's biometrics to continue`；用户曾报告验证完成，但页面仍停在第二因素挑战。已从 Cancel 返回方法选择并手动选择 `Unnamed Authenticator` 重试，当前交由本人确认生物识别，尚未成功返回 API。未读取二维码、OTP、登录令牌或设备凭据，也不将设备 ID、邮箱或私有证据路径写入 Git；管理入口成功验证后才能解除 MFA 登录验收的发布前阻断。新代码和 `0003` 仍未部署到生产，注册保持关闭，开放注册尚未授权。

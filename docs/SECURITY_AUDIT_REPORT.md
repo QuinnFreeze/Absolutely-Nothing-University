@@ -1,20 +1,20 @@
 # ANU 网站安全审计与验收记录
 
-检查日期：2026-10-19（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。
+检查日期：2026-10-19；2026-10-20 更新生产只读预检、备份及 MFA 进展（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。
 
 **本轮加固代码尚未部署或推送，生产 `0003` 迁移尚未执行。新用户注册已在备份后关闭，不能将本地测试描述为生产验收。** 发布影响、操作顺序与回滚见 [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md)。
 
 ## 1. 真实生产状态
 
-| 对象 | 2026-10-19 已核实事实 | 边界或剩余工作 |
+| 对象 | 已核实事实（日期逐项注明） | 边界或剩余工作 |
 | --- | --- | --- |
-| GitHub Pages | `main` 构建状态为 `built`，CNAME 为 `freeze.edu.kg`，`https_enforced=true`；证书 `approved`，到期日 2027-01-16 | 这是已有发布；本轮前端改动尚未上线 |
-| Firebase | 沿用已有项目及公开 Web App 配置；2026-10-18 已确认 Google 提供方启用；本日再次通过公开项目配置确认正式域在授权域列表中 | 历史控制台记录不是本日真人 OAuth 联调；不得宣称完整登录通过 |
-| Worker | 线上仍为已有版本 `4e829602-af8d-4c75-ab59-1cb09c1eea76` | 该版本不包含本轮加固 |
-| D1 | 保留既有数据；`0003_security_hardening.sql` 尚未应用到生产 | 新列和 token ledger 仍是待发布结构 |
-| 注册开关 | 完成私有备份后，只将 `registration_enabled` 关闭；线上 health 已读回 `false`，其余三个开关为 `true` | 注册须保持关闭，直至安全验收和开放批准 |
-| 备份 | 2026-10-19 02:07:40 UTC 导出到仓库外私有位置；10,901 bytes，权限 `0600`；SHA-256 为 `573a67f54852d52ddfd46d0a878ee4cb97e2fdff4aa1a89cffe33384dfebb376` | 不公开 SQL 内容、私有路径或任何凭据；正式变更前须另取一小时内的新备份 |
-| 管理保护 | 已按用户授权创建 ANU Admin API Access 应用，保护 `/api/v1/admin` 及其子路径；限定指定邮箱、每次登录独立 MFA、1h 应用会话；真实 issuer/AUD 已填入待发布配置。经另行确认启用单邮箱、仅 OTP、30 分钟的 App Launcher 自助注册门户 | CLI token 读取 Access 策略仍为 403；控制台保存并刷新核验。门户仅关联 App Launcher，未改变 Admin API 原策略/MFA；真实认证器注册页已可达，本人第二因素注册/登录未验收 |
+| GitHub Pages | 2026-10-20 通过 GitHub CLI 复核：`built`、来源 `main` 根目录、CNAME `freeze.edu.kg`、`https_enforced=true`；远程 `main` 仍为 `d02aceb509fbef8dc2ad5866f0d07731f3077451`。证书在 2026-10-19 已核实 `approved`，到期日 2027-01-16 | 这是已有发布；本轮前端改动尚未上线 |
+| Firebase | 沿用已有项目及公开 Web App 配置；2026-10-18 已确认 Google 提供方启用；2026-10-19 再通过公开项目配置确认正式域在授权域列表中 | 历史控制台记录不是本轮真人 OAuth 联调；不得宣称完整登录通过 |
+| Worker | 2026-10-20 只读 API 复核仍为版本 `4e829602-af8d-4c75-ab59-1cb09c1eea76`、100% 流量；正式自定义域 `api.freeze.edu.kg`，`workers.dev` 及 preview 均为关闭 | 该版本不包含本轮加固；未部署新的限流 binding |
+| D1 | 2026-10-20 仅 SELECT 迁移账本：`0001`、`0002` 已应用，`0003_security_hardening.sql` 待应用，`rows_written=0` | 新列和 token ledger 仍是待发布结构；未查询学生记录 |
+| 注册开关 | 2026-10-19 私有备份后只关闭 `registration_enabled`；2026-10-20 再次公开读取 health：`ok:true`、注册 `false`，论文、证书和公开目录均为 `true`，本次未改开关 | 注册须保持关闭，直至安全验收和开放批准 |
+| 备份 | 最新导出为 2026-10-20 00:14:19 UTC；10,906 bytes，文件 `0600`、目录 `0700`，仓库外保存；SHA-256 `28a4734eeabb97bfeb4b1b7741369006f7e66011db0af444d73f16338490de33` 已匹配。历史 2026-10-19 02:07:40 UTC 备份为 10,901 bytes、`0600`，hash `573a67f54852d52ddfd46d0a878ee4cb97e2fdff4aa1a89cffe33384dfebb376` | 不公开 SQL 内容、私有路径或任何凭据；实际发布时仍须使用一小时内的有效备份，过期须重新导出 |
+| 管理保护 | 已按用户授权创建 ANU Admin API Access 应用，保护 `/api/v1/admin` 及其子路径；限定指定邮箱、每次登录独立 MFA、1h 应用会话；真实 issuer/AUD 已填入待发布配置。经另行确认启用单邮箱、仅 OTP、30 分钟的 App Launcher 自助注册门户；2026-10-20 已确认一个 Biometrics 设备，创建及最近使用日期均为当天 | CLI token 读取 Access 策略在 2026-10-19 为 403；控制台已保存并刷新核验。门户仅关联 App Launcher，未改变 Admin API 原策略/MFA；管理入口仍停在真实生物识别挑战，未成功返回 API，真人 MFA 登录未验收 |
 | 真实账户流程 | 尚未完成真人 Google OAuth、真实 Turnstile、生产账户写入及物理 iPhone Safari 验收 | 不计为通过；响应式尺寸、UA 模拟和本地 fixtures 均不能替代 |
 
 公开 Firebase Web `apiKey`、项目标识和 Turnstile site key 用于客户端配置，不是管理员凭据。服务端 secret、Cloudflare API token、私钥、原始用户令牌和备份 SQL 不应进入 Git、公开文档或浏览器日志。[Firebase API key 指南](https://firebase.google.com/docs/projects/api-keys)。
@@ -77,13 +77,13 @@ npm run deploy:dry-run
 
 GitHub Pages 当前没有同源 `/__/auth/*` helper。保留既有 `firebaseapp.com` authDomain，先使用 popup；只有部署并验证同源 helper、OAuth redirect URI 后才允许 redirect 回退。单独修改 authDomain 或增加 302 跳转不能提供该 helper。[Firebase redirect 最佳实践](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 Allow 规则，使用受支持的 IdP MFA 或独立 MFA，并检查更具体的策略是否覆盖上级要求；实际登录也必须验证第二因素。当前策略 API 403，已通过控制台完成独立 MFA 方法开启及应用/策略的强制要求配置；保存后重新读取确认。用户另行确认后，30 分钟会话的自助注册门户已启用，真实 `/AddMfaDevice` 页面已显示注册方式，先前 `NoAuth` 阻断已修复；生物识别、安全密钥或 TOTP 的本人注册与实际第二因素登录仍未完成，见第 7 节。Admin API 应用会话仍为 1h；“每次登录 MFA”不是每个 API 请求再次验证。[Cloudflare MFA 配置](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/)。
+Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 Allow 规则，使用受支持的 IdP MFA 或独立 MFA，并检查更具体的策略是否覆盖上级要求；实际登录也必须验证第二因素。策略 API 在 2026-10-19 返回 403，已通过控制台完成独立 MFA 方法开启及应用/策略的强制要求配置；保存后重新读取确认。用户另行确认后，30 分钟会话的自助注册门户已启用，先前 `NoAuth` 阻断已修复；2026-10-20 已从设备表确认一个 Biometrics 设备及当天的创建/最近使用日期。设备绑定不等于管理登录成功：管理 flags 入口仍显示生物识别挑战，未成功返回 API，见第 7 节。Admin API 应用会话仍为 1h；“每次登录 MFA”不是每个 API 请求再次验证。[Cloudflare MFA 配置](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/)。
 
 ## 5. 开放注册前必须解决的事项
 
 1. 本地自动化、TypeScript、dry-run 和 Chrome 桌面/移动布局回归已通过；正式发布时仍需对批准的最终提交重新运行。
-2. 三个边缘限流 namespace 已与账户内当前 Worker 配置核对无复用，发布前复核；Access 应用与 issuer/audience 已配置，单邮箱自助门户已启用且认证器注册页可达，仍需由管理员本人注册并验证第二因素，完成 MFA 实际验收。
-3. 按发布方案重新备份、评审影响和回滚，再协调前端 action 与后端版本，执行必要的 `0003` 增量迁移；本轮尚未执行。
+2. 三个边缘限流 namespace 在 2026-10-20 再次与账户内当前 Worker 配置核对无复用，发布前复核；Access 应用与 issuer/audience 已配置，Biometrics 设备绑定已确认，仍需管理员在管理入口实际完成第二因素挑战并成功返回 API，才能记为 MFA 登录通过。
+3. 2026-10-20 已再次私有备份；按发布方案评审影响和回滚，执行时核对备份仍在一小时内，再协调前端 action 与后端版本，执行必要的 `0003` 增量迁移。新代码和迁移仍未发布，开放注册尚未授权。
 4. 在隔离环境完成新注册，并用明确授权的验收账号完成真实 Google、Turnstile、档案同步/导出/删除、隐私公开及撤回。当前没有仅验收账号注册通道，不得为测试自行全局开放注册。
 5. 使用物理 iPhone Safari 验证登录、取消/受阻提示、退出切换、刷新恢复及 PNG 保存。确认生产错误恢复和已有用户数据后，再取得开放注册批准。
 6. Firebase 规范允许 1–128 字符 UID，但遗留生产 `students` 表要求至少 6 字符。本轮保留原表，短 UID 注册明确返回 `400 UID_NOT_SUPPORTED`，不将有效身份误判为假 token；完整支持短 UID 需要另行审查保留数据和关联表的安全迁移。通常自动生成的 Google UID 不受此遗留限制影响，仍需记录兼容边界。
@@ -94,7 +94,7 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 
 备份导出在创建目录前核对真实路径，发布门禁独立核对 SQL、父目录及校验文件；仓库内路径及指向仓库的符号链接均不能作为生产备份。旧 Worker 回滚可保留新增表列和数据，但不能直接兼容本轮仅保存计数的新导入 receipt。生产没有独立 import 开关；需另行评审精确导入路由维护规则，或准备保留本轮安全校验的兼容回滚版本。不得删账本、覆盖生产数据库或关闭认证/Access 来换取兼容，具体步骤见发布方案第 7 节。
 
-## 7. 本日 Access 边缘验证
+## 7. Access 边缘验证（2026-10-19—20）
 
 - 应用 `ANU Admin API`（ID `b4e5841c-4e8c-41db-b248-de8595cf850d`），关联唯一邮箱白名单策略，未允许整个邮箱域、Everyone、Bypass 或 Service Auth 业务通行。管理员邮箱只保存在 Cloudflare，未写入公开源码或报告。
 - `https://quiet-water-b981.cloudflareaccess.com` 的公开 JWKS 返回 200、两把 RSA 公钥；应用 AUD 已从保存后的应用页面复制，未使用策略 ID 代替。
@@ -103,9 +103,11 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 - 当前生产 `workers.dev` 和 preview URLs 均为关闭；本地配置显式 `workers_dev=false`、`preview_urls=false`，避免后续发布意外恢复旁路。
 - 新 Worker 尚未部署，因此当前是边缘 Access 加已有 Worker 管理 secret。新版本上线后才增加 Worker 对 Access JWT 的独立验签。回滚必须保留边缘 Access/MFA，不能因回滚删除该应用。
 
-- 管理员首次 Cloudflare SSO 返回拒绝，未扩宽白名单；已添加 One-time PIN 作为该应用的指定邮箱验证方式，仍保留应用及唯一策略的独立 MFA 要求。一次性邮箱码本身不计为第二因素；管理员需另行注册并验证生物识别、安全密钥或 TOTP。[官方 OTP 说明](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/)。
+- 2026-10-19 管理员首次 Cloudflare SSO 返回拒绝，未扩宽白名单；已添加 One-time PIN 作为该应用的指定邮箱验证方式，仍保留应用及唯一策略的独立 MFA 要求。一次性邮箱码本身不计为第二因素；该阶段尚待本人注册，后续设备绑定结果见 2026-10-20 复核。[官方 OTP 说明](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/)。
 
-- 管理员报告已完成邮箱验证码后，使用同一 Chrome 会话访问管理 flags，实际进入独立 MFA 页面，显示 `No authentication methods set up` 与 `Setup MFA`。邮箱身份验证已进入下一阶段，第二因素注册和成功登录尚未完成；已交由管理员本人处理，未读取验证码、登录令牌或 MFA 密钥。
+- 2026-10-19 管理员报告完成邮箱验证码后，使用同一 Chrome 会话访问管理 flags，实际进入独立 MFA 页面，显示 `No authentication methods set up` 与 `Setup MFA`。当时第二因素注册和成功登录尚未完成；已交由管理员本人处理，未读取验证码、登录令牌或 MFA 密钥。
 - 后续排查曾确认 `Setup MFA` 和官方 `/AddMfaDevice` 入口被未启用的 App Launcher 阻断至 `#/NoAuth`。用户本轮已明确确认启用自助入口；浏览器保存后刷新重新读取，唯一 Allow 策略为 `ANU administrator MFA enrollment`（ID `f419fc5a-9592-4508-ab52-9db39d344e0e`），限制精确单邮箱、仅 One-time PIN，`acceptAllIdPs=false`，门户应用与策略会话均为 30 分钟。该策略只关联一个 App Launcher 应用，不修改 ANU Admin API 原策略、独立 MFA 或管理 secret 要求；管理员邮箱不写入 Git。门户规则不授予所保护应用的新权限。[门户设置](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/app-launcher/)、[独立 MFA 注册](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/independent-mfa/)。
-- 保存并刷新核验后，真实 `/AddMfaDevice` 已显示 `Secure your account with MFA`，提供 `Biometrics`、`Security key`、`Authenticator application` 三种选项，先前 `NoAuth` 阻断已修复。已交由本人创建认证器；未读取二维码、OTP、登录令牌或 MFA 密钥。本人认证器注册与实际第二因素登录仍待完成，不能将注册入口可达标为 MFA 验收通过。
-- 只读账户 API 成功检查三个 Worker 的当前上传设置，均无 Rate Limiting binding；拟用 `353403995691`、`353403995692`、`353403995693` 当前无匹配。此结论不涵盖历史未启用版本，不表示新 binding 已部署，也未修改其它 Worker。
+- 保存并刷新核验后，真实 `/AddMfaDevice` 已显示 `Secure your account with MFA`，提供 `Biometrics`、`Security key`、`Authenticator application` 三种选项，先前 `NoAuth` 阻断已修复；未读取二维码、OTP、登录令牌或 MFA 密钥。2026-10-20 门户设备表已确认一个 Biometrics 设备，创建与最近使用日期均为当天，不记录设备 ID。
+- 2026-10-20 管理 flags 入口实际强制显示 `Authenticate your identity` 和 `Use your device's biometrics to continue`。用户曾报告已验证，但页面仍停在第二因素挑战，不能据此记为 MFA 登录通过。从 Cancel 返回方法选择后，已手动选择 `Unnamed Authenticator` 重试，当前交由本人确认生物识别；尚未成功返回 API。
+- 2026-10-19 及 2026-10-20 的只读账户 API 均检查三个 Worker 当前上传设置，均无 Rate Limiting binding；拟用 `353403995691`、`353403995692`、`353403995693` 无匹配。此结论不涵盖历史未启用版本，不表示新 binding 已部署，也未修改其它 Worker。
+- 2026-10-20 生产只读预检确认正式路由为 `api.freeze.edu.kg` → `anu-student-api / production`，无额外 zone route，`workers.dev=false`、`preview=false`；部署仍为上述旧版本、100% 流量。仅核对三个 secret 名称 `ADMIN_API_TOKEN`、`IP_HASH_SALT`、`TURNSTILE_SECRET_KEY` 存在，不读取值，不证明盐长度或 key 配对。D1 使用固定 SELECT 读取迁移账本，`0001/0002` 已应用、`0003` 待应用、`rows_written=0`；未初始化表或查询学生记录。
