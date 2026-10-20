@@ -11,9 +11,9 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 
 ## 当前状态（2026-10-20）
 
-**本轮安全加固代码尚未推送或部署，`0003` 迁移尚未应用到生产。** 已在仓库外私有备份后关闭新用户注册；2026-10-20 再次读取线上 health 为 `ok:true`、注册 `false`，论文、证书和公开目录开关均为 `true`，本次未改开关。通过安全验收并获得开放批准前，注册保持关闭。
+**已按批准版本 `6eae1ce` 发布前端和 Worker，并在私有备份后完成 D1 `0003` 增量迁移。新用户注册保持关闭，尚未获准开放。** 上线后 health 为 `ok:true`、注册 `false`，论文、证书和公开目录开关均为 `true`。
 
-2026-10-20 复核 GitHub Pages 为 `built`、来源为 `main` 根目录、正式域强制 HTTPS；远程 `main` 仍为 `d02aceb509fbef8dc2ad5866f0d07731f3077451`。线上 Worker 仍为已有版本 `4e829602-af8d-4c75-ab59-1cb09c1eea76`（100% 流量），不代表本轮改动已上线。当天已重新私有备份，发布时仍须满足一小时内及权限/hash 门禁。真人 Google OAuth、真实 Turnstile、生产账户写入和物理 iPhone Safari 尚未验收，不能以本地模拟代替；开放注册尚未授权。
+GitHub Pages 已构建批准提交 `6eae1cefe23ef5968bd3fdfd5d5155d256fe8d5e`，正式 HTTPS 的六个前端文件与该版本逐字节匹配。Worker 已发布为 `c22b3178-7872-4d77-a06a-ea2d7f9408ae`，远程读回 100% 流量；D1 迁移前后原业务记录计数、原索引和配额触发器均保留。11 项真实 API 防护检查和生产游客 Chrome 回归通过，涵盖蓝白默认主题、手动深色、中英移动布局及五张实际 PNG。真人 Google OAuth、真实 Turnstile 成功与重放、生产账户写入和物理 iPhone Safari 尚未验收；这些项目仍阻止开放注册。详见安全报告。
 
 ## 技术架构
 
@@ -63,13 +63,13 @@ npm run deploy:dry-run
 
 覆盖 JWT 假签名/声明、跨账号权限、Turnstile action 和重放、并发注册、revision 冲突、导入原子性、限流故障、档案导出/删除、登录切换及超时恢复。静态检查同时核对双语绑定、公开配置和 secret 边界；PNG 使用 Canvas mocks，Safari 客户端包含 UA 模拟。
 
-Worker 测试运行实际处理器、内存 SQLite 和 RSA 签名，外部 Firebase、Turnstile、Access 及边缘服务为模拟。客户端测试替换 SDK 和 API；因此测试通过不代表真人 OAuth、真实挑战、远程 D1 或物理 Safari 通过。本轮最终全集、TypeScript、dry-run 与 Chrome 390/768/1440 px 中英/深色回归已通过，包含 4 张实际 PNG 下载；浏览器身份及 API 为 fixtures，详见安全报告。
+Worker 测试运行实际处理器、内存 SQLite 和 RSA 签名，外部 Firebase、Turnstile、Access 及边缘服务为模拟。客户端测试替换 SDK 和 API；因此测试通过不代表真人 OAuth、真实挑战、远程 D1 或物理 Safari 通过。本轮最终全集、TypeScript 和 dry-run 已通过。本地 Chrome 390/768/1440 px 中英/深色回归使用身份/API fixtures，下载四张实际 PNG；另外，已发布正式站点的独立 Chrome 游客回归使用真实 Firebase SDK 和字体、无网络 mock，完成 21 项检查及五张实际 PNG，不进行 OAuth 或生产学生写入。两类结果分别记录于安全报告。
 
 ## 配置与隐私
 
 沿用已有 Firebase 项目及 `js/anu-config.js` 中的公开标识，Google 提供方和正式授权域已在前次核对。GitHub Pages 未部署 Firebase 同源 `/__/auth/*` helper，登录使用 popup；不得只修改 authDomain 来尝试修复 Safari redirect。[Firebase 官方说明](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；真实 issuer/audience 已从 2026-10-19 创建的 ANU Admin API Access 应用填入；边缘限定指定管理员邮箱并要求 MFA。经用户单独确认，认证器自助门户已保存并刷新核验：仅允许精确单邮箱和 One-time PIN，门户应用及策略会话均为 30 分钟，只关联 App Launcher，不改变 Admin API 的 MFA 要求。2026-10-20 已确认 Biometrics 设备绑定、强制挑战及本人验证后的实际放行；同一浏览器新请求管理 flags 已抵达 Worker，因未提交管理员 secret 返回 `ADMIN_FORBIDDEN`。这项生产边缘 MFA 验收通过，保留 Worker 拒绝；不代表带 secret 的管理操作或待部署新 Worker 的 Access JWT 独立验签已通过。三个边缘限流 namespace 在 2026-10-20 再次与账户内三个 Worker 当前设置核对，无复用；未检查历史未启用版本，发布前仍须复核。生产缺 binding 将返回 503。
+生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；真实 issuer/audience 已从 2026-10-19 创建的 ANU Admin API Access 应用填入；边缘限定指定管理员邮箱并要求 MFA。经用户单独确认，认证器自助门户已保存并刷新核验：仅允许精确单邮箱和 One-time PIN，门户应用及策略会话均为 30 分钟，只关联 App Launcher，不改变 Admin API 的 MFA 要求。2026-10-20 在新 Worker 发布前已确认 Biometrics 设备绑定、强制挑战及本人验证后的实际放行；同一浏览器新请求管理 flags 已抵达当时的 Worker，因未提交管理员 secret 返回 `ADMIN_FORBIDDEN`。这项生产边缘 MFA 验收通过，保留 Worker 拒绝；不代表带 secret 的管理操作或新 Worker 的 Access JWT 独立验签已完成生产验收。三个边缘限流 namespace 已在发布前与账户内三个 Worker 当前设置核对无复用，并随新 Worker 上传及远程读回；未检查历史未启用版本。生产缺 binding 将返回 503。
 
 遗留数据库学籍表要求 UID 至少 6 字符；JWT 验证遵守 Firebase 的 1–128 字符规则，短 UID 新建学籍明确返回 `UID_NOT_SUPPORTED`，完整兼容需后续安全迁移。
 
