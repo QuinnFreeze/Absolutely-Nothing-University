@@ -69,7 +69,7 @@ Worker 测试运行实际处理器、内存 SQLite 和 RSA 签名，外部 Fireb
 
 沿用已有 Firebase 项目及 `js/anu-config.js` 中的公开标识，Google 提供方和正式授权域已在前次核对。GitHub Pages 未部署 Firebase 同源 `/__/auth/*` helper，登录使用 popup；不得只修改 authDomain 来尝试修复 Safari redirect。[Firebase 官方说明](https://firebase.google.com/docs/auth/web/redirect-best-practices)。
 
-生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；真实 issuer/audience 已从 2026-10-19 创建的 ANU Admin API Access 应用填入；边缘限定指定管理员邮箱并要求 MFA。经用户单独确认，认证器自助门户已保存并刷新核验：仅允许精确单邮箱和 One-time PIN，门户应用及策略会话均为 30 分钟，只关联 App Launcher，不改变 Admin API 的 MFA 要求。2026-10-20 门户设备表已确认一个 Biometrics 设备，创建及最近使用日期均为当天；管理入口仍停在实际生物识别挑战，尚未成功返回 API，真人 MFA 登录不能标为通过。三个边缘限流 namespace 在 2026-10-20 再次与账户内三个 Worker 当前设置核对，无复用；未检查历史未启用版本，发布前仍须复核。生产缺 binding 将返回 503。
+生产只允许正式 HTTPS 来源，Turnstile 校验 `register`、`paper`、`diploma`、`import` 四种 action。管理接口要求 Access JWT 与管理员 secret；真实 issuer/audience 已从 2026-10-19 创建的 ANU Admin API Access 应用填入；边缘限定指定管理员邮箱并要求 MFA。经用户单独确认，认证器自助门户已保存并刷新核验：仅允许精确单邮箱和 One-time PIN，门户应用及策略会话均为 30 分钟，只关联 App Launcher，不改变 Admin API 的 MFA 要求。2026-10-20 已确认 Biometrics 设备绑定、强制挑战及本人验证后的实际放行；同一浏览器新请求管理 flags 已抵达 Worker，因未提交管理员 secret 返回 `ADMIN_FORBIDDEN`。这项生产边缘 MFA 验收通过，保留 Worker 拒绝；不代表带 secret 的管理操作或待部署新 Worker 的 Access JWT 独立验签已通过。三个边缘限流 namespace 在 2026-10-20 再次与账户内三个 Worker 当前设置核对，无复用；未检查历史未启用版本，发布前仍须复核。生产缺 binding 将返回 503。
 
 遗留数据库学籍表要求 UID 至少 6 字符；JWT 验证遵守 Firebase 的 1–128 字符规则，短 UID 新建学籍明确返回 `UID_NOT_SUPPORTED`，完整兼容需后续安全迁移。
 

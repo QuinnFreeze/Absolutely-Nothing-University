@@ -20,7 +20,7 @@
 | `0003` 增量迁移 | 新增 `turnstile_tokens` 及过期索引；`idempotency_keys.request_hash`、`students.revision` 默认值兼容旧行；保持注册关闭 | 新 Worker 依赖这些结构，不能先部署后端再补迁移 |
 | Turnstile | 新后端要求 hostname/action/时效和一次性使用 | 旧前端未带 action 的写入将被拒绝，须协调发布及缓存刷新 |
 | 边缘 Rate Limiting | IP/UID 减少 D1 访问，写入保留 D1 25/hour 硬限额 | 生产缺少/失效 binding 返回 503，不能降级放行；三个 namespace 已与账户内三个 Worker 当前设置核对无复用，发布前仍须复核，未检查历史未启用版本 |
-| Access + 管理 secret | 管理接口同时要求有效 token 和 Access JWT；Access 策略必须配置 MFA | 真实 issuer/audience 已配置；已保存限定邮箱和每次登录 MFA 的应用/策略。2026-10-20 已确认 Biometrics 设备绑定，管理入口仍需完成实际第二因素挑战并返回 API |
+| Access + 管理 secret | 管理接口同时要求有效 token 和 Access JWT；Access 策略必须配置 MFA | 真实 issuer/audience 已配置；2026-10-20 已确认 Biometrics 绑定、强制挑战和本人验证后新请求抵达 Worker，生产边缘 MFA 验收通过。未提交 secret，Worker 拒绝保留；带 secret 操作和新 Worker 独立验签仍待生产验收 |
 | Firebase | 保留现有 Google 提供方、项目、授权域和 popup 路径 | 不切换到不存在的同源 helper，不新建替代项目 |
 | 档案删除 | 显式确认且最近五分钟 Google 认证；只删除本人 ANU D1 档案及其关联记录 | 认证过旧返回 403，需重新 Google 登录；不删除 Google/Firebase 身份 |
 
@@ -111,8 +111,12 @@ ANU_PRODUCTION_APPROVED=1 ANU_VERIFIED_BACKUP=/absolute/private/backup.sql npm r
 
 2026-10-19 用户明确批准免费 Zero Trust 与管理员防护，并指定唯一管理员邮箱。本日已创建 ANU Admin API 应用（`b4e5841c-4e8c-41db-b248-de8595cf850d`），保护 `/api/v1/admin` 及其继承子路径；应用和唯一策略要求独立 MFA，应用会话 1h。邮箱保存在控制台，不进入公开仓库。该授权不等于新 Worker/Pages 部署、生产 0003 迁移或注册开放授权。
 
-管理员应用使用精确邮箱 OTP 身份验证，并继续要求独立 MFA。一次性邮箱码不代替第二因素，也不取消 Worker 管理 secret。管理员完成邮箱验证后，初次入口曾显示 `No authentication methods set up`；后续经单独授权启用自助门户，2026-10-20 已从设备表确认一个 Biometrics 设备，创建和最近使用日期均为当天。设备绑定已确认，管理入口实际第二因素登录仍未成功返回 API，不能记为 MFA 通过。
+管理员应用使用精确邮箱 OTP 身份验证，并继续要求独立 MFA。一次性邮箱码不代替第二因素，也不取消 Worker 管理 secret。管理员完成邮箱验证后，初次入口曾显示 `No authentication methods set up`；后续经单独授权启用自助门户，2026-10-20 已从设备表确认一个 Biometrics 设备，创建和最近使用日期均为当天。同日实际管理入口强制挑战、本人验证后的新请求抵达 Worker，生产边缘 MFA 验收通过，最终证据见下文；不将这一结果扩大为管理操作或新 Worker 独立 JWT 验签已通过。
 
 `Setup MFA` 和官方 `/AddMfaDevice` 先前因 App Launcher 未启用而落到 `#/NoAuth`；该阻断现已修复。用户本轮明确确认启用，浏览器保存后刷新重新读取，唯一 Allow 策略为 `ANU administrator MFA enrollment`（ID `f419fc5a-9592-4508-ab52-9db39d344e0e`），只允许精确单个管理员邮箱、仅 One-time PIN，`acceptAllIdPs=false`，门户应用与策略会话均为 30 分钟。策略只关联一个 App Launcher 应用，不修改 Admin API 原策略、独立 MFA、1h 应用会话或 Worker 管理 secret 要求；不将管理员邮箱写入 Git。
 
-真实 `/AddMfaDevice` 已显示 `Secure your account with MFA` 及 `Biometrics`、`Security key`、`Authenticator application` 选项。2026-10-20 管理 flags 入口实际显示 `Authenticate your identity` 和 `Use your device's biometrics to continue`；用户曾报告验证完成，但页面仍停在第二因素挑战。已从 Cancel 返回方法选择并手动选择 `Unnamed Authenticator` 重试，当前交由本人确认生物识别，尚未成功返回 API。未读取二维码、OTP、登录令牌或设备凭据，也不将设备 ID、邮箱或私有证据路径写入 Git；管理入口成功验证后才能解除 MFA 登录验收的发布前阻断。新代码和 `0003` 仍未部署到生产，注册保持关闭，开放注册尚未授权。
+真实 `/AddMfaDevice` 已显示 `Secure your account with MFA` 及 `Biometrics`、`Security key`、`Authenticator application` 选项。2026-10-20 管理 flags 入口实际显示 `Authenticate your identity` 和 `Use your device's biometrics to continue`；早先用户报告完成时，旧页面仍停在挑战，当时没有计为通过。随后从 Cancel 返回方法选择并手动选择 `Unnamed Authenticator`，交由本人重试。
+
+用户最终报告已跳回 API 后，同一 Chrome 会话发起新请求 `https://api.freeze.edu.kg/api/v1/admin/flags`，实际显示 Worker JSON `{"ok":false,"error":{"code":"ADMIN_FORBIDDEN","message":"Administrative authorization required."}}`；浏览器状态再次核对最终主机/路径确为 `api.freeze.edu.kg/api/v1/admin/flags`。这证明已绑定的 Biometrics 经过强制挑战和本人验证后，Access/MFA 实际放行至 Worker；该项生产边缘 MFA 验收通过。未提交管理员 secret，所以 Worker 仍拒绝管理授权。未读取 cookie、token、二维码、OTP 或设备凭据，也不将请求 ID、设备 ID、邮箱或私有证据路径写入 Git。
+
+MFA 登录验收这一项阻断已解除；带 secret 的管理操作和新 Worker 的 Access JWT 独立验签仍未进行生产验收。新代码和 `0003` 仍未部署到生产，注册保持关闭，开放注册尚未授权；真人 Google OAuth、真实 Turnstile、生产账户流程和物理 iPhone Safari 的既定验收要求不变。
