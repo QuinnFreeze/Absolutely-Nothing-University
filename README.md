@@ -15,6 +15,8 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 
 GitHub Pages 已构建批准提交 `6eae1cefe23ef5968bd3fdfd5d5155d256fe8d5e`，正式 HTTPS 的六个前端文件与该版本逐字节匹配。Worker 已发布为 `c22b3178-7872-4d77-a06a-ea2d7f9408ae`，远程读回 100% 流量；D1 迁移前后原业务记录计数、原索引和配额触发器均保留。11 项真实 API 防护检查和生产游客 Chrome 回归通过，涵盖蓝白默认主题、手动深色、中英移动布局及五张实际 PNG。真人 Google OAuth、真实 Turnstile 成功与重放、生产账户写入和物理 iPhone Safari 尚未验收；这些项目仍阻止开放注册。详见安全报告。
 
+2026-10-21 本地已补充登录超时与 Firebase observer 先后到达时的恢复处理，保留账号切换、退出和云端错误边界；26 组认证模拟及 12 项本地 Chrome UI fixture 检查通过。该后续补丁尚未部署，不改变上述线上版本或注册关闭状态，详见安全审计。
+
 ## 技术架构
 
 | 层 | 实现与责任 |
@@ -54,6 +56,7 @@ node --no-warnings tests/run-tests.mjs
 node tests/student-auth-tests.mjs
 node tests/canvas-export-tests.mjs
 node tests/browser-regression.cjs
+node tests/auth-recovery-browser.cjs
 git diff --check
 
 # 在 worker/ 目录运行

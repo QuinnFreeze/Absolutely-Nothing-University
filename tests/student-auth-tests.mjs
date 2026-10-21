@@ -27,7 +27,7 @@ function bundle(nickname = "学员") {
   return { profile: { studentNumber: "ANU20260001", nickname, revision: 0 }, transcripts: [], papers: [], diplomas: [], honors: [] };
 }
 
-function makeHarness({ origin = "https://freeze.edu.kg", sdkGate, scriptLoaded = true, popupError, firebase, userAgent, popupGate, fastTimeouts = false, persistenceError, signOutGate } = {}) {
+function makeHarness({ origin = "https://freeze.edu.kg", sdkGate, scriptLoaded = true, popupError, firebase, userAgent, popupGate, fastTimeouts = false, fastPopupTimeouts = false, persistenceError, signOutGate } = {}) {
   const calls = { fetch: [], popup: [], redirect: [], initialize: [], render: [], reset: [], remove: [] };
   const elements = new Map();
   let theme = "light";
@@ -82,7 +82,9 @@ function makeHarness({ origin = "https://freeze.edu.kg", sdkGate, scriptLoaded =
     document,
     navigator: { userAgent: userAgent || "Mozilla/5.0 Safari", platform: "MacIntel", maxTouchPoints: 0 },
     AbortController,
-    setTimeout: fastTimeouts ? (fn) => setTimeout(fn, 10) : setTimeout,
+    setTimeout: fastTimeouts || fastPopupTimeouts
+      ? (fn, ms) => setTimeout(fn, fastTimeouts || ms === 90000 ? 10 : ms)
+      : setTimeout,
     clearTimeout,
     URL,
     TextEncoder,
@@ -617,6 +619,115 @@ export async function runStudentAuthTests() {
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(authTimeout.auth.getState().user, null, "Late popup results cannot adopt state after their deadline");
     console.log("✓ [MOCK PASS / ACCELERATED CLOCK] API/public/token waits abort on timeout; late work cannot publish or send; popup timeout clears busy state");
+  }
+
+  {
+    const popup = deferred();
+    const h = makeHarness({ fastPopupTimeouts: true, popupGate: popup });
+    await h.auth.prepareSignIn();
+    const login = h.auth.signInWithGoogle();
+    await h.emitUser(h.user);
+    const result = await login;
+    assert.equal(result.mode, "observer", "The SDK identity is recovered without claiming fresh popup authentication");
+    assert.equal(result.user.uid, h.user.uid);
+    assert.equal(h.auth.getState().authError, null);
+    assert.equal(h.calls.fetch.length, 1, "Observer-first recovery reuses the completed cloud read");
+    assert.equal(h.auth.getState().authSigningIn, false);
+    console.log("✓ [MOCK PASS / ACCELERATED POPUP CLOCK] An SDK identity received before popup timeout remains successful without duplicate cloud reads");
+  }
+
+  {
+    const popup = deferred();
+    const h = makeHarness({ fastPopupTimeouts: true, popupGate: popup });
+    await h.login();
+    await assert.rejects(h.auth.signInWithGoogle(), { code: "AUTH_POPUP_TIMEOUT" });
+    assert.equal(h.auth.getState().user.uid, h.user.uid, "A failed account switch retains the original identity");
+    assert.equal(h.auth.getState().authError.code, "AUTH_POPUP_TIMEOUT", "An unchanged identity cannot prove account switching succeeded");
+    assert.equal(h.calls.fetch.length, 1);
+    console.log("✓ [MOCK PASS / ACCELERATED POPUP CLOCK] An unchanged existing account cannot turn a timed-out switch into success");
+  }
+
+  {
+    const popup = deferred();
+    const h = makeHarness({ fastPopupTimeouts: true, popupGate: popup });
+    await h.auth.prepareSignIn();
+    h.setRequest(() => response({ ok: false, error: { code: "UPSTREAM_UNAVAILABLE", message: "Cloud is unavailable" } }, 503));
+    const login = h.auth.signInWithGoogle();
+    await h.emitUser(h.user);
+    const result = await login;
+    assert.equal(result.mode, "observer");
+    assert.equal(result.user.uid, h.user.uid);
+    assert.equal(result.cloudError.code, "UPSTREAM_UNAVAILABLE");
+    assert.equal(h.auth.getState().bundleLoaded, false);
+    assert.equal(h.auth.getState().authError, null);
+    assert.equal(h.calls.fetch.length, 1, "A cloud failure remains explicit instead of silently repeating the read");
+    console.log("✓ [MOCK PASS / ACCELERATED POPUP CLOCK] Observer recovery preserves cloud errors without dropping identity or retrying failed reads");
+  }
+
+  {
+    for (const nextState of ["signout", "other-account"]) {
+      const popup = deferred();
+      const cloud = deferred();
+      const h = makeHarness({ fastPopupTimeouts: true, popupGate: popup });
+      await h.auth.prepareSignIn();
+      h.setRequest(() => cloud.promise);
+      const login = h.auth.signInWithGoogle();
+      const rejected = assert.rejects(login, { code: "AUTH_SESSION_CHANGED" });
+      const observer = h.emitUser(h.user);
+      // Only the popup deadline is accelerated; the private read stays pending
+      // until the test changes identity and releases its response.
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      if (nextState === "signout") {
+        await h.auth.signOutStudent();
+      } else {
+        h.setRequest(() => response({ ok: true, registered: true, data: bundle("账号 C") }));
+        await h.emitUser({ ...h.user, uid: "other-account" });
+      }
+      cloud.resolve(response({ ok: true, registered: true, data: bundle("旧账号 B") }));
+      await observer;
+      await rejected;
+      assert.equal(h.auth.getState().authError, null, "An old recovery cannot overwrite the new session's auth status");
+      if (nextState === "signout") {
+        assert.equal(h.auth.getState().user, null);
+        assert.equal(h.auth.getState().bundle, null);
+      } else {
+        assert.equal(h.auth.getState().user.uid, "other-account");
+        assert.equal(h.auth.getState().bundle.profile.nickname, "账号 C");
+      }
+    }
+    console.log("✓ [MOCK PASS / ACCELERATED POPUP CLOCK] Sign-out and account changes during observer recovery reject stale identity and archive results");
+  }
+
+  {
+    const popup = deferred();
+    const h = makeHarness({ fastTimeouts: true, popupGate: popup });
+    await assert.rejects(h.auth.signInWithGoogle(), { code: "AUTH_POPUP_TIMEOUT" });
+    assert.equal(h.auth.getState().authError.code, "AUTH_POPUP_TIMEOUT");
+    const observed = [];
+    h.auth.onStateChange((state) => observed.push({ signedIn: Boolean(state.user), error: state.authError }));
+    await h.emitUser(h.user);
+    assert.equal(h.auth.getState().user.uid, h.user.uid, "A late SDK auth event is distinct from the expired popup result");
+    assert.equal(h.auth.getState().authError, null, "Authenticated SDK recovery retires the obsolete popup error");
+    assert.equal(h.auth.getState().bundleLoaded, true);
+    assert.equal(h.auth.getState().bundle.profile.nickname, "学员");
+    assert.ok(observed.some((state) => state.signedIn && state.error === null), "Recovery is published to the portal before and after cloud sync");
+    assert.equal(h.calls.fetch.length, 1, "Observer recovery performs one authenticated cloud read");
+    console.log("✓ [MOCK PASS / ACCELERATED CLOCK] A Firebase observer arriving after popup timeout restores identity, clears stale auth error, and syncs the archive");
+  }
+
+  {
+    const popup = deferred();
+    const h = makeHarness({ fastTimeouts: true, popupGate: popup });
+    await assert.rejects(h.auth.signInWithGoogle(), { code: "AUTH_POPUP_TIMEOUT" });
+    await h.auth.signOutStudent();
+    const reads = h.calls.fetch.length;
+    await h.emitUser(h.user);
+    assert.equal(h.auth.getState().user, null, "Explicit sign-out takes precedence over a late SDK auth event");
+    assert.equal(h.auth.getState().bundle, null);
+    assert.equal(h.auth.getState().bundleLoaded, false);
+    assert.equal(h.auth.getState().authError, null);
+    assert.equal(h.calls.fetch.length, reads, "A rejected late SDK identity cannot start private cloud reads");
+    console.log("✓ [MOCK PASS / ACCELERATED CLOCK] Explicit sign-out after popup timeout still rejects late Firebase observers without restoring private data");
   }
 
   {

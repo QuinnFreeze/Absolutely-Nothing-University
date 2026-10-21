@@ -118,3 +118,19 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 - 用户最终报告已跳回 API 后，同一 Chrome 会话新请求 `https://api.freeze.edu.kg/api/v1/admin/flags`，页面实际返回 Worker JSON：`{"ok":false,"error":{"code":"ADMIN_FORBIDDEN","message":"Administrative authorization required."}}`；浏览器状态再次确认最终主机/路径确为 `api.freeze.edu.kg/api/v1/admin/flags`。因此 Biometrics 绑定、强制挑战及本人验证后请求抵达 Worker 这一项生产边缘 MFA 验收通过。未提交管理员 secret，Worker 拒绝保持有效；没有读取 cookie/token，不记录请求 ID、邮箱、设备 ID 或私有证据路径。该证据发生在新 Worker 发布前，不能证明带 secret 管理操作或新 Worker 的 Access JWT 独立验签通过。
 - 2026-10-19 及 2026-10-20 发布前的只读账户 API 检查三个 Worker 当时上传设置，拟用 `353403995691`、`353403995692`、`353403995693` 无复用。新 Worker 已上传并读回 IP/UID/写入三个 binding，限制分别为 120/30/10 次每 60 秒；未修改其它 Worker，未检查历史未启用版本。
 - 2026-10-20 发布前只读预检确认正式路由为 `api.freeze.edu.kg` → `anu-student-api / production`，无额外 zone route，`workers.dev=false`、`preview=false`；保存旧版本作回滚基线。只核对 `ADMIN_API_TOKEN`、`IP_HASH_SALT`、`TURNSTILE_SECRET_KEY` 名称，不读取值。随后按批准先迁移再发布；新 Worker 的生产 health 200 表明本次请求的 IP 限流及盐配置检查通过，不证明 Turnstile key/secret 配对或 UID/写入限流实测。
+
+## 8. 后续登录恢复补丁（2026-10-21，待部署）
+
+生产业务代码仍为获批的 `6eae1ce`，本节记录后续开发，不将新检查混为该版本的上线验收。真实 Chrome 在账号选择、已获授权的基本资料确认之后，出现超时或弹窗关闭后取消的反馈，刷新后仍为游客；键盘操作对照也未完成回跳。浏览器自动化曾报告页面响应处理暂停，当前不能据此确定站点、Google 或工具的根因，真实 OAuth 仍未通过。
+
+代码审查另行确认了可复现的状态问题：SDK observer 晚于超时时会保留旧认证错误；observer 先成功而 popup Promise 后超时，也可能覆盖成功状态。补丁在合法 SDK 身份恢复后清除过期错误，仅对本次意图中新出现的身份会话处理后者；既有账号未变化的切换超时继续报错，取消/网络失败不吞掉，等待云端读取期间退出或切换账号会拒绝旧结果。恢复返回 `observer`，不代表重新完成近期 Google 认证；服务端 `auth_time` 要求保持不变。已失败的云端读取不会被恢复分支自动重试。
+
+界面只替换仍属于此次登录失败的提示，保留 JSON 导出等后续操作反馈；云端不可用仍明确显示错误。没有改变 90 秒 UI 等待上限、JWT、Turnstile、Access/MFA、CORS、权限、注册开关或数据结构。
+
+验证结果：
+
+- 26 组认证客户端模拟通过，含 observer 先/后超时、旧账号不变、云端失败、恢复等待期间退出与换账号。SDK、API 与加速时钟均为模拟；不证明真实 OAuth 通过。
+- 全套本地测试及 Worker TypeScript 检查退出码 0；两份业务 JS 语法检查及 `git diff --check` 通过。
+- `node tests/auth-recovery-browser.cjs`：隔离 Chrome、本地页面和公开 `ANU_AUTH` 接口 fixture；中英 × 390/1440 px × 三类状态共 12 项通过，12 张截图。超时后成功提示恢复、真实游客 JSON 下载反馈保留、云端错误优先均验证；蓝白默认且无横向溢出，无 console/pageerror 或意外外部请求。没有真实 SDK/Google/Turnstile/生产写入。
+
+该补丁需要独立评审后发布前端；影响与回滚见发布文档第 10 节。注册继续关闭，原有真实 Turnstile、生产学生流程、管理员完整链路和物理 iPhone Safari 的验收边界不变。
