@@ -1,19 +1,19 @@
 # ANU 网站安全审计与验收记录
 
-检查日期：2026-10-19；2026-10-20 更新实际发布、数据库保留检查、生产 API/游客回归及 MFA 验收（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。
+检查日期：2026-10-19；2026-10-20 更新首次发布，2026-10-21 更新后续前端发布及验收（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。
 
-**已按用户批准的 `6eae1ce` 发布前端和 Worker，在私有备份后完成生产 `0003` 增量迁移。新用户注册仍关闭；真实账户与物理设备验收尚未完成，不得开放注册。** 发布影响、操作顺序与回滚见 [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md)。
+**初次加固已按用户批准的 `6eae1ce` 发布前端和 Worker，在私有备份后完成生产 `0003` 增量迁移；2026-10-21 又按单独批准发布前端登录恢复补丁 `67347cb`，Worker/D1 未变。新用户注册仍关闭；真实账户与物理设备验收尚未完成，不得开放注册。** 发布影响、操作顺序与回滚见 [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md)。
 
 ## 1. 真实生产状态
 
 | 对象 | 已核实事实（日期逐项注明） | 边界或剩余工作 |
 | --- | --- | --- |
-| GitHub Pages | 2026-10-20 已构建批准源提交 `6eae1cefe23ef5968bd3fdfd5d5155d256fe8d5e`，来源 `main` 根目录、CNAME `freeze.edu.kg`、强制 HTTPS；独立 HTTPS 获取的六个前端文件与批准源逐字节、SHA-256 一致 | 发布与实际内容均已验证；后续文档提交可能推进 `main`，业务源版本仍以本条为准 |
+| GitHub Pages | 初次源为 `6eae1ce`；后续登录恢复补丁 `67347cb3ae9461f48d9f7acbf08fa320ff79f774` 经单独批准，通过 PR #1 合并为 `61080c8f1df60fc5922594ad8ebdf4133929495f`，Pages 于 2026-10-21 00:53:59 UTC 构建成功。正式 HTTPS 两份修改 JS 的 SHA-256 与批准源一致；`main` 根目录、CNAME 及 HTTPS 保留 | 后续纯文档提交可能推进 `main`，前端业务源为 `67347cb`；真人 OAuth 未通过 |
 | Firebase | 沿用已有项目及公开 Web App 配置；2026-10-18 已确认 Google 提供方启用；2026-10-19 再通过公开项目配置确认正式域在授权域列表中；生产游客 Chrome 真实 SDK 初始化无认证错误 | SDK 初始化不等于真人 Google OAuth 联调 |
 | Worker | 2026-10-20 已发布新版本 `c22b3178-7872-4d77-a06a-ea2d7f9408ae` 至 `api.freeze.edu.kg`，远程读回 100% 流量、三个 Rate Limiting binding、原 D1、正式 vars 及域；`workers.dev` 和 preview 仍关闭。部署元数据 7 项、health 与匿名防护检查通过 | 旧版回滚标识为 `4e829602-af8d-4c75-ab59-1cb09c1eea76`；匿名检查不代替已认证业务验收 |
 | D1 | 先备份，再于 2026-10-20 00:31:32 UTC 应用 `0003_security_hardening.sql`，8 条命令成功；`0001/0002` 保留。新增 revision、request_hash、token ledger 及索引存在；六个学生业务表计数均为 0→0，原 25 个索引和 3 个配额触发器保留，总索引 28 | 没有新建或删除生产学生记录；只读迁移前后检查 `rows_written=0`，不代表真实账户写入验收 |
 | 注册开关 | 发布后真实 health：`ok:true`、注册 `false`，论文、证书和公开目录均为 `true`；D1 读回 `registration_enabled=0` | 注册须保持关闭，直至安全验收和另行开放批准 |
-| 备份 | 发布使用 2026-10-20 00:14:19 UTC 仓库外私有导出，10,906 bytes，文件 `0600`、目录 `0700`，SHA-256 `28a4734eeabb97bfeb4b1b7741369006f7e66011db0af444d73f16338490de33` 已匹配；生产操作均通过一小时内备份门禁。保留历史备份 | 不公开 SQL、私有路径或凭据；未来生产变更重新检查备份时效，过期须重新导出 |
+| 备份 | 初次发布使用 2026-10-20 00:14:19 UTC 仓库外私有导出，10,906 bytes，文件 `0600`、目录 `0700`，SHA-256 `28a4734eeabb97bfeb4b1b7741369006f7e66011db0af444d73f16338490de33` 已匹配；该次 D1 迁移与 Worker 部署分别通过一小时内备份门禁。后续前端补丁不操作 D1；历史备份保留 | 不公开 SQL、私有路径或凭据；未来迁移或 Worker 发布重新检查备份时效，过期须重新导出 |
 | 管理保护 | ANU Admin API Access 应用保护 `/api/v1/admin` 及其子路径，限定单个管理员邮箱、每次登录独立 MFA、1h 会话；新 Worker 已配置真实 issuer/AUD。另经授权启用仅该邮箱、OTP、30 分钟的 App Launcher 注册门户。2026-10-20 Biometrics 绑定、强制挑战及本人验证后抵达旧 Worker 的边缘 MFA 验收通过 | CLI token 读取 Access 策略曾为 403，控制台保存并刷新核验；门户不改变 API 权限。未提交管理员 secret，旧 Worker 返回 `ADMIN_FORBIDDEN`；新 Worker 的独立 Access JWT 验签和带 secret 操作仍待真实生产验收 |
 | 真实游客 UI | 正式站点、真实 Firebase SDK/字体、无网络 mock 的 Chrome 回归：21 项通过，26 张截图、5 张 2400 px 宽 PNG；96 组校园布局和 12 组 My ANU 布局无横向溢出；默认蓝白、手动深色及刷新保持正常 | 不执行 Google OAuth 或生产学生写入，不能代替真实账户或物理 iPhone Safari |
 | 真实账户流程 | 真人 Google OAuth、真实 Turnstile 成功与重放、生产账户写入及物理 iPhone Safari 尚未完成 | 不计为通过；响应式尺寸、UA 模拟和本地 fixtures 均不能替代 |
@@ -119,9 +119,9 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 - 2026-10-19 及 2026-10-20 发布前的只读账户 API 检查三个 Worker 当时上传设置，拟用 `353403995691`、`353403995692`、`353403995693` 无复用。新 Worker 已上传并读回 IP/UID/写入三个 binding，限制分别为 120/30/10 次每 60 秒；未修改其它 Worker，未检查历史未启用版本。
 - 2026-10-20 发布前只读预检确认正式路由为 `api.freeze.edu.kg` → `anu-student-api / production`，无额外 zone route，`workers.dev=false`、`preview=false`；保存旧版本作回滚基线。只核对 `ADMIN_API_TOKEN`、`IP_HASH_SALT`、`TURNSTILE_SECRET_KEY` 名称，不读取值。随后按批准先迁移再发布；新 Worker 的生产 health 200 表明本次请求的 IP 限流及盐配置检查通过，不证明 Turnstile key/secret 配对或 UID/写入限流实测。
 
-## 8. 后续登录恢复补丁（2026-10-21，待部署）
+## 8. 后续登录恢复补丁（2026-10-21，已发布）
 
-生产业务代码仍为获批的 `6eae1ce`，本节记录后续开发，不将新检查混为该版本的上线验收。真实 Chrome 在账号选择、已获授权的基本资料确认之后，出现超时或弹窗关闭后取消的反馈，刷新后仍为游客；键盘操作对照也未完成回跳。浏览器自动化曾报告页面响应处理暂停，当前不能据此确定站点、Google 或工具的根因，真实 OAuth 仍未通过。
+Worker 业务代码仍为获批的 `6eae1ce`；前端补丁 `67347cb` 已获独立批准并通过 PR #1 发布。本节单独记录后续修复，不将检查混为初次加固的验收。补丁发布前真实 Chrome 在账号选择、已获授权的基本资料确认之后，出现超时或弹窗关闭后取消的反馈，刷新后仍为游客；键盘操作对照也未完成回跳。浏览器自动化曾报告页面响应处理暂停，当前不能据此确定站点、Google 或工具的根因，真实 OAuth 仍未通过。
 
 代码审查另行确认了可复现的状态问题：SDK observer 晚于超时时会保留旧认证错误；observer 先成功而 popup Promise 后超时，也可能覆盖成功状态。补丁在合法 SDK 身份恢复后清除过期错误，仅对本次意图中新出现的身份会话处理后者；既有账号未变化的切换超时继续报错，取消/网络失败不吞掉，等待云端读取期间退出或切换账号会拒绝旧结果。恢复返回 `observer`，不代表重新完成近期 Google 认证；服务端 `auth_time` 要求保持不变。已失败的云端读取不会被恢复分支自动重试。
 
@@ -133,4 +133,6 @@ Access JWT 验签不能证明 MFA 策略已开启。需核对管理应用及其 
 - 全套本地测试及 Worker TypeScript 检查退出码 0；两份业务 JS 语法检查及 `git diff --check` 通过。
 - `node tests/auth-recovery-browser.cjs`：隔离 Chrome、本地页面和公开 `ANU_AUTH` 接口 fixture；中英 × 390/1440 px × 三类状态共 12 项通过，12 张截图。超时后成功提示恢复、真实游客 JSON 下载反馈保留、云端错误优先均验证；蓝白默认且无横向溢出，无 console/pageerror 或意外外部请求。没有真实 SDK/Google/Turnstile/生产写入。
 
-该补丁需要独立评审后发布前端；影响与回滚见发布文档第 10 节。注册继续关闭，原有真实 Turnstile、生产学生流程、管理员完整链路和物理 iPhone Safari 的验收边界不变。
+补丁已获独立发布批准，合并提交 `61080c8` 的 Pages 构建和两份 JS 正式 HTTPS 摘要已核对。发布后独立 Chrome 使用真实 SDK/字体、无网络 mock 的游客检查 7/7 通过：390/1440 px 蓝白默认、语言/手动主题/刷新、登录预热和游客导航正常，实际论文 PNG 为 2400×1728、797,555 bytes；console/page/request failure 均为 0，学生 API 请求为 0。该检查不执行 Google OAuth 或生产写入。
+
+2026-10-21 生产只读复核 4/4 通过：Worker 仍为原版本且承接 100% 流量、D1 原绑定保留、开发/预览旁路关闭、health 正常且注册 false。影响与回滚见发布文档第 10 节。注册继续关闭，原有真实 Turnstile、生产学生流程、管理员完整链路和物理 iPhone Safari 的验收边界不变。

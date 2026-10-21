@@ -1,10 +1,10 @@
 # ANU 生产发布影响、验收与回滚方案
 
-日期：2026-10-19 制定，2026-10-20 更新实际发布与上线验收记录。保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1。**用户已批准具体版本 `6eae1ce`，Pages、Worker 和 D1 `0003` 已按方案发布；新用户注册继续关闭，开放注册尚未授权。**
+日期：2026-10-19 制定，2026-10-20 记录首次发布，2026-10-21 更新后续前端发布与验收。保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1。**用户已批准具体版本 `6eae1ce`，Pages、Worker 和 D1 `0003` 已按方案发布；随后另行批准的前端补丁见第 10 节。新用户注册继续关闭，开放注册尚未授权。**
 
 ## 1. 发布结果与回滚基线
 
-- 前端源版本：`6eae1cefe23ef5968bd3fdfd5d5155d256fe8d5e`，已推送 `main`，Pages 于 2026-10-20 00:29:36 UTC 报告 `built`。来源为 `main` 根目录，CNAME `freeze.edu.kg`、强制 HTTPS；独立 HTTPS 六文件的字节及 SHA-256 与批准源一致。发布前回滚提交为 `d02aceb509fbef8dc2ad5866f0d07731f3077451`；后续纯文档提交可能推进分支，不改变业务源版本。
+- 初次加固前端源版本：`6eae1cefe23ef5968bd3fdfd5d5155d256fe8d5e`，已推送 `main`，Pages 于 2026-10-20 00:29:36 UTC 报告 `built`。来源为 `main` 根目录，CNAME `freeze.edu.kg`、强制 HTTPS；独立 HTTPS 六文件的字节及 SHA-256 与批准源一致。发布前回滚提交为 `d02aceb509fbef8dc2ad5866f0d07731f3077451`；2026-10-21 后续前端补丁及其回滚基线见第 10 节。
 - Worker 新版本：`c22b3178-7872-4d77-a06a-ea2d7f9408ae`，远程读回 100% 流量，正式域 `api.freeze.edu.kg`，`workers.dev` 及 preview 仍关闭；发布前回滚版本为 `4e829602-af8d-4c75-ab59-1cb09c1eea76`。三个 IP/UID/写入边缘限流 binding 已随新版上传并读回，限制分别为 120/30/10 次每 60 秒；不能以打包 dry-run 代替本次真实发布。
 - 备份：2026-10-20 00:14:19 UTC 仓库外私有导出，10,906 bytes，文件 `0600`、目录 `0700`，SHA-256 `28a4734eeabb97bfeb4b1b7741369006f7e66011db0af444d73f16338490de33` 匹配。迁移与 Worker 发布分别通过一小时内备份门禁；历史备份保留。
 - D1：`0003_security_hardening.sql` 于 2026-10-20 00:31:32 UTC 应用，8 条命令成功；`0001/0002` 保留。原六个学生业务表均 0→0，system_flags 4→4、rate_limits 9→9、security_audit_log 4→4，原 25 索引与 3 配额触发器保留；新增 revision、request_hash、token ledger 及索引存在，总索引 28。前后只读比较全部通过，没有新增或删除学生记录。
@@ -135,10 +135,10 @@ MFA 登录验收这一项阻断已解除，该证据发生在新 Worker 发布�
 
 共 11 项实际请求全部符合预期。没有发送生产学生写请求，没有读取 cookie、原始 JWT 或密钥。匿名防护结果不代替真实身份的签名链、资源所有权、Turnstile 或 UID/写入边缘限流验收。生产 health 200 只表明本次请求的 IP 限流及盐配置检查通过。
 
-## 10. 后续前端登录恢复补丁（2026-10-21，待批准）
+## 10. 后续前端登录恢复补丁（2026-10-21，已发布）
 
-修复详情见安全审计第 8 节。拟发布范围仅 GitHub Pages 的 `app.js`、`js/student-auth.js` 及随附测试/文档：登录超时与 SDK 身份到达顺序不再留下过时错误，后续操作反馈和云端失败保留。没有 Worker、D1、Firebase、Access 或权限配置变更，不执行数据库迁移或学生数据写入；注册保持关闭。原 90 秒 UI 等待上限及服务端近期认证要求不变。
+修复详情见安全审计第 8 节。实际发布范围仅 GitHub Pages 的 `app.js`、`js/student-auth.js` 及随附测试/文档：登录超时与 SDK 身份到达顺序不再留下过时错误，后续操作反馈和云端失败保留。没有 Worker、D1、Firebase、Access 或权限配置变更，不执行数据库迁移或学生数据写入；注册保持关闭。原 90 秒 UI 等待上限及服务端近期认证要求不变。
 
-发布前核对具体补丁提交、测试结果及远程基线；该补丁不在原 `6eae1ce` 授权内，须先获得新的前端发布批准，再将批准提交发布至 Pages。发布后核对 Pages 构建、两份线上 JS 的 SHA-256、游客和认证错误界面及 health 注册状态。真实 OAuth 仍需独立完成，不能由 fixture 通过替代。
+用户已独立批准仅发布补丁 `67347cb3ae9461f48d9f7acbf08fa320ff79f774`。PR #1 于 2026-10-21 00:53:37 UTC 合并为 `61080c8f1df60fc5922594ad8ebdf4133929495f`，Pages 于 00:53:59 UTC 构建成功；正式 HTTPS 两份修改 JS 的 SHA-256 匹配批准源。发布前 26 组认证模拟、12 项本地 UI fixture、全套本地测试与 TypeScript 通过；发布后 7 项真实游客检查和 4 项基础设施只读检查通过。本次没有重新部署 Worker 或操作 D1。真实 OAuth 仍需独立完成，不能由 fixture 通过替代。
 
 若此补丁造成回归，使用新的 Git revert 提交将业务 JS 恢复为补丁前版本（`63cb865`，业务内容与 `6eae1ce` 相同），核对 Pages 与正式 HTTPS 内容；不回退 Worker，不改动 D1、不删数据或认证记录，不放宽现有安全校验。
