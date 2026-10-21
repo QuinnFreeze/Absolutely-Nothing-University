@@ -2122,50 +2122,188 @@ html[data-theme="dark"] .btn-contribute-nothing {
    ========================================================================== */
 
 .my-anu-auth-banner {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
   align-items: center;
-  gap: 1.25rem;
-  background: var(--bulletin-bg);
-  border: 1px solid var(--bulletin-border);
-  border-left: 5px solid var(--crimson-seal);
-  border-radius: 12px;
-  padding: 1.35rem 1.5rem;
+  gap: 2rem;
+  background: var(--surface-elevated);
+  border: 1px solid var(--stone-border);
+  border-top: 3px solid var(--oxford-mid);
+  border-radius: 16px;
+  padding: 1.75rem;
   margin-bottom: 1rem;
   box-shadow: var(--shadow-soft);
 }
 
-.my-anu-auth-info {
-  flex: 1 1 420px;
+#my-anu-global-feedback:empty { display: none; }
+
+.my-anu-auth-main, .my-anu-auth-controls {
+  min-width: 0;
+}
+
+.my-anu-auth-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.1rem;
+}
+
+.my-anu-auth-monogram {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 48px;
+  color: #FFFFFF;
+  background: #0B2E59;
+  border: 1px solid #14427A;
+  border-radius: 9px 9px 16px 16px;
+  font-family: var(--serif-font);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.my-anu-auth-identity-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+
+.my-anu-auth-kicker {
+  color: var(--ink-muted);
+  font-size: 0.73rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.my-anu-auth-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--oxford-abyss);
+  background: var(--bulletin-bg);
+  border: 1px solid var(--bulletin-border);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.my-anu-auth-state::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .my-anu-auth-info strong {
   display: block;
   font-family: var(--serif-font);
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.4;
   color: var(--oxford-abyss);
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.6rem;
 }
 
 .my-anu-auth-info p {
-  font-size: 0.9rem;
-  color: var(--ink);
-  margin-bottom: 0.35rem;
+  max-width: 48ch;
+  font-size: 0.86rem;
+  color: var(--ink-muted);
+  line-height: 1.8;
+}
+
+.my-anu-auth-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+  list-style: none;
+  margin-top: 1rem;
+  color: var(--ink-muted);
+  font-size: 0.73rem;
+}
+
+.my-anu-auth-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.my-anu-auth-benefits li::before {
+  content: "✓";
+  color: var(--oxford-soft);
+  font-weight: 700;
+}
+
+.my-anu-auth-controls {
+  border-left: 1px solid var(--stone-border);
+  padding-left: 1.5rem;
 }
 
 .my-anu-safari-note {
-  font-size: 0.78rem !important;
-  color: var(--ink-muted) !important;
-  margin-bottom: 0 !important;
+  margin-top: 0.7rem;
+  font-size: 0.72rem;
+  line-height: 1.7;
+  color: var(--ink-muted);
+  text-align: center;
 }
 
 .my-anu-auth-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 0.65rem;
-  align-items: center;
 }
+
+.my-anu-auth-actions button {
+  width: 100%;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.my-anu-auth-actions .btn-primary {
+  min-height: 48px;
+  padding: 0.8rem 1rem;
+  font-size: 0.88rem;
+}
+
+.my-anu-auth-banner[data-auth-state="signed-in"] .my-anu-safari-note {
+  display: none;
+}
+
+#page-my-anu > .academic-section > .container > .section-header .section-desc {
+  max-width: 52ch;
+}
+
+@media (max-width: 900px) {
+  .my-anu-auth-banner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.35rem;
+  }
+
+  .my-anu-auth-controls {
+    border-left: 0;
+    border-top: 1px solid var(--stone-border);
+    padding-left: 0;
+    padding-top: 1.25rem;
+  }
+}
+
+.footer-privacy-link { display: inline-block; margin-top: 0.8rem; font-size: 0.8rem; text-underline-offset: 0.2em; }
+.legal-document-content { max-width: 860px; padding-top: 3rem; padding-bottom: 4rem; }
+.legal-document h1, .legal-document h2, .legal-document h3 { color: var(--oxford-abyss); font-family: var(--serif-font); line-height: 1.4; }
+.legal-document h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-top: 0.65rem; }
+.legal-document h2 { font-size: 1.6rem; margin-bottom: 1rem; }
+.legal-document h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+.legal-document p { margin-bottom: 1rem; overflow-wrap: anywhere; }
+.legal-document-intro, .legal-document-date { color: var(--ink-muted); }
+.legal-document nav { display: flex; gap: 1.25rem; margin: 1.25rem 0 2rem; }
+.legal-document article { padding-top: 2rem; margin-top: 2rem; border-top: 1px solid var(--stone-border); scroll-margin-top: 1rem; }
+.legal-back-link { display: inline-block; margin-bottom: 1.5rem; }
 
 .my-anu-registration-panel {
   background: var(--surface-elevated);
@@ -2267,6 +2405,8 @@ html[data-theme="dark"] .btn-contribute-nothing {
 button:disabled { cursor: wait; opacity: 0.65; }
 @media (max-width: 600px) {
   .my-anu-auth-banner, .my-anu-id-card, .my-anu-records-panel, .my-anu-registration-panel { padding: 1rem; }
+  .my-anu-auth-banner { padding: 1.25rem; }
+  .my-anu-auth-info strong { font-size: 1.35rem; }
   .my-anu-auth-actions, .my-anu-auth-actions button { width: 100%; }
   .my-anu-id-header { align-items: flex-start; }
   .my-anu-records-panel .dept-tab { flex: 1 1 42%; }

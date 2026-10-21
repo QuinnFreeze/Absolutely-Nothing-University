@@ -1680,6 +1680,8 @@
 
   const myAnuStatusHeadline = document.getElementById("my-anu-status-headline");
   const myAnuStatusSub = document.getElementById("my-anu-status-sub");
+  const myAnuAuthBanner = document.getElementById("my-anu-auth-banner");
+  const myAnuAuthStatus = document.getElementById("my-anu-auth-state");
   const googleSigninBtn = document.getElementById("google-signin-btn");
   const googleSignoutBtn = document.getElementById("google-signout-btn");
   const syncCloudBtn = document.getElementById("sync-cloud-btn");
@@ -1857,6 +1859,12 @@
     if (portalLanguage && portalLanguage !== currentLang && myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = "";
     portalLanguage = currentLang;
     const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : { user: null, isRegistered: false, bundle: null };
+    if (myAnuAuthBanner) myAnuAuthBanner.dataset.authState = authState.user ? "signed-in" : "guest";
+    if (myAnuAuthStatus) {
+      myAnuAuthStatus.textContent = authState.authSigningIn || authState.authInitializing
+        ? dict.my_auth_status_pending
+        : authState.user ? dict.my_auth_status_signed_in : dict.my_auth_status_guest;
+    }
     if (authState.user && !authState.authError && loginFailureFeedback !== null) {
       // Only replace a notice still owned by the failed sign-in. Other actions
       // may have posted useful feedback while Firebase finished in the background.
@@ -1915,8 +1923,8 @@
       if (myAnuStatusSub) {
         myAnuStatusSub.textContent = authState.user.email
           ? (currentLang === "zh"
-              ? `当前已绑定安全 Google 账号：${authState.user.email}（由 Firebase Authentication 托管保护）`
-              : `Authenticated via Google: ${authState.user.email} (Managed by Firebase Authentication)`)
+              ? `Google 账号：${authState.user.email}`
+              : `Google account: ${authState.user.email}`)
           : "";
       }
       if (!authState.isRegistered && regNicknameInput && !regNicknameInput.value.trim()) {
