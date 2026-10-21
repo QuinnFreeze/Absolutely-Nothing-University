@@ -1721,6 +1721,7 @@
   let archiveSource = "cloud";
   let archiveAccount = null;
   let portalLanguage = null;
+  let loginFailureFeedback = null;
 
   const setNicknameInput = document.getElementById("set-nickname-input");
   const setCollegeSelect = document.getElementById("set-college-select");
@@ -1856,6 +1857,14 @@
     if (portalLanguage && portalLanguage !== currentLang && myAnuGlobalFeedback) myAnuGlobalFeedback.textContent = "";
     portalLanguage = currentLang;
     const authState = window.ANU_AUTH ? window.ANU_AUTH.getState() : { user: null, isRegistered: false, bundle: null };
+    if (authState.user && !authState.authError && loginFailureFeedback !== null) {
+      // Only replace a notice still owned by the failed sign-in. Other actions
+      // may have posted useful feedback while Firebase finished in the background.
+      if (myAnuGlobalFeedback && myAnuGlobalFeedback.textContent === loginFailureFeedback) {
+        myAnuGlobalFeedback.textContent = currentLang === "zh" ? "✓ Google 账号登录成功！" : "✓ Signed in with Google!";
+      }
+      loginFailureFeedback = null;
+    }
     const bundle = authState.bundle;
     const profile = bundle && bundle.profile;
     const account = authState.user && authState.user.uid;
@@ -2307,6 +2316,7 @@
       }
       try {
         googleSigninBtn.disabled = true;
+        loginFailureFeedback = null;
         if (myAnuGlobalFeedback) {
           myAnuGlobalFeedback.textContent =
             currentLang === "zh" ? "正在启动 Google 安全登录..." : "Launching Google Sign-In...";
@@ -2322,10 +2332,11 @@
         }
       } catch (err) {
         if (myAnuGlobalFeedback) {
-          myAnuGlobalFeedback.textContent =
+          loginFailureFeedback =
             currentLang === "zh"
               ? `登录未完成：${cloudErrorMessage(err)}`
               : `Sign-in incomplete: ${cloudErrorMessage(err)}`;
+          myAnuGlobalFeedback.textContent = loginFailureFeedback;
         }
       } finally {
         googleSigninBtn.disabled = false;

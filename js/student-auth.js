@@ -297,6 +297,11 @@
         const changed = adoptUser(user);
         authReady = true;
         if (currentUser) {
+          // The SDK observer may finish after the popup's UI deadline. Accept
+          // its authenticated state and retire the stale sign-in error, while
+          // the guard above still prevents an explicit sign-out being undone.
+          authError = null;
+          notifyListeners();
           // Firebase does not consume rejected async observer promises.
           try {
             if (changed || !bundleLoaded) await refreshStudentBundle();
@@ -562,7 +567,7 @@
   /**
    * Signs in with Google following Firebase official best practices for both desktop
    * and iPhone Safari / mobile browsers:
-   * - Attempts signInWithPopup first on user gesture (works on iOS 16.4+ Safari and desktop).
+   * - Attempts signInWithPopup first on user gesture; real desktop and iOS behavior requires device validation.
    * - Redirect fallback requires same-origin auth helpers to avoid third-party storage failures.
    * See https://firebase.google.com/docs/auth/web/redirect-best-practices
    */
@@ -572,6 +577,7 @@
     if (authSigningIn && signInPromise) return signInPromise;
     signedOutByUser = false;
     const intent = ++authIntent;
+    let popupStartSession = null;
     authSigningIn = true;
     authError = null;
     notifyListeners();
@@ -583,6 +589,7 @@
       const { authMod } = firebaseModules;
       const provider = new authMod.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
+      popupStartSession = authSession;
       // Invoke popup synchronously when prewarmed: awaiting even an already
       // resolved init promise loses transient user activation on some browsers.
       return withDeadline(authMod.signInWithPopup(firebaseAuth, provider), "AUTH_POPUP_TIMEOUT", "Google 登录等待超时，请重试。", AUTH_POPUP_TIMEOUT_MS)
@@ -611,8 +618,26 @@
       catch (_) {}
       if (intent !== authIntent) throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
       return { mode: "popup", user: currentUser, cloudError };
-    }).catch((error) => {
+    }).catch(async (error) => {
       const normalized = authFailure(error);
+      // A newly accepted SDK identity can arrive before the popup Promise
+      // settles. A UI deadline must not replace that authenticated state with
+      // a stale error. An unchanged account does not prove a switch succeeded.
+      if (normalized.code === "AUTH_POPUP_TIMEOUT" && intent === authIntent &&
+          !signedOutByUser && currentUser && popupStartSession !== null &&
+          authSession !== popupStartSession) {
+        const recoverySession = authSession;
+        authError = null;
+        try { if (cloudLoading || (!bundleLoaded && !cloudError)) await refreshStudentBundle(); }
+        catch (_) { /* Cloud failures remain visible through cloudError. */ }
+        if (intent !== authIntent || signedOutByUser) {
+          throw errorWithCode("AUTH_SESSION_CHANGED", "登录账号已变更，请重新操作。");
+        }
+        assertSession(recoverySession);
+        // Session recovery is not evidence of a fresh Google authentication;
+        // protected server operations still enforce the token's auth_time.
+        return { mode: "observer", user: currentUser, cloudError };
+      }
       if (intent === authIntent) authError = errorSnapshot(normalized);
       throw normalized;
     }).finally(() => {
