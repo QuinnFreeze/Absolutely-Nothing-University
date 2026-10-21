@@ -8,6 +8,7 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 - 学生 API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)
 - [安全审计与验收边界](docs/SECURITY_AUDIT_REPORT.md)
 - [生产发布影响与回滚方案](docs/PRODUCTION_ROLLOUT.md)
+- [登录界面与 Google 品牌更名方案](docs/LOGIN_BRANDING_ROLLOUT.md)
 
 ## 当前状态（2026-10-21）
 

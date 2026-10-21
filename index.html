@@ -846,25 +846,40 @@
               </div>
 
               <!-- Auth & Guest Mode Top Banner -->
-              <div class="my-anu-auth-banner" id="my-anu-auth-banner">
-                <div class="my-anu-auth-info">
-                  <strong id="my-anu-status-headline" data-i18n="my_guest_banner_title">您当前处于游客模式（Guest Mode）</strong>
-                  <p id="my-anu-status-sub" data-i18n="my_guest_banner_desc"></p>
-                  <p class="my-anu-safari-note" data-i18n="my_safari_notice"></p>
+              <div class="my-anu-auth-banner" id="my-anu-auth-banner" data-auth-state="guest">
+                <div class="my-anu-auth-main">
+                  <div class="my-anu-auth-identity">
+                    <span class="my-anu-auth-monogram" aria-hidden="true">ANU</span>
+                    <div class="my-anu-auth-identity-text">
+                      <span class="my-anu-auth-kicker" data-i18n="my_auth_eyebrow">校园通行证</span>
+                      <span class="my-anu-auth-state" id="my-anu-auth-state" data-i18n="my_auth_status_guest">游客模式</span>
+                    </div>
+                  </div>
+                  <div class="my-anu-auth-info">
+                    <strong id="my-anu-status-headline" data-i18n="my_guest_banner_title">欢迎来到 My ANU</strong>
+                    <p id="my-anu-status-sub" data-i18n="my_guest_banner_desc"></p>
+                  </div>
+                  <ul class="my-anu-auth-benefits">
+                    <li data-i18n="my_auth_private">档案默认私有</li>
+                    <li data-i18n="my_auth_sync">跨设备同步</li>
+                  </ul>
                 </div>
-                <div class="my-anu-auth-actions">
-                  <button type="button" class="btn-primary" id="google-signin-btn" data-i18n="my_btn_google_signin">
-                    使用 Google 账号安全登录
-                  </button>
-                  <button type="button" class="btn-secondary" id="sync-cloud-btn" style="display: none;" data-i18n="my_btn_sync_now">
-                    立即同步云端档案
-                  </button>
-                  <button type="button" class="btn-secondary" id="import-local-archive-btn" style="display: none;" data-i18n="my_btn_import_local">
-                    导入本机现有校园记录
-                  </button>
-                  <button type="button" class="bulletin-next-btn" id="google-signout-btn" style="display: none;" data-i18n="my_btn_signout">
-                    退出登录
-                  </button>
+                <div class="my-anu-auth-controls">
+                  <div class="my-anu-auth-actions">
+                    <button type="button" class="btn-primary" id="google-signin-btn" data-i18n="my_btn_google_signin">
+                      使用 Google 登录
+                    </button>
+                    <button type="button" class="btn-secondary" id="sync-cloud-btn" style="display: none;" data-i18n="my_btn_sync_now">
+                      立即同步云端档案
+                    </button>
+                    <button type="button" class="btn-secondary" id="import-local-archive-btn" style="display: none;" data-i18n="my_btn_import_local">
+                      导入本机现有校园记录
+                    </button>
+                    <button type="button" class="bulletin-next-btn" id="google-signout-btn" style="display: none;" data-i18n="my_btn_signout">
+                      退出登录
+                    </button>
+                  </div>
+                  <p class="my-anu-safari-note" data-i18n="my_safari_notice"></p>
                 </div>
               </div>
               <div class="enroll-status-box" id="my-anu-global-feedback" aria-live="polite" style="margin-bottom: 1.5rem;"></div>
@@ -1154,6 +1169,7 @@
             <span data-i18n="footer_motto">校训：Nihil Agere, Omnia Esse · 什么都不做，即是一切</span>
           </div>
           <p class="footer-disclaimer" data-i18n="footer_disclaimer"></p>
+          <a class="footer-privacy-link" href="privacy.html" data-i18n="footer_link_privacy">隐私政策与使用条款</a>
         </div>
       </footer>
     </div>

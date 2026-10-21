@@ -1,5 +1,7 @@
 # ANU 网站安全审计与验收记录
 
+2026-10-21 后续登录外观与 Google 品牌更名已完成本地准备，尚未发布或保存云端更名。涉及公开隐私页、Google 品牌验证和新增 DNS TXT 的影响及回滚，见 [LOGIN_BRANDING_ROLLOUT.md](LOGIN_BRANDING_ROLLOUT.md)。本项不增加登录 scopes，不修改认证回调或注册开关。
+
 检查日期：2026-10-19；2026-10-20 更新首次发布，2026-10-21 更新后续前端发布及验收（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。
 
 **初次加固已按用户批准的 `6eae1ce` 发布前端和 Worker，在私有备份后完成生产 `0003` 增量迁移；2026-10-21 又按单独批准发布前端登录恢复补丁 `67347cb`，Worker/D1 未变。新用户注册仍关闭；真实账户与物理设备验收尚未完成，不得开放注册。** 发布影响、操作顺序与回滚见 [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md)。
