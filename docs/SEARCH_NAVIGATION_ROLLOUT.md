@@ -1,6 +1,6 @@
 # 侧边栏、登录布局与公开站内搜索
 
-日期：2026-10-22（Asia/Shanghai）。本轮是前端改版，尚未获准生产发布；当前生产基线为 `1128c81`，前端业务源为 `739aaa2`。新用户注册继续关闭。
+日期：2026-10-22（Asia/Shanghai）。用户已明确批准 PR #3 的前端版本 `efcb4b532f86bfb45202cda5db8ec981f9db3c28`，现已合并为 `1272310e500fdccccabc7899d365c048eca3949f` 并上线。GitHub Pages 于 2026-10-22 12:37:33 UTC 构建成功；原前端基线为 `1128c81`。新用户注册继续关闭。
 
 ## 修改与参考
 
@@ -21,9 +21,9 @@ My ANU 登录区采用浅蓝信息栏与独立操作面板，移动端转为单�
 
 仅修改静态 HTML/CSS/JS 和测试/说明。不变更 Firebase、Google 品牌、OAuth scopes/回调、Worker、D1、DNS、Access/MFA、功能开关或现有生产数据。
 
-发布前须展示具体提交并获得对应生产批准。只发布 GitHub Pages；发布后核对线上静态文件摘要、搜索与导航、移动蓝白/深色及公开隐私页，复查注册仍关闭。身份认证和真实账户写入不能由本地 fixture 验收替代。
+本轮已在展示影响与回滚后获得具体提交的生产批准，只发布 GitHub Pages。发布后核对线上静态文件摘要、搜索与导航、移动蓝白/深色及公开隐私页，并复查注册仍关闭。身份认证和真实账户写入不能由本地 fixture 验收替代。
 
-回滚使用新的 revert 提交恢复本轮前端文件到 `1128c81`，移除本轮新增搜索模块；既有隐私页、Google 已发布品牌、Worker/D1、Access/MFA 和关闭注册状态均保留。不需要数据库迁移或数据回退。
+回滚使用新的 revert 提交恢复本轮前端文件到 `1128c81`，移除本轮新增搜索模块，并回退配套搜索测试与测试入口；保留实际发布及回滚的审计记录。既有隐私页、Google 已发布品牌、Worker/D1、Access/MFA 和关闭注册状态均保留。不需要数据库迁移或数据回退。
 
 ## 验证记录
 
@@ -34,3 +34,13 @@ My ANU 登录区采用浅蓝信息栏与独立操作面板，移动端转为单�
 新增隔离 Chrome 搜索与导航回归 **94/94 通过**，保存 37 张截图：覆盖中英文、390/768/1440 px、浅色/深色、手机侧栏焦点与同页关闭、搜索键盘及焦点恢复、具体内容定位、私有数据排除、长邮箱/忙碌状态及矮窗口滚动。修复了菜品分类遮挡命中结果、同页快捷入口不关菜单、搜索 Esc/Tab 行为和手机侧栏焦点问题。
 
 已逐项对照参考图的搜索栏、快捷链接、分隔线、箭头、留白及深蓝底，并检查登录区蓝白分栏与手机单列。另以 393×589 CSS px、DPR 3 捕获 **1179×1767** 原生尺寸菜单图；保留 ANU 品牌、现有内容与四个实际分组是有意适配。该回归使用公开 ANU_AUTH 接口 fixture，不代表真实 Firebase/Google/Worker/Turnstile 或物理 iPhone Safari 验收。仓库外保存截图与结果，不提交私有路径、用户数据或浏览器状态。
+
+## 生产执行与验收
+
+1. [PR #3](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/3) 按批准的完整 head 提交匹配后合并；合并提交为 `1272310e500fdccccabc7899d365c048eca3949f`，Pages 构建成功。仅发布静态前端，没有部署 Worker、操作数据库、修改 DNS/认证配置或开放注册。
+2. `index.html`、`styles.css`、`app.js`、`js/i18n.js`、`js/site-search.js`、`js/student-auth.js`、`js/anu-config.js`、`js/canvas-export.js`、`privacy.html`、`favicon.svg` 与 `data/announcements.json` 共 11 份正式 HTTPS 文件 SHA-256 与批准源一致；普通 URL 和带版本参数的 URL 均已核对。Pages 仍为 `main` 根目录，正式域名和强制 HTTPS 保留。
+3. 正式 HTTPS 与真实游客联合验收 **50/50 通过**，保存 18 张截图。使用全新隔离 Chrome 会话、真实 Firebase SDK 与字体，无网络 mock；覆盖 390/1440 px、中英文、默认蓝白、手动深色及刷新、登录入口、手机菜单/同页快捷链接、搜索键盘与焦点恢复、无结果/清空、真实课程定位及双语隐私页。线上截图也已目视核对。
+4. 页面运行错误、失败网络请求和学生 API 操作均为 0。独立公开 health 返回 `ok:true`、`registrationEnabled:false`；其余三个功能开关仍为 true。测试没有登录 Google、触发 Turnstile 或访问/写入学生档案。
+5. 真实 OAuth 回跳、Worker 已认证业务、Turnstile 成功/重放、管理员完整链路和物理 iPhone Safari 仍待验收，不能由上述游客检查替代。前端发布不解除注册关闭要求。
+
+发布摘要、浏览器结果与截图保存在仓库外；后续纯文档提交可能推进 `main`，本轮前端业务源仍为获批的 `efcb4b5`。

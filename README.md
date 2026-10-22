@@ -20,7 +20,7 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 
 2026-10-22 已按明确批准保存 Google 品牌名称 **Absolutely Nothing University (ANU)**、首页、隐私政策和开发者联系信息，保留原 Firebase 品牌网域并新增 `freeze.edu.kg`。新增一条 Google TXT 后，DNS 原 16 条记录全部保留；独立 DoH 可见验证 TXT 与原 SPF。Search Console Domain 所有权验证成功，Google 控制台确认品牌已经验证并向用户显示；真实 Google 账号选择页也已显示新名称。同一 Chrome 会话恢复了 Firebase 登录身份，但云端同步仍提示认证验证暂不可用，完整真人 OAuth 与已认证业务仍未通过。Worker、D1、Access、scopes、回调和 Firebase `authDomain` 均未改动；最新只读复核 health 正常且注册继续关闭。详见[登录界面与品牌发布记录](docs/LOGIN_BRANDING_ROLLOUT.md)及安全审计。
 
-侧边栏、登录布局和公开站内搜索的后续前端改版尚未生产发布，范围、隐私边界和回滚见[搜索与导航发布方案](docs/SEARCH_NAVIGATION_ROLLOUT.md)。该方案不变更后端或开放注册。
+侧边栏、登录布局和公开站内搜索已按明确批准的 `efcb4b5` 经 PR #3 发布（合并提交 `1272310`）；Pages 于 2026-10-22 12:37:33 UTC 构建成功。11 份普通 HTTPS 文件摘要与批准源一致，真实 SDK/字体、无 mock 的生产游客与文件联合检查 50/50 通过，覆盖手机/桌面、双语、浅深色、菜单、搜索定位和隐私页，页面错误、失败请求与学生 API 操作均为 0。本地搜索回归 94/94、全套测试及类型检查此前通过。后端和认证配置未改，health 正常且注册仍关闭；真实账户和物理 Safari 的未验收边界保留。范围、隐私边界和回滚见[搜索与导航发布记录](docs/SEARCH_NAVIGATION_ROLLOUT.md)。
 
 ## 技术架构
 
