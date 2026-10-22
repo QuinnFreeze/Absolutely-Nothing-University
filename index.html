@@ -41,6 +41,7 @@
   <div class="app-shell">
     <!-- Persistent Academic Sidebar -->
     <aside class="uni-sidebar" id="uni-sidebar" aria-label="University Sidebar Navigation">
+      <button type="button" class="sidebar-dismiss" id="sidebar-close" aria-label="关闭导航" data-i18n-aria-label="nav_close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       <a href="#overview" class="sidebar-brand" data-page-link="overview" id="sidebar-crest-trigger">
         <img src="favicon.svg" alt="Absolutely Nothing University Crest" class="sidebar-crest" width="48" height="48" />
         <div class="sidebar-brand-text">
@@ -49,83 +50,90 @@
         </div>
       </a>
 
-      <div class="sidebar-term-box">
-        <strong data-i18n="sidebar_term_title">2026 躺平学年 · 第 NaN 周</strong>
-        <span data-i18n="sidebar_term_status">教学状态：全校无限期放假中</span>
+      <button type="button" class="sidebar-search-trigger" id="site-search-open" aria-haspopup="dialog" aria-controls="site-search-dialog">
+        <span data-i18n="search_open">搜索全站</span><kbd aria-hidden="true">⌘ K</kbd><span class="sidebar-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 5 5"/></svg></span>
+      </button>
+      <div class="sidebar-quick-links" aria-label="Quick links">
+        <a href="#my-anu">My ANU</a>
+        <a href="#academics" data-i18n="nav_quick_academics">院系</a>
+        <a href="#admissions" data-i18n="nav_quick_admissions">录取</a>
       </div>
 
       <nav class="sidebar-nav" aria-label="Main Portal Pages">
-        <div class="sidebar-nav-section-label" data-i18n="sidebar_sec_main">核心门户 · PORTALS</div>
-
-        <button type="button" class="nav-item-btn active" data-page-target="overview" aria-current="page">
+        <details class="sidebar-nav-group" data-nav-group="resources" open>
+          <summary><span data-i18n="nav_group_resources"></span><svg class="sidebar-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <div class="sidebar-group-links">
+            <button type="button" class="nav-item-btn active" data-page-target="overview" aria-current="page">
           <span class="nav-item-left">
-            <span class="nav-item-code">I.</span>
             <span data-i18n="nav_overview">创校门户与校长办公厅</span>
           </span>
           <span class="nav-item-badge">HOME</span>
         </button>
-
-        <button type="button" class="nav-item-btn" data-page-target="admissions">
+            <button type="button" class="nav-item-btn" data-page-target="my-anu" id="sidebar-my-anu-btn">
           <span class="nav-item-left">
-            <span class="nav-item-code">II.</span>
-            <span data-i18n="nav_admissions">极速录取与博士学位</span>
-          </span>
-          <span class="nav-item-badge">Ph.D.</span>
-        </button>
-
-        <button type="button" class="nav-item-btn" data-page-target="academics">
-          <span class="nav-item-left">
-            <span class="nav-item-code">III.</span>
-            <span data-i18n="nav_academics">院系大纲与模拟统考</span>
-          </span>
-          <span class="nav-item-badge">0.0 CR</span>
-        </button>
-
-        <button type="button" class="nav-item-btn" data-page-target="research">
-          <span class="nav-item-left">
-            <span class="nav-item-code">IV.</span>
-            <span data-i18n="nav_research">空白论文库与在线投稿</span>
-          </span>
-          <span class="nav-item-badge">0 WORDS</span>
-        </button>
-
-        <div class="sidebar-nav-section-label" data-i18n="sidebar_sec_campus">校园生态 · CAMPUS</div>
-
-        <button type="button" class="nav-item-btn" data-page-target="faculty">
-          <span class="nav-item-left">
-            <span class="nav-item-code">V.</span>
-            <span data-i18n="nav_faculty">不坐班名师与自动回信</span>
-          </span>
-        </button>
-
-        <button type="button" class="nav-item-btn" data-page-target="campus">
-          <span class="nav-item-left">
-            <span class="nav-item-code">VI.</span>
-            <span data-i18n="nav_campus">薛定谔食堂与摸鱼社团</span>
-          </span>
-          <span class="nav-item-badge">LIFE</span>
-        </button>
-
-        <button type="button" class="nav-item-btn" data-page-target="webcams">
-          <span class="nav-item-left">
-            <span class="nav-item-code">VII.</span>
-            <span data-i18n="nav_webcams">保卫处 24h 模拟监控</span>
-          </span>
-          <span class="nav-item-badge">SIM</span>
-        </button>
-
-        <div class="sidebar-nav-section-label" data-i18n="sidebar_sec_account">学生门户 · MY ANU</div>
-
-        <button type="button" class="nav-item-btn" data-page-target="my-anu" id="sidebar-my-anu-btn">
-          <span class="nav-item-left">
-            <span class="nav-item-code">VIII.</span>
             <span data-i18n="nav_my_anu">My ANU · 我的校园</span>
           </span>
           <span class="nav-item-badge" id="sidebar-auth-badge">ID</span>
         </button>
+          </div>
+        </details>
+        <details class="sidebar-nav-group" data-nav-group="academics">
+          <summary><span data-i18n="nav_group_academics"></span><svg class="sidebar-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <div class="sidebar-group-links">
+            <button type="button" class="nav-item-btn" data-page-target="academics">
+          <span class="nav-item-left">
+            <span data-i18n="nav_academics">院系大纲与模拟统考</span>
+          </span>
+          <span class="nav-item-badge">0.0 CR</span>
+        </button>
+            <button type="button" class="nav-item-btn" data-page-target="research">
+          <span class="nav-item-left">
+            <span data-i18n="nav_research">空白论文库与在线投稿</span>
+          </span>
+          <span class="nav-item-badge">0 WORDS</span>
+        </button>
+          </div>
+        </details>
+        <details class="sidebar-nav-group" data-nav-group="admissions">
+          <summary><span data-i18n="nav_group_admissions"></span><svg class="sidebar-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <div class="sidebar-group-links">
+            <button type="button" class="nav-item-btn" data-page-target="admissions">
+          <span class="nav-item-left">
+            <span data-i18n="nav_admissions">极速录取与博士学位</span>
+          </span>
+          <span class="nav-item-badge">Ph.D.</span>
+        </button>
+          </div>
+        </details>
+        <details class="sidebar-nav-group" data-nav-group="campus">
+          <summary><span data-i18n="nav_group_campus"></span><svg class="sidebar-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <div class="sidebar-group-links">
+            <button type="button" class="nav-item-btn" data-page-target="faculty">
+          <span class="nav-item-left">
+            <span data-i18n="nav_faculty">不坐班名师与自动回信</span>
+          </span>
+        </button>
+            <button type="button" class="nav-item-btn" data-page-target="campus">
+          <span class="nav-item-left">
+            <span data-i18n="nav_campus">薛定谔食堂与摸鱼社团</span>
+          </span>
+          <span class="nav-item-badge">LIFE</span>
+        </button>
+            <button type="button" class="nav-item-btn" data-page-target="webcams">
+          <span class="nav-item-left">
+            <span data-i18n="nav_webcams">保卫处 24h 模拟监控</span>
+          </span>
+          <span class="nav-item-badge">SIM</span>
+        </button>
+          </div>
+        </details>
       </nav>
 
       <div class="sidebar-footer">
+      <div class="sidebar-term-box">
+        <strong data-i18n="sidebar_term_title">2026 躺平学年 · 第 NaN 周</strong>
+        <span data-i18n="sidebar_term_status">教学状态：全校无限期放假中</span>
+      </div>
         <div class="sidebar-ctrl-row">
           <button type="button" class="sidebar-btn" id="lang-switch-btn" aria-label="Switch Language">English</button>
           <button type="button" class="sidebar-btn" id="theme-switch-btn" aria-label="Toggle Dark Mode">🌙 学院夜读</button>
@@ -149,6 +157,7 @@
           </button>
           <span class="mobile-topbar-title">ANU · 绝对虚无大学</span>
           <div class="mobile-quick-actions">
+            <button type="button" class="mobile-quick-btn mobile-search-btn" id="mobile-search-open" aria-label="搜索全站" data-i18n-aria-label="search_open" aria-haspopup="dialog" aria-controls="site-search-dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 5 5"/></svg></button>
             <button type="button" class="mobile-quick-btn" id="mobile-lang-btn" aria-label="Switch Language">EN</button>
             <button type="button" class="mobile-quick-btn" id="mobile-theme-btn" aria-label="Toggle Theme">🌙</button>
           </div>
@@ -839,7 +848,7 @@
         <section class="page-view" id="page-my-anu" data-page="my-anu">
           <div class="academic-section">
             <div class="container">
-              <div class="section-header">
+              <div class="section-header my-anu-auth-page-header">
                 <p class="section-latin" data-i18n="my_eyebrow">Regestum Scholasticum · Google 学生账户与云端校园档案</p>
                 <h2 class="section-title" data-i18n="my_title">My ANU · 我的虚无校园个人中心</h2>
                 <p class="section-desc" data-i18n="my_desc"></p>
@@ -1175,8 +1184,28 @@
     </div>
   </div>
 
+  <dialog class="site-search-dialog" id="site-search-dialog" aria-labelledby="site-search-title" aria-describedby="site-search-note">
+    <div class="site-search-header">
+      <h2 id="site-search-title" data-i18n="search_title">搜索 ANU</h2>
+      <button type="button" class="search-icon-button" id="site-search-close" aria-label="关闭搜索" data-i18n-aria-label="search_close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </div>
+    <form class="site-search-form" id="site-search-form" role="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 5 5"/></svg>
+      <label class="visually-hidden" for="site-search-input" data-i18n="search_label">搜索课程、公告与校园功能</label>
+      <input type="search" id="site-search-input" autocomplete="off" spellcheck="false" maxlength="120" placeholder="搜索课程、公告与校园功能…" data-i18n-placeholder="search_placeholder" aria-controls="site-search-results" />
+      <button type="button" class="search-clear-button" id="site-search-clear" data-i18n="search_clear" hidden>清空</button>
+    </form>
+    <div class="site-search-toolbar">
+      <p id="site-search-status" role="status" aria-live="polite" aria-atomic="true"></p>
+      <span class="site-search-key-hint" data-i18n="search_keyboard">↑ ↓ 选择 · Enter 前往 · Esc 关闭</span>
+    </div>
+    <ul class="site-search-results" id="site-search-results" aria-labelledby="site-search-status"></ul>
+    <p class="site-search-note" id="site-search-note" data-i18n="search_note">搜索公开校园内容，不包含个人档案。支持中文与 English。</p>
+  </dialog>
+
   <script src="js/anu-config.js"></script>
   <script src="js/i18n.js"></script>
+  <script src="js/site-search.js"></script>
   <script src="js/canvas-export.js"></script>
   <script src="js/student-auth.js"></script>
   <script src="app.js"></script>

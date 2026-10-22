@@ -3,6 +3,7 @@
 
   const DATA = window.ANU_DATA;
   const CANVAS_EXPORT = window.ANU_CANVAS;
+  const SEARCH = window.ANU_SEARCH;
   if (!DATA) return;
 
   const {
@@ -65,6 +66,11 @@
     },
     announcements: []
   };
+
+  // Copy only published source data before any local or signed-in UI renders.
+  // Announcement updates below never rebuild from user-modified runtime data.
+  const publicSearchBase = SEARCH ? SEARCH.buildIndex(DATA) : [];
+  let publicSearchIndex = publicSearchBase.concat(SEARCH ? SEARCH.buildIndex({}, fallbackAnnouncementsData) : []);
 
   function detectInitialLang() {
     try {
@@ -165,6 +171,9 @@
   const sidebarEl = document.getElementById("uni-sidebar");
   const backdropEl = document.getElementById("sidebar-backdrop");
   const mobileToggleBtn = document.getElementById("mobile-menu-toggle");
+  const sidebarCloseBtn = document.getElementById("sidebar-close");
+  const mainStageEl = document.querySelector(".main-stage");
+  const sidebarMedia = window.matchMedia("(max-width: 980px)");
   const mobileLangBtn = document.getElementById("mobile-lang-btn");
   const mobileThemeBtn = document.getElementById("mobile-theme-btn");
   const navButtons = document.querySelectorAll("[data-page-target]");
@@ -304,10 +313,25 @@
   }
 
   // Multi-Page Sidebar Router
-  function closeMobileSidebar() {
+  function syncSidebarAccessibility() {
+    const open = sidebarMedia.matches && Boolean(sidebarEl && sidebarEl.classList.contains("open"));
+    if (sidebarEl) {
+      sidebarEl.inert = sidebarMedia.matches && !open;
+      if (sidebarEl.inert) sidebarEl.setAttribute("aria-hidden", "true");
+      else sidebarEl.removeAttribute("aria-hidden");
+    }
+    if (mainStageEl) mainStageEl.inert = open;
+    document.body.classList.toggle("sidebar-open", open);
+    if (mobileToggleBtn) mobileToggleBtn.setAttribute("aria-expanded", String(open));
+  }
+
+  function closeMobileSidebar(restoreFocus = false) {
     if (sidebarEl) sidebarEl.classList.remove("open");
     if (backdropEl) backdropEl.classList.remove("open");
-    if (mobileToggleBtn) mobileToggleBtn.setAttribute("aria-expanded", "false");
+    syncSidebarAccessibility();
+    if (restoreFocus && sidebarMedia.matches && mobileToggleBtn) requestAnimationFrame(() => {
+      if (sidebarMedia.matches && !sidebarEl.classList.contains("open")) mobileToggleBtn.focus();
+    });
   }
 
   function switchToPage(pageKey, updateHash = true) {
@@ -325,6 +349,8 @@
       btn.classList.toggle("active", isMatch);
       if (isMatch) {
         btn.setAttribute("aria-current", "page");
+        const group = btn.closest("details");
+        if (group) group.open = true;
       } else {
         btn.removeAttribute("aria-current");
       }
@@ -342,6 +368,15 @@
     btn.addEventListener("click", () => {
       const target = btn.getAttribute("data-page-target");
       if (target) switchToPage(target, true);
+    });
+  });
+
+  document.querySelectorAll("[data-page-link], .sidebar-quick-links a").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      const target = link.getAttribute("data-page-link") || link.hash.slice(1);
+      if (!validPages.includes(target)) return;
+      event.preventDefault();
+      switchToPage(target, true);
     });
   });
 
@@ -363,17 +398,244 @@
     mobileToggleBtn.addEventListener("click", () => {
       const isOpen = sidebarEl && sidebarEl.classList.toggle("open");
       if (backdropEl) backdropEl.classList.toggle("open", Boolean(isOpen));
-      mobileToggleBtn.setAttribute("aria-expanded", String(Boolean(isOpen)));
+      syncSidebarAccessibility();
+      if (isOpen && sidebarEl) {
+        sidebarEl.scrollTop = 0;
+        if (sidebarCloseBtn) requestAnimationFrame(() => {
+          if (sidebarMedia.matches && sidebarEl.classList.contains("open")) sidebarCloseBtn.focus();
+        });
+      }
     });
   }
 
   if (backdropEl) {
-    backdropEl.addEventListener("click", closeMobileSidebar);
+    backdropEl.addEventListener("click", () => closeMobileSidebar(true));
   }
+  if (sidebarCloseBtn) sidebarCloseBtn.addEventListener("click", () => closeMobileSidebar(true));
+  sidebarMedia.addEventListener("change", () => closeMobileSidebar(false));
+  syncSidebarAccessibility();
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      closeMobileSidebar();
+    if (siteSearchDialog && siteSearchDialog.open) return;
+    if (e.key === "Escape" && sidebarEl && sidebarEl.classList.contains("open")) {
+      closeMobileSidebar(true);
+    }
+    if (e.key === "Tab" && sidebarMedia.matches && sidebarEl && sidebarEl.classList.contains("open")) {
+      const controls = Array.from(sidebarEl.querySelectorAll("a[href], button:not([disabled]), summary, input")).filter((el) => el.getClientRects().length);
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !sidebarEl.contains(document.activeElement))) {
+        e.preventDefault();
+        if (last) last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !sidebarEl.contains(document.activeElement))) {
+        e.preventDefault();
+        if (first) first.focus();
+      }
+    }
+  });
+
+  // Public search UI: queries stay in memory, and result strings use text nodes.
+  const siteSearchDialog = document.getElementById("site-search-dialog");
+  const siteSearchInput = document.getElementById("site-search-input");
+  const siteSearchResults = document.getElementById("site-search-results");
+  const siteSearchStatus = document.getElementById("site-search-status");
+  const siteSearchClear = document.getElementById("site-search-clear");
+  let searchMatches = [];
+  let searchReturnFocus = null;
+  let searchRestoreFocus = true;
+  let searchComposing = false;
+
+  function searchPageLabel(page) {
+    const key = page === "my-anu" ? "nav_my_anu" : "nav_" + page;
+    return i18nDict[currentLang][key] || "ANU";
+  }
+
+  function renderSiteSearch() {
+    if (!siteSearchResults || !siteSearchInput || !SEARCH) return;
+    const query = siteSearchInput.value.trim();
+    const dict = i18nDict[currentLang];
+    searchMatches = query
+      ? SEARCH.search(publicSearchIndex, query, currentLang, 24)
+      : publicSearchBase.filter((record) => record.kind === "page");
+    if (siteSearchClear) siteSearchClear.hidden = !siteSearchInput.value;
+    if (siteSearchStatus) siteSearchStatus.textContent = query
+      ? (searchMatches.length ? dict.search_count.replace("{count}", String(searchMatches.length)) : dict.search_none)
+      : dict.search_suggested;
+    siteSearchResults.replaceChildren();
+    if (!searchMatches.length) {
+      const empty = document.createElement("li");
+      empty.className = "search-empty";
+      empty.textContent = dict.search_empty;
+      siteSearchResults.appendChild(empty);
+      return;
+    }
+    searchMatches.forEach((record) => {
+      const row = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "search-result";
+      const head = document.createElement("span");
+      head.className = "search-result-head";
+      const title = document.createElement("span");
+      title.className = "search-result-title";
+      title.textContent = record.title[currentLang] || record.title.zh || record.title.en;
+      const page = document.createElement("span");
+      page.className = "search-result-page";
+      page.textContent = searchPageLabel(record.page);
+      head.append(title, page);
+      const snippet = document.createElement("span");
+      snippet.className = "search-result-snippet";
+      snippet.textContent = record.snippet || (record.body[currentLang] || "").slice(0, 130);
+      button.append(head, snippet);
+      button.addEventListener("click", () => activateSearchResult(record));
+      row.appendChild(button);
+      siteSearchResults.appendChild(row);
+    });
+  }
+
+  function activateSearchResult(record) {
+    if (!validPages.includes(record.page)) return;
+    searchRestoreFocus = false;
+    if (siteSearchDialog && siteSearchDialog.open) siteSearchDialog.close();
+    switchToPage(record.page, true);
+    let destination = document.getElementById(record.targetId || "page-" + record.page);
+    if (record.kind === "course") {
+      const course = coursesByLang[currentLang].find((item) => "course:" + item.code === record.id);
+      if (course) {
+        currentDeptFilter = "all";
+        deptTabs.forEach((tab) => tab.classList.toggle("active", tab.getAttribute("data-dept") === "all"));
+        renderInspector(course);
+        renderCourseTable("all");
+        destination = document.getElementById("syllabus-panel");
+      }
+    } else if (record.kind === "paper") {
+      const index = papersByLang[currentLang].findIndex((paper) => "paper:" + paper.doi === record.id);
+      if (index >= 0) {
+        activePaperIdx = index;
+        renderPaperList();
+        destination = document.getElementById("paper-reader");
+      }
+    } else if (record.kind === "menu") {
+      currentCafeFilter = "all";
+      cafeFilterBtns.forEach((button) => button.classList.toggle("active", button.getAttribute("data-cafe-cat") === "all"));
+      renderCafeteriaMenu();
+      const dishIndex = cafeMenuByLang[currentLang].findIndex((_, index) => "menu:" + index === record.id);
+      destination = cafeMenuListEl.children[dishIndex] || destination;
+    } else if (record.kind === "faculty") {
+      const facultyIndex = facultyByLang[currentLang].findIndex((_, index) => "faculty:" + index === record.id);
+      destination = facultyGridEl.children[facultyIndex] || destination;
+    } else if (record.kind === "club") {
+      const clubIndex = clubsByLang[currentLang].findIndex((club) => "club:" + club.id === record.id);
+      destination = clubsListEl.children[clubIndex] || destination;
+    } else if (record.kind === "announcement") {
+      currentAnnCategory = "all";
+      highlightedAnnId = record.id.slice("announcement:".length);
+      annFilterBtns.forEach((button) => button.classList.toggle("active", button.getAttribute("data-ann-cat") === "all"));
+      renderChancellorAndAnnouncements();
+      destination = Array.from(announcementsListEl.children).find((item) => item.getAttribute("data-ann-id") === highlightedAnnId) || destination;
+    }
+    if (destination) {
+      destination.classList.add("search-destination");
+      if (!destination.hasAttribute("tabindex")) destination.setAttribute("tabindex", "-1");
+      requestAnimationFrame(() => {
+        destination.scrollIntoView({ behavior: "instant", block: "start" });
+        destination.focus({ preventScroll: true });
+      });
+    }
+  }
+
+  function openSiteSearch(opener) {
+    if (!siteSearchDialog || !siteSearchInput) return;
+    if (!siteSearchDialog.open) searchReturnFocus = sidebarMedia.matches && sidebarEl && sidebarEl.contains(opener) ? mobileToggleBtn : opener;
+    closeMobileSidebar(false);
+    renderSiteSearch();
+    if (!siteSearchDialog.open) siteSearchDialog.showModal();
+    document.body.classList.add("search-open");
+    requestAnimationFrame(() => {
+      if (siteSearchDialog.open) {
+        siteSearchInput.focus();
+        siteSearchInput.select();
+      }
+    });
+  }
+
+  ["site-search-open", "mobile-search-open"].forEach((id) => {
+    const button = document.getElementById(id);
+    if (button) button.addEventListener("click", () => openSiteSearch(button));
+  });
+  const siteSearchClose = document.getElementById("site-search-close");
+  if (siteSearchClose) siteSearchClose.addEventListener("click", () => siteSearchDialog.close());
+  if (siteSearchClear) siteSearchClear.addEventListener("click", () => {
+    siteSearchInput.value = "";
+    renderSiteSearch();
+    siteSearchInput.focus();
+  });
+  if (siteSearchInput) {
+    siteSearchInput.addEventListener("input", (event) => { if (!event.isComposing) renderSiteSearch(); });
+    siteSearchInput.addEventListener("compositionstart", () => { searchComposing = true; });
+    siteSearchInput.addEventListener("compositionend", () => { searchComposing = false; renderSiteSearch(); });
+    siteSearchInput.addEventListener("keydown", (event) => {
+      if (event.isComposing || searchComposing) return;
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const buttons = siteSearchResults.querySelectorAll(".search-result");
+        const target = event.key === "ArrowDown" ? buttons[0] : buttons[buttons.length - 1];
+        if (target) target.focus();
+      }
+    });
+  }
+  const siteSearchForm = document.getElementById("site-search-form");
+  if (siteSearchForm) siteSearchForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!searchComposing && siteSearchInput.value.trim() && searchMatches[0]) activateSearchResult(searchMatches[0]);
+  });
+  if (siteSearchResults) siteSearchResults.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+    const buttons = Array.from(siteSearchResults.querySelectorAll(".search-result"));
+    const index = buttons.indexOf(document.activeElement);
+    if (index < 0) return;
+    event.preventDefault();
+    if (event.key === "ArrowUp" && index === 0) siteSearchInput.focus();
+    else buttons[(index + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length].focus();
+  });
+  if (siteSearchDialog) {
+    siteSearchDialog.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !event.isComposing && !searchComposing) {
+        // Search inputs consume Esc to clear text before native dialog cancel.
+        event.preventDefault();
+        event.stopPropagation();
+        siteSearchDialog.close();
+      } else if (event.key === "Tab") {
+        const controls = Array.from(siteSearchDialog.querySelectorAll("button:not([disabled]), input:not([disabled]), a[href]")).filter((el) => el.getClientRects().length);
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !siteSearchDialog.contains(document.activeElement))) {
+          event.preventDefault();
+          if (last) last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !siteSearchDialog.contains(document.activeElement))) {
+          event.preventDefault();
+          if (first) first.focus();
+        }
+      }
+    });
+    siteSearchDialog.addEventListener("click", (event) => {
+      const rect = siteSearchDialog.getBoundingClientRect();
+      if (event.target === siteSearchDialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) siteSearchDialog.close();
+    });
+    siteSearchDialog.addEventListener("close", () => {
+      document.body.classList.remove("search-open");
+      searchComposing = false;
+      const restoreTarget = searchRestoreFocus ? searchReturnFocus : null;
+      if (restoreTarget && restoreTarget.isConnected) requestAnimationFrame(() => {
+        if (!siteSearchDialog.open && !restoreTarget.closest("[inert]")) restoreTarget.focus();
+      });
+      searchRestoreFocus = true;
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      openSiteSearch(document.activeElement);
     }
   });
 
@@ -385,6 +647,10 @@
         const json = await res.json();
         if (json && json.chancellor && Array.isArray(json.announcements)) {
           announcementsData = json;
+          if (SEARCH) {
+            publicSearchIndex = publicSearchBase.concat(SEARCH.buildIndex({}, json));
+            if (siteSearchDialog && siteSearchDialog.open) renderSiteSearch();
+          }
           renderChancellorAndAnnouncements();
         }
       }
@@ -1179,6 +1445,14 @@
         el.innerHTML = dict[key];
       }
     });
+
+    ["placeholder", "aria-label"].forEach((attribute) => {
+      document.querySelectorAll(`[data-i18n-${attribute}]`).forEach((el) => {
+        const key = el.getAttribute(`data-i18n-${attribute}`);
+        if (key && dict[key] !== undefined) el.setAttribute(attribute, dict[key]);
+      });
+    });
+    renderSiteSearch();
 
     if (langSwitchBtn) langSwitchBtn.textContent = dict.lang_btn;
     if (mobileLangBtn) mobileLangBtn.textContent = currentLang === "zh" ? "EN" : "中";
