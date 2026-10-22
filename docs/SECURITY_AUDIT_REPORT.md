@@ -1,5 +1,7 @@
 # ANU 网站安全审计与验收记录
 
+后续侧边栏、登录布局与公开搜索改版已完成本地验收，尚未生产发布。搜索使用公开源数据的显式字段快照，排除身份、云端/本机档案、用户生成记录及测验答案；查询不发送、持久化或插入 HTML。全套本地测试与 Worker 类型检查通过，新增隔离 Chrome 搜索回归 94/94 通过，保存 37 张截图；外部认证与 API 使用 fixture，不代表生产 OAuth 或物理 Safari 通过。范围与回滚见 [SEARCH_NAVIGATION_ROLLOUT.md](SEARCH_NAVIGATION_ROLLOUT.md)，注册仍关闭。
+
 2026-10-22 登录界面版本 `739aaa2` 已经单独批准并通过 PR #2 发布；Google 品牌资料、单条 DNS TXT、Search Console Domain 所有权验证及品牌验证/发布也已按明确批准完成。Google 控制台确认品牌已经验证并向用户显示，真实 Google 账号选择页已核实新名称。身份会话恢复已观察到，Worker 认证验证仍暂不可用，完整 OAuth 与已认证业务未通过。影响、执行结果和回滚见 [LOGIN_BRANDING_ROLLOUT.md](LOGIN_BRANDING_ROLLOUT.md)。本项未增加登录 scopes，未修改认证回调、Firebase `authDomain` 或注册开关。
 
 检查日期：2026-10-19；2026-10-20 更新首次发布，2026-10-21 更新登录恢复补丁，2026-10-22 更新登录界面、品牌验证和生产复核（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。

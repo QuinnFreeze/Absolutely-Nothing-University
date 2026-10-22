@@ -67,7 +67,7 @@ console.log(`✓ [PASS] Bilingual dictionary (${zhKeys.length} keys), 8 full syl
 const html = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
 assert.ok(html.includes('property="og:title"'), "Open Graph tags must exist");
 assert.ok(html.includes('viewport-fit=cover'), "Mobile Safari viewport-fit=cover must exist");
-const i18nMatches = [...html.matchAll(/data-i18n(?:-html)?="([^"]+)"/g)].map((m) => m[1]);
+const i18nMatches = [...html.matchAll(/data-i18n(?:-html|-placeholder|-aria-label)?="([^"]+)"/g)].map((m) => m[1]);
 for (const key of i18nMatches) {
   assert.ok(ANU_DATA.i18nDict.zh[key] !== undefined, `Missing zh translation for HTML key: ${key}`);
   assert.ok(ANU_DATA.i18nDict.en[key] !== undefined, `Missing en translation for HTML key: ${key}`);
@@ -276,3 +276,6 @@ await runCanvasExportTests();
 
 const { runReleaseGateTests } = await import("./release-gate-tests.mjs");
 runReleaseGateTests();
+
+const { runSiteSearchTests } = await import("./site-search-tests.mjs");
+runSiteSearchTests();
