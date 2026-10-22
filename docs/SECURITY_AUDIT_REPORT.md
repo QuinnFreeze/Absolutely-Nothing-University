@@ -1,23 +1,24 @@
 # ANU 网站安全审计与验收记录
 
-2026-10-21 后续登录外观与 Google 品牌更名已完成本地准备，尚未发布或保存云端更名。涉及公开隐私页、Google 品牌验证和新增 DNS TXT 的影响及回滚，见 [LOGIN_BRANDING_ROLLOUT.md](LOGIN_BRANDING_ROLLOUT.md)。本项不增加登录 scopes，不修改认证回调或注册开关。
+2026-10-22 登录界面版本 `739aaa2` 已经单独批准并通过 PR #2 发布；Google 品牌资料、单条 DNS TXT、Search Console Domain 所有权验证及品牌验证/发布也已按明确批准完成。Google 控制台确认品牌已经验证并向用户显示，真实 Google 账号选择页已核实新名称。身份会话恢复已观察到，Worker 认证验证仍暂不可用，完整 OAuth 与已认证业务未通过。影响、执行结果和回滚见 [LOGIN_BRANDING_ROLLOUT.md](LOGIN_BRANDING_ROLLOUT.md)。本项未增加登录 scopes，未修改认证回调、Firebase `authDomain` 或注册开关。
 
-检查日期：2026-10-19；2026-10-20 更新首次发布，2026-10-21 更新后续前端发布及验收（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。
+检查日期：2026-10-19；2026-10-20 更新首次发布，2026-10-21 更新登录恢复补丁，2026-10-22 更新登录界面、品牌验证和生产复核（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。
 
-**初次加固已按用户批准的 `6eae1ce` 发布前端和 Worker，在私有备份后完成生产 `0003` 增量迁移；2026-10-21 又按单独批准发布前端登录恢复补丁 `67347cb`，Worker/D1 未变。新用户注册仍关闭；真实账户与物理设备验收尚未完成，不得开放注册。** 发布影响、操作顺序与回滚见 [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md)。
+**初次加固已按用户批准的 `6eae1ce` 发布前端和 Worker，在私有备份后完成生产 `0003` 增量迁移；2026-10-21 又按单独批准发布前端登录恢复补丁 `67347cb`；随后获批的登录界面版本 `739aaa2` 已通过 PR #2 发布，Worker/D1 未变。新用户注册仍关闭；真实账户与物理设备验收尚未完成，不得开放注册。** 发布影响、操作顺序与回滚见 [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md)。
 
 ## 1. 真实生产状态
 
 | 对象 | 已核实事实（日期逐项注明） | 边界或剩余工作 |
 | --- | --- | --- |
-| GitHub Pages | 初次源为 `6eae1ce`；后续登录恢复补丁 `67347cb3ae9461f48d9f7acbf08fa320ff79f774` 经单独批准，通过 PR #1 合并为 `61080c8f1df60fc5922594ad8ebdf4133929495f`，Pages 于 2026-10-21 00:53:59 UTC 构建成功。正式 HTTPS 两份修改 JS 的 SHA-256 与批准源一致；`main` 根目录、CNAME 及 HTTPS 保留 | 后续纯文档提交可能推进 `main`，前端业务源为 `67347cb`；真人 OAuth 未通过 |
+| GitHub Pages | 初次源为 `6eae1ce`；登录恢复补丁 `67347cb` 经 PR #1 发布。最新获批前端 `739aaa2` 经 PR #2 合并为 `5a0e64d3eeefb04305f3a586925b959fe37da064`，Pages 于 2026-10-21 12:11:03 UTC 构建成功；五份前端资产及 `privacy.html` 正式 HTTPS SHA-256 与批准源一致。`main` 根目录、CNAME 及 HTTPS 保留 | 后续纯文档提交可能推进 `main`，前端业务源为 `739aaa2`；真人 OAuth 未通过 |
 | Firebase | 沿用已有项目及公开 Web App 配置；2026-10-18 已确认 Google 提供方启用；2026-10-19 再通过公开项目配置确认正式域在授权域列表中；生产游客 Chrome 真实 SDK 初始化无认证错误 | SDK 初始化不等于真人 Google OAuth 联调 |
+| Google 品牌与网域 | 2026-10-22 按明确批准保存名称 `Absolutely Nothing University (ANU)`、首页、隐私政策及开发者联系信息；保留原 Firebase 品牌网域并新增 `freeze.edu.kg`。仅新增一条 Google TXT，原 16 条 DNS 全保留；独立 DoH 核对 TXT 和原 SPF。Search Console Domain 所有权验证成功，Google 控制台明确确认品牌已经验证并向用户显示 | 真实 Google 账号选择页已核实新名称；身份会话恢复不代表新的 OAuth 回跳、Worker 验证或学生写入成功；私人邮箱、TXT 挑战值及私有证据不进入 Git |
 | Worker | 2026-10-20 已发布新版本 `c22b3178-7872-4d77-a06a-ea2d7f9408ae` 至 `api.freeze.edu.kg`，远程读回 100% 流量、三个 Rate Limiting binding、原 D1、正式 vars 及域；`workers.dev` 和 preview 仍关闭。部署元数据 7 项、health 与匿名防护检查通过 | 旧版回滚标识为 `4e829602-af8d-4c75-ab59-1cb09c1eea76`；匿名检查不代替已认证业务验收 |
 | D1 | 先备份，再于 2026-10-20 00:31:32 UTC 应用 `0003_security_hardening.sql`，8 条命令成功；`0001/0002` 保留。新增 revision、request_hash、token ledger 及索引存在；六个学生业务表计数均为 0→0，原 25 个索引和 3 个配额触发器保留，总索引 28 | 没有新建或删除生产学生记录；只读迁移前后检查 `rows_written=0`，不代表真实账户写入验收 |
 | 注册开关 | 发布后真实 health：`ok:true`、注册 `false`，论文、证书和公开目录均为 `true`；D1 读回 `registration_enabled=0` | 注册须保持关闭，直至安全验收和另行开放批准 |
 | 备份 | 初次发布使用 2026-10-20 00:14:19 UTC 仓库外私有导出，10,906 bytes，文件 `0600`、目录 `0700`，SHA-256 `28a4734eeabb97bfeb4b1b7741369006f7e66011db0af444d73f16338490de33` 已匹配；该次 D1 迁移与 Worker 部署分别通过一小时内备份门禁。后续前端补丁不操作 D1；历史备份保留 | 不公开 SQL、私有路径或凭据；未来迁移或 Worker 发布重新检查备份时效，过期须重新导出 |
 | 管理保护 | ANU Admin API Access 应用保护 `/api/v1/admin` 及其子路径，限定单个管理员邮箱、每次登录独立 MFA、1h 会话；新 Worker 已配置真实 issuer/AUD。另经授权启用仅该邮箱、OTP、30 分钟的 App Launcher 注册门户。2026-10-20 Biometrics 绑定、强制挑战及本人验证后抵达旧 Worker 的边缘 MFA 验收通过 | CLI token 读取 Access 策略曾为 403，控制台保存并刷新核验；门户不改变 API 权限。未提交管理员 secret，旧 Worker 返回 `ADMIN_FORBIDDEN`；新 Worker 的独立 Access JWT 验签和带 secret 操作仍待真实生产验收 |
-| 真实游客 UI | 正式站点、真实 Firebase SDK/字体、无网络 mock 的 Chrome 回归：21 项通过，26 张截图、5 张 2400 px 宽 PNG；96 组校园布局和 12 组 My ANU 布局无横向溢出；默认蓝白、手动深色及刷新保持正常 | 不执行 Google OAuth 或生产学生写入，不能代替真实账户或物理 iPhone Safari |
+| 真实游客 UI | 初次正式站点回归 21 项通过，26 张截图、5 张 2400 px 宽 PNG；96 组校园布局和 12 组 My ANU 布局无溢出。最新 `739aaa2` 的真实 SDK/字体、无网络 mock 游客检查 9/9 通过，含 390/1440 px 双语蓝白/深色刷新、登录入口、隐私页和 2400×1728 PNG；错误与学生 API 请求均为 0 | 不执行 Google OAuth 或生产学生写入，不能代替真实账户或物理 iPhone Safari |
 | 真实账户流程 | 真人 Google OAuth、真实 Turnstile 成功与重放、生产账户写入及物理 iPhone Safari 尚未完成 | 不计为通过；响应式尺寸、UA 模拟和本地 fixtures 均不能替代 |
 
 公开 Firebase Web `apiKey`、项目标识和 Turnstile site key 用于客户端配置，不是管理员凭据。服务端 secret、Cloudflare API token、私钥、原始用户令牌和备份 SQL 不应进入 Git、公开文档或浏览器日志。[Firebase API key 指南](https://firebase.google.com/docs/projects/api-keys)。
@@ -138,3 +139,18 @@ Worker 业务代码仍为获批的 `6eae1ce`；前端补丁 `67347cb` 已获独�
 补丁已获独立发布批准，合并提交 `61080c8` 的 Pages 构建和两份 JS 正式 HTTPS 摘要已核对。发布后独立 Chrome 使用真实 SDK/字体、无网络 mock 的游客检查 7/7 通过：390/1440 px 蓝白默认、语言/手动主题/刷新、登录预热和游客导航正常，实际论文 PNG 为 2400×1728、797,555 bytes；console/page/request failure 均为 0，学生 API 请求为 0。该检查不执行 Google OAuth 或生产写入。
 
 2026-10-21 生产只读复核 4/4 通过：Worker 仍为原版本且承接 100% 流量、D1 原绑定保留、开发/预览旁路关闭、health 正常且注册 false。影响与回滚见发布文档第 10 节。注册继续关闭，原有真实 Turnstile、生产学生流程、管理员完整链路和物理 iPhone Safari 的验收边界不变。
+
+## 9. 登录界面与 Google 品牌发布（2026-10-22）
+
+用户明确批准 PR #2 对应前端提交 `739aaa2`，以及 Google 品牌资料保存、DNS TXT、Search Console 所有权验证和品牌验证/发布。前端已合并为 `5a0e64d3eeefb04305f3a586925b959fe37da064`，Pages 于 2026-10-21 12:11:03 UTC 构建成功。登录卡片保留现有认证、退出、账号切换、同步、导入与超时恢复接口；双语 `privacy.html` 及页脚入口已上线。`index.html`、`styles.css`、`app.js`、`js/i18n.js`、`js/student-auth.js` 和隐私页的线上摘要与获批源一致。
+
+- 本地全套测试、Worker TypeScript、JS 语法及 diff 检查此前通过；登录卡片/隐私页的隔离 Chrome fixture 20 项通过。身份、API 等外部服务在该 fixture 中为模拟。
+- 真实生产游客检查 9/9 通过：390/1440 px、中英文、默认蓝白与手动深色及刷新、登录入口、隐私页和 2400×1728 PNG 下载正常；console/page/request failure 均为 0，学生 API 请求为 0。该检查不执行真人 OAuth 或生产学生写入。
+- 2026-10-22 已保存 Google 应用名称 `Absolutely Nothing University (ANU)`、首页、隐私政策及开发者联系信息。品牌网域只新增 `freeze.edu.kg`，原 Firebase 网域保留；OAuth client、scopes、回调、Firebase `authDomain` 未变。
+- DNS 操作前重新读取的 16 条记录与仓库外私有备份一致；只新增一条 Google TXT 后为 17 条，结构对照确认原记录缺失 0、恰新增 1。独立 DoH 同时见到 Google 验证 TXT 与原 SPF，未修改网站或邮件解析。
+- Search Console Domain 所有权验证已成功。Google 控制台明确显示“您的品牌已经过验证，正在向用户显示。”品牌已发布，真实 Google 账号选择页已显示新名称及本站隐私入口。完成名称核验后关闭选择弹窗；本轮未完成新的 OAuth 回跳，不将品牌验证等同于账号流程验收。
+- 同日只读生产复核 4/4 通过：Worker 仍为 `c22b3178-7872-4d77-a06a-ea2d7f9408ae`、100% 流量，D1 原绑定不变，`workers.dev` 和 preview 均关闭；正式 Origin 的 health 为 200、`ok:true`、注册 `false`。本次未部署 Worker、执行迁移、查询学生记录或修改 Access。
+
+同一 Chrome 会话在页面初始化后恢复了 Firebase 登录身份，但云端同步仍提示“Authentication verification is temporarily unavailable. Please retry.”，并提供重试入口。此为真实可见状态，不代表 Worker 已成功验证该身份。关闭账号选择弹窗后，原 Firebase 身份保留，切换/退出按钮恢复可用并显示取消提示。未建立学生档案或执行生产学生写入；认证验证不可用的根因仍待排查。
+
+DNS/品牌操作记录与浏览器证据保存在仓库外，不提交私人邮箱、TXT 挑战值、凭据或私有证据目录。注册继续关闭，真实 Google OAuth、Turnstile 成功/重放、生产档案操作、管理员完整链路及物理 iPhone Safari 的验收要求不变。回滚保留原方案，详见登录品牌发布记录。

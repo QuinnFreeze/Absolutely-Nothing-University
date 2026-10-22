@@ -10,13 +10,15 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 - [生产发布影响与回滚方案](docs/PRODUCTION_ROLLOUT.md)
 - [登录界面与 Google 品牌更名方案](docs/LOGIN_BRANDING_ROLLOUT.md)
 
-## 当前状态（2026-10-21）
+## 当前状态（2026-10-22）
 
 **已按批准版本 `6eae1ce` 发布前端和 Worker，并在私有备份后完成 D1 `0003` 增量迁移。新用户注册保持关闭，尚未获准开放。** 上线后 health 为 `ok:true`、注册 `false`，论文、证书和公开目录开关均为 `true`。
 
 初次加固版本 `6eae1ce` 的前端六文件已核对；2026-10-21 又按单独批准发布登录恢复补丁 `67347cb`（合并提交 `61080c8`），Pages 构建成功，两份修改后的线上 JS 与批准源 SHA-256 一致。Worker 仍为 `c22b3178-7872-4d77-a06a-ea2d7f9408ae`、100% 流量；D1 迁移保留检查不变。初次发布的 11 项 API 防护、21 项游客回归通过；后续补丁的 7 项真实游客检查也通过，默认蓝白、移动布局、双语、深浅切换及实际 PNG 下载正常。真人 Google OAuth、真实 Turnstile 成功与重放、生产账户写入和物理 iPhone Safari 尚未完成；这些项目仍阻止开放注册。
 
-后续补丁修复登录超时与 Firebase observer 先后到达时的错误提示，保留账号切换、退出和云端错误边界；26 组认证模拟及 12 项本地 Chrome UI fixture 检查通过。Worker 与 D1 未变，线上 health 正常且注册继续关闭，详见安全审计。
+登录恢复补丁修复超时与 Firebase observer 先后到达时的错误提示，保留账号切换、退出和云端错误边界；26 组认证模拟及 12 项本地 Chrome UI fixture 检查通过。随后经单独批准，登录卡片、双语隐私页及入口的前端版本 `739aaa2` 通过 PR #2 合并为 `5a0e64d`，Pages 于 2026-10-21 12:11:03 UTC 构建成功。五份前端资产和隐私页的正式 HTTPS 摘要均与批准源一致；9 项真实生产游客检查通过，含 390/1440 px 双语、蓝白与手动深色刷新、登录入口、隐私页及 2400×1728 PNG，运行错误和学生 API 请求均为 0。本地全套、TypeScript 和 20 项登录界面 fixture 检查此前通过。
+
+2026-10-22 已按明确批准保存 Google 品牌名称 **Absolutely Nothing University (ANU)**、首页、隐私政策和开发者联系信息，保留原 Firebase 品牌网域并新增 `freeze.edu.kg`。新增一条 Google TXT 后，DNS 原 16 条记录全部保留；独立 DoH 可见验证 TXT 与原 SPF。Search Console Domain 所有权验证成功，Google 控制台确认品牌已经验证并向用户显示；真实 Google 账号选择页也已显示新名称。同一 Chrome 会话恢复了 Firebase 登录身份，但云端同步仍提示认证验证暂不可用，完整真人 OAuth 与已认证业务仍未通过。Worker、D1、Access、scopes、回调和 Firebase `authDomain` 均未改动；最新只读复核 health 正常且注册继续关闭。详见[登录界面与品牌发布记录](docs/LOGIN_BRANDING_ROLLOUT.md)及安全审计。
 
 ## 技术架构
 
