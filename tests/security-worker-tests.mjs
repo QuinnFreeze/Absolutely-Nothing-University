@@ -1226,6 +1226,30 @@ export async function runWorkerSecurityTests() {
   }
 
   {
+    const fetchBefore = globalThis.fetch;
+    try {
+      for (const cancelFails of [false, true]) {
+        let cancelled = false;
+        globalThis.fetch = async (_url, init) => {
+          assert.equal(init.redirect, "manual", "Callers must not enable redirect following");
+          return new Response(new ReadableStream({
+            cancel() { cancelled = true; if (cancelFails) throw new Error("cleanup failed"); }
+          }), { status: 307, headers: { Location: "https://must-not-receive.invalid" } });
+        };
+        await assert.rejects(() => fetchWithTimeout("https://verification.invalid", { redirect: "follow" }),
+          /REMOTE_VERIFICATION_REDIRECT/, "Cleanup failures must not change redirect rejection");
+        assert.equal(cancelled, true, "Redirect bodies must be cancelled before rejection");
+      }
+      globalThis.fetch = async () => ({ status: 0, type: "opaqueredirect", body: null });
+      await assert.rejects(() => fetchWithTimeout("https://verification.invalid"), /REMOTE_VERIFICATION_REDIRECT/);
+      globalThis.fetch = async () => new Response(new ReadableStream({ cancel() { return new Promise(() => {}); } }), { status: 308 });
+      await assert.rejects(() => fetchWithTimeout("https://verification.invalid", {}, 20), /REMOTE_VERIFICATION_TIMEOUT/,
+        "Redirect cleanup must remain within the complete-response deadline");
+    } finally { globalThis.fetch = fetchBefore; }
+    console.log("✓ [PASS][LOCAL MOCK] Redirect cancellation, cleanup errors, opaque redirect and stalled-cleanup deadline");
+  }
+
+  {
     let d1Reads = 0;
     const edgeOnly = { ...env, ENVIRONMENT: "production", IP_HASH_SALT: "production-test-salt-at-least-16", DB: { prepare() { d1Reads++; throw new Error("D1 must not run"); } },
       IP_RATE_LIMITER: { limit: async () => ({ success: true }) }, UID_RATE_LIMITER: { limit: async () => ({ success: true }) } };

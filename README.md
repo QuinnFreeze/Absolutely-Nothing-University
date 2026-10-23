@@ -9,8 +9,11 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 - [安全审计与验收边界](docs/SECURITY_AUDIT_REPORT.md)
 - [生产发布影响与回滚方案](docs/PRODUCTION_ROLLOUT.md)
 - [登录界面与 Google 品牌更名方案](docs/LOGIN_BRANDING_ROLLOUT.md)
+- [Worker 认证验证器修复与发布评审](docs/WORKER_AUTH_VERIFIER_ROLLOUT.md)
 
-## 当前状态（2026-10-22）
+## 当前状态（2026-10-23）
+
+Worker 认证验证 503 已在本地定位并修复：Workers 不支持共享请求中的 `redirect:error`，现改用 manual 并显式拒绝所有 3xx。新增 145 项真实 workerd 回归与全套、类型检查通过；外部身份服务为隔离 fixtures，**该后端修复尚未发布，也未完成完整真人登录验收**。注册继续关闭。具体发布范围、备份要求与回滚见[修复评审记录](docs/WORKER_AUTH_VERIFIER_ROLLOUT.md)。
 
 **已按批准版本 `6eae1ce` 发布前端和 Worker，并在私有备份后完成 D1 `0003` 增量迁移。新用户注册保持关闭，尚未获准开放。** 上线后 health 为 `ok:true`、注册 `false`，论文、证书和公开目录开关均为 `true`。
 
@@ -56,8 +59,9 @@ npm run dev
 ## 自动化检查
 
 ```bash
-# 从仓库根目录运行
+# 先在 worker/ 执行 npm ci，再从仓库根目录运行
 node --no-warnings tests/run-tests.mjs
+node --no-warnings tests/workerd-verifier-tests.mjs
 node tests/student-auth-tests.mjs
 node tests/canvas-export-tests.mjs
 node tests/browser-regression.cjs

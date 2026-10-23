@@ -10,7 +10,13 @@ export async function fetchWithTimeout(url: string, init: RequestInit = {}, time
   try {
     return await Promise.race([
       (async () => {
-        const response = await fetch(url, { ...init, signal: controller.signal, redirect: "error" });
+        // workerd supports only follow/manual. Reject redirects ourselves so
+        // verifier requests never follow Location or forward credentials.
+        const response = await fetch(url, { ...init, signal: controller.signal, redirect: "manual" });
+        if ((response.status >= 300 && response.status < 400) || response.type === "opaqueredirect") {
+          await response.body?.cancel().catch(() => {});
+          throw new Error("REMOTE_VERIFICATION_REDIRECT");
+        }
         // Bound the complete response, including a server that sends headers and
         // then stalls its body. These verification endpoints return small JSON.
         if (!response.body) return response;

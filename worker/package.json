@@ -11,6 +11,7 @@
     "db:migrate:prod": "node scripts/release-gate.mjs migrate",
     "db:backup:prod": "bash scripts/backup-restore.sh backup",
     "typecheck": "tsc --noEmit",
+    "test:runtime": "node ../tests/workerd-verifier-tests.mjs",
     "deploy:dry-run": "wrangler deploy --config wrangler.toml --dry-run --outdir .wrangler/dry-run"
   },
   "devDependencies": {

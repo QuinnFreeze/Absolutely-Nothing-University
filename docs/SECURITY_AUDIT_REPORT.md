@@ -1,5 +1,7 @@
 # ANU 网站安全审计与验收记录
 
+2026-10-23 已定位真实账号云端验证 503 的运行时根因：共享验证请求使用 Workers 不支持的 `redirect: "error"`，尚未发出请求即抛错。本地改为 `manual` 并显式拒绝全部 3xx，保留不跟随重定向、3.5 秒完整响应截止、64 KiB 限额及所有验签要求。新增真实 workerd + 临时 D1 的 145 项回归、Node 清理/超时模拟、全套测试及 TypeScript 通过，打包 dry-run 完成。**此 Worker 修复尚未发布，完整真实登录仍未通过；注册保持关闭。** 具体影响、测试边界、备份门禁及回滚见 [WORKER_AUTH_VERIFIER_ROLLOUT.md](WORKER_AUTH_VERIFIER_ROLLOUT.md)。
+
 侧边栏、登录布局与公开搜索版本 `efcb4b5` 已获明确批准，经 PR #3 合并为 `1272310` 并发布；Pages 于 2026-10-22 12:37:33 UTC 构建成功。搜索使用公开源数据的显式字段快照，排除身份、云端/本机档案、用户生成记录及测验答案；查询不发送、持久化或插入 HTML。本地全套测试、Worker 类型检查及 94/94 隔离 Chrome 搜索检查通过；发布后的真实 SDK/字体、无 mock 游客与文件联合验收 50/50 通过，11 份普通 HTTPS 文件摘要匹配。真实 OAuth、已认证业务和物理 Safari 的未验收边界保留。范围与回滚见 [SEARCH_NAVIGATION_ROLLOUT.md](SEARCH_NAVIGATION_ROLLOUT.md)，注册仍关闭。
 
 2026-10-22 登录界面版本 `739aaa2` 已经单独批准并通过 PR #2 发布；Google 品牌资料、单条 DNS TXT、Search Console Domain 所有权验证及品牌验证/发布也已按明确批准完成。Google 控制台确认品牌已经验证并向用户显示，真实 Google 账号选择页已核实新名称。身份会话恢复已观察到，Worker 认证验证仍暂不可用，完整 OAuth 与已认证业务未通过。影响、执行结果和回滚见 [LOGIN_BRANDING_ROLLOUT.md](LOGIN_BRANDING_ROLLOUT.md)。本项未增加登录 scopes，未修改认证回调、Firebase `authDomain` 或注册开关。
@@ -49,8 +51,9 @@ Cloudflare 边缘限流按位置计数、最终一致，适合削峰，不承担
 ## 3. 测试入口与证据分类
 
 ```bash
-# 仓库根目录，Node.js 24+
+# 先在 worker/ 执行 npm ci；仓库根目录，Node.js 24+
 node --no-warnings tests/run-tests.mjs
+node --no-warnings tests/workerd-verifier-tests.mjs
 node tests/student-auth-tests.mjs
 node tests/canvas-export-tests.mjs
 
