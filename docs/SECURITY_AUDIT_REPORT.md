@@ -1,5 +1,7 @@
 # ANU 网站安全审计与验收记录
 
+2026-10-23 后续本地补丁已复现并修复 observer-first 弹窗关闭竞态：新 SDK 身份先确认、popup 随后报告关闭时，不再留下矛盾的取消错误。所有 intent/session/退出保护保留，云端 503 不隐藏，近期认证仍由后端判断。30 组认证模拟、全套测试、145 项 workerd 和 TypeScript 通过；**此前端补丁尚未发布，真实 OAuth 仍未通过**。本轮只读网络观察遭遇工具明确的暂停文档响应限制，没有绕过；测试窗口已清理并确认游客态。范围、证据与回滚见 [GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md](GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md)。
+
 2026-10-23 已按单独批准将验证器修复 `68c6e82` 经 PR #4 合并，并在新私有备份后发布 Worker `293c660d-f8f6-488c-81b5-d0ec3690a4be`、100% 流量。共享请求改用 manual 并明确拒绝全部 3xx，保留超时、限额及完整验签要求。145 项真实 workerd 本地回归、全套、TypeScript 与构建通过；生产 9/9 只读检查中假签名已从 503 恢复为 401，六类业务计数与迁移保留，11 份前端文件摘要不变。**真人 Google 两次尝试仍为取消/回跳超时，完整登录未通过；注册保持关闭。** 测试弹窗已关闭，刷新后游客状态和公开搜索核验通过，没有新增或删除学生记录。详见 [WORKER_AUTH_VERIFIER_ROLLOUT.md](WORKER_AUTH_VERIFIER_ROLLOUT.md)。
 
 侧边栏、登录布局与公开搜索版本 `efcb4b5` 已获明确批准，经 PR #3 合并为 `1272310` 并发布；Pages 于 2026-10-22 12:37:33 UTC 构建成功。搜索使用公开源数据的显式字段快照，排除身份、云端/本机档案、用户生成记录及测验答案；查询不发送、持久化或插入 HTML。本地全套测试、Worker 类型检查及 94/94 隔离 Chrome 搜索检查通过；发布后的真实 SDK/字体、无 mock 游客与文件联合验收 50/50 通过，11 份普通 HTTPS 文件摘要匹配。真实 OAuth、已认证业务和物理 Safari 的未验收边界保留。范围与回滚见 [SEARCH_NAVIGATION_ROLLOUT.md](SEARCH_NAVIGATION_ROLLOUT.md)，注册仍关闭。

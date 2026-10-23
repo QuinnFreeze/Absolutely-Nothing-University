@@ -126,6 +126,7 @@ function makeHarness({ origin = "https://freeze.edu.kg", sdkGate, scriptLoaded =
     setRequest(fn) { nextRequest = fn; },
     setPersistenceError(code) { persistenceError = code; },
     setPopupError(code) { popupError = code; },
+    setPopupGate(gate) { popupGate = gate; },
     setTheme(value) { theme = value; },
     async login() {
       await window.ANU_AUTH.initAuth();
@@ -662,6 +663,94 @@ export async function runStudentAuthTests() {
     assert.equal(h.auth.getState().authError, null);
     assert.equal(h.calls.fetch.length, 1, "A cloud failure remains explicit instead of silently repeating the read");
     console.log("✓ [MOCK PASS / ACCELERATED POPUP CLOCK] Observer recovery preserves cloud errors without dropping identity or retrying failed reads");
+  }
+
+  {
+    for (const cloudUnavailable of [false, true]) {
+      const popup = deferred();
+      const h = makeHarness({ popupGate: popup });
+      await h.auth.prepareSignIn();
+      if (cloudUnavailable) h.setRequest(() => response({
+        ok: false, error: { code: "UPSTREAM_UNAVAILABLE", message: "Cloud is unavailable" }
+      }, 503));
+      const login = h.auth.signInWithGoogle();
+      await h.emitUser(h.user);
+      popup.reject(Object.assign(new Error("Synthetic popup closed after authentication"), { code: "auth/popup-closed-by-user" }));
+      const result = await login;
+      assert.equal(result.mode, "observer", "A newly accepted SDK identity must survive a later popup-close race without claiming fresh popup success");
+      assert.equal(result.user.uid, h.user.uid);
+      assert.equal(h.auth.getState().authError, null);
+      assert.equal(h.auth.getState().authSigningIn, false);
+      assert.equal(h.calls.fetch.length, 1, "Popup-close recovery must reuse the observer's cloud read rather than silently retrying");
+      if (cloudUnavailable) {
+        assert.equal(result.cloudError.code, "UPSTREAM_UNAVAILABLE");
+        assert.equal(result.cloudError.status, 503);
+        assert.equal(h.auth.getState().bundleLoaded, false);
+      } else {
+        assert.equal(result.cloudError, null);
+        assert.equal(h.auth.getState().bundleLoaded, true);
+      }
+    }
+    console.log("✓ [MOCK PASS] Observer-first popup-close recovery preserves the new identity, completed reads and explicit cloud 503 without claiming fresh authentication");
+  }
+
+  {
+    const popup = deferred();
+    const h = makeHarness({ popupGate: popup });
+    await h.login();
+    const login = h.auth.signInWithGoogle();
+    const rejected = assert.rejects(login, { code: "auth/popup-closed-by-user" });
+    await h.emitUser({ ...h.user });
+    popup.reject(Object.assign(new Error("Synthetic cancelled account switch"), { code: "auth/popup-closed-by-user" }));
+    await rejected;
+    assert.equal(h.auth.getState().user.uid, h.user.uid);
+    assert.equal(h.auth.getState().authError.code, "auth/popup-closed-by-user", "The unchanged previous account must not turn a cancelled switch into success");
+    assert.equal(h.calls.fetch.length, 1);
+    assert.equal(h.auth.getState().authSigningIn, false);
+    console.log("✓ [MOCK PASS] An observer for the unchanged previous account cannot turn a cancelled switch into success");
+  }
+
+  {
+    for (const nextIntent of ["signout", "new-login"]) {
+      const oldPopup = deferred();
+      const h = makeHarness({ popupGate: oldPopup });
+      await h.auth.prepareSignIn();
+      const oldLogin = h.auth.signInWithGoogle();
+      const oldRejected = assert.rejects(oldLogin, { code: "AUTH_SESSION_CHANGED" });
+      await h.emitUser(h.user);
+      await h.auth.signOutStudent();
+      const readsAfterSignout = h.calls.fetch.length;
+      let nextPopup;
+      let nextLogin;
+      const nextUser = { ...h.user, uid: "new-popup-account" };
+      if (nextIntent === "new-login") {
+        nextPopup = deferred();
+        h.setPopupGate(nextPopup);
+        h.setRequest(() => response({ ok: true, registered: true, data: bundle("New account") }));
+        nextLogin = h.auth.signInWithGoogle();
+        await h.emitUser(nextUser);
+      }
+      oldPopup.reject(Object.assign(new Error("Synthetic late cancellation for the old login"), { code: "auth/popup-closed-by-user" }));
+      await oldRejected;
+      assert.equal(h.auth.getState().authError, null, "An old cancellation must not overwrite the current intent's auth status");
+      if (nextIntent === "signout") {
+        await h.emitUser(h.user);
+        assert.equal(h.auth.getState().user, null);
+        assert.equal(h.auth.getState().bundle, null);
+        assert.equal(h.auth.getState().bundleLoaded, false);
+        assert.equal(h.auth.getState().authSigningIn, false);
+        assert.equal(h.calls.fetch.length, readsAfterSignout, "A late cancellation or SDK observer cannot restart private reads after sign-out");
+      } else {
+        assert.equal(h.auth.getState().user.uid, nextUser.uid);
+        assert.equal(h.auth.getState().bundle.profile.nickname, "New account");
+        assert.equal(h.auth.getState().authSigningIn, true, "An old cancellation must not retire the new popup's busy state");
+        nextPopup.resolve({ user: nextUser });
+        assert.equal((await nextLogin).mode, "popup", "Only the new popup may complete the new intent");
+        assert.equal(h.auth.getState().authSigningIn, false);
+        assert.equal(h.calls.fetch.length, readsAfterSignout + 1);
+      }
+      console.log(`✓ [MOCK PASS] Late popup cancellation cannot restore an old identity or disturb ${nextIntent === "signout" ? "explicit sign-out" : "a newer login intent"}`);
+    }
   }
 
   {

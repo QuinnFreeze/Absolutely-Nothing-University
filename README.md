@@ -10,6 +10,7 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 - [生产发布影响与回滚方案](docs/PRODUCTION_ROLLOUT.md)
 - [登录界面与 Google 品牌更名方案](docs/LOGIN_BRANDING_ROLLOUT.md)
 - [Worker 认证验证器修复与发布评审](docs/WORKER_AUTH_VERIFIER_ROLLOUT.md)
+- [Google observer 与弹窗关闭竞态补丁](docs/GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md)
 
 ## 当前状态（2026-10-23）
 
