@@ -279,3 +279,7 @@ runReleaseGateTests();
 
 const { runSiteSearchTests } = await import("./site-search-tests.mjs");
 runSiteSearchTests();
+
+// 10. Exercise verification fetches in Cloudflare's actual runtime, not Node fetch.
+const { runWorkerdVerifierTests } = await import("./workerd-verifier-tests.mjs");
+await runWorkerdVerifierTests();
