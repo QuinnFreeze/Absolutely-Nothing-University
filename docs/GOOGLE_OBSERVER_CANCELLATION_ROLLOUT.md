@@ -1,6 +1,6 @@
 # Google 身份 observer 与弹窗关闭竞态（2026-10-23）
 
-状态：**本地修复与验证完成，尚未发布。** 该补丁修复“SDK 已确认新身份但仍显示取消”的反馈竞态，不宣称解决真实 Google 回跳始终停在游客态的问题。生产 Worker 保持已获批的 `293c660d-f8f6-488c-81b5-d0ec3690a4be`，新用户注册继续关闭。
+状态（2026-10-24，Asia/Shanghai）：**已按明确批准，经 PR #5 合并并发布 GitHub Pages。** 获批源为 `7bbfd4f6b4b5efc72383520955ca7ee8b82e758f`，合并提交为 `a06a32cd2fed662d44147c267d9b9cdf7c2102a1`。该补丁修复“SDK 已确认新身份但仍显示取消”的反馈竞态，不宣称解决真实 Google 回跳始终停在游客态的问题。生产 Worker 保持已获批的 `293c660d-f8f6-488c-81b5-d0ec3690a4be`，新用户注册继续关闭。
 
 ## 已复现的问题及最小修复
 
@@ -43,8 +43,18 @@ Firebase 11.1.0 的官方 popup 源码在观察到窗口关闭后等待八秒再
 
 ## 发布影响与回滚
 
-本次只建议发布 GitHub Pages 的客户端补丁，须对具体提交另行批准；既有 Worker 发布批准不覆盖本次前端变更。合并可能触发 Pages 自动构建，不部署 Worker，不迁移或写入 D1，不更改认证/Access/MFA 配置，不开放注册。
+本次已对具体提交获得单独批准，仅发布 GitHub Pages 客户端补丁。合并触发 Pages 自动构建，没有部署 Worker、迁移或写入 D1、更改认证/Access/MFA 配置或开放注册。
 
 发布后核对 `js/student-auth.js` 的普通 HTTPS 摘要、游客界面、未变的生产 health 与注册 false。真实 Google 验收仍需独立完成，失败时保留明确错误和游客功能。
 
 回滚用新的提交将 `js/student-auth.js` 恢复至前端基线 `62b499ecc88a1f231dd41cf71538420e024e4605`；保留本次审计记录，不回退 main 历史、不回滚已修复的 Worker、不恢复或覆盖 D1。回滚仅恢复原反馈竞态，不能视为解决 OAuth 回跳。
+
+## 生产发布核验（2026-10-24）
+
+1. [PR #5](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/5) 使用完整获批 head 匹配后合并。Pages 对合并提交于 2026-10-23 16:57:34 UTC（北京时间 2026-10-24 00:57:34）构建成功。
+2. 11 份正式 HTTPS 资产 SHA-256 全部与获批源匹配。唯一变化的生产文件是 `js/student-auth.js`；`index.html`、`styles.css`、`app.js`、`js/i18n.js`、`js/site-search.js`、`js/anu-config.js`、`js/canvas-export.js`、`privacy.html`、`favicon.svg` 和 `data/announcements.json` 均与基线 `62b499e` 一致。
+3. 真实 health 返回 `ok:true`、`registrationEnabled:false`，其余三项功能开关保持 true。只读部署元数据确认 Worker 仍为 `293c660d-f8f6-488c-81b5-d0ec3690a4be`、100% 流量。本轮没有 D1 查询、备份、迁移或业务写入，也没有改认证配置、DNS、Access/MFA。
+4. 正式 Chrome 页面显示游客模式，Google 登录入口可用，退出按钮隐藏，反馈为空；Google 账号选择页继续显示已发布的网站名。使用用户已授权的同一账号执行一次真实登录：选中账号后，回跳页面的 DOM 读取超时，主站最终显示“登录未完成：已取消 Google 登录，您可以继续使用游客功能”，没有确认身份恢复。**真实 OAuth 仍未通过**；不能将本次工具超时确定为站点根因，也不能把本次反馈竞态补丁当作回跳修复。
+5. 回跳弹窗已结束。主站刷新后重新确认游客模式、登录按钮可用、退出隐藏和空反馈；全站搜索“拖延症”显示 2 项公开结果，关闭后恢复 My ANU。蓝白界面已截图并目视检查，随后关闭本轮测试主标签；原有用户标签保留。没有学生档案操作、Google 账号删除、授权撤销或浏览器数据清空；本次没有已认证会话可用于验证真实退出，不能标为登录/退出流程通过。
+
+发布摘要、文件摘要及截图保存在仓库外，不提交账号信息、回调参数或原始浏览器状态。后续纯文档提交可能推进 `main`，此前端业务源仍为 `7bbfd4f`。

@@ -12,7 +12,9 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 - [Worker 认证验证器修复与发布评审](docs/WORKER_AUTH_VERIFIER_ROLLOUT.md)
 - [Google observer 与弹窗关闭竞态补丁](docs/GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md)
 
-## 当前状态（2026-10-23）
+## 当前状态（2026-10-24）
+
+已按明确批准，将前端补丁 `7bbfd4f` 经 [PR #5](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/5) 合并为 `a06a32c` 并发布 Pages，修复 SDK 已确认新身份后 popup 关闭误报取消的竞态。30 组认证模拟、全套测试、145 项本地 workerd 与 TypeScript 此前通过；发布后 11 份正式 HTTPS 文件与批准源匹配，仅 `js/student-auth.js` 改变，游客与公开搜索复核正常。**追加真实 Google 尝试仍返回取消，未确认身份恢复，完整登录仍未通过；注册保持关闭。** 测试窗口已清理并确认游客态；Worker 保持原版本，本轮没有数据库操作或认证配置变更。详见[补丁与发布记录](docs/GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md)。
 
 Worker 认证验证器修复 `68c6e82` 已按单独批准，经 PR #4 合并并在新私有备份后发布为 `293c660d-f8f6-488c-81b5-d0ec3690a4be`，100% 流量。145 项真实 workerd 本地回归、全套、类型检查与构建通过；生产 9/9 只读检查中假签名已正确返回 401，六类业务计数和迁移保留，11 份前端文件摘要不变。**两次真人 Google 尝试仍出现取消/回跳超时，完整登录尚未通过；注册保持关闭。** 测试弹窗已清理并核实游客状态，没有新增或删除学生记录。详见[修复与发布验收记录](docs/WORKER_AUTH_VERIFIER_ROLLOUT.md)。
 
