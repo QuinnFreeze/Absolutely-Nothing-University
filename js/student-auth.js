@@ -621,9 +621,9 @@
     }).catch(async (error) => {
       const normalized = authFailure(error);
       // A newly accepted SDK identity can arrive before the popup Promise
-      // settles. A UI deadline must not replace that authenticated state with
-      // a stale error. An unchanged account does not prove a switch succeeded.
-      if (normalized.code === "AUTH_POPUP_TIMEOUT" && intent === authIntent &&
+      // settles. A deadline or popup-close error must not replace that accepted
+      // identity. An unchanged account does not prove a switch succeeded.
+      if (["AUTH_POPUP_TIMEOUT", "auth/popup-closed-by-user"].includes(normalized.code) && intent === authIntent &&
           !signedOutByUser && currentUser && popupStartSession !== null &&
           authSession !== popupStartSession) {
         const recoverySession = authSession;
