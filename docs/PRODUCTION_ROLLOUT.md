@@ -1,5 +1,7 @@
 # ANU 生产发布影响、验收与回滚方案
 
+2026-10-23 后续 Worker 验证器修复 `68c6e82` 已单独获批，经新私有备份和既有门禁发布为 `293c660d-f8f6-488c-81b5-d0ec3690a4be`、100% 流量。生产只读防护 9/9、前端摘要 11/11 通过，D1 计数和迁移保留；真人 Google 回跳仍未通过，注册保持关闭。本次影响、备份、回滚和真实账号清理详见 [WORKER_AUTH_VERIFIER_ROLLOUT.md](WORKER_AUTH_VERIFIER_ROLLOUT.md)。下文保留初次发布及后续前端的历史方案。
+
 日期：2026-10-19 制定，2026-10-20 记录首次发布，2026-10-21 更新后续前端发布与验收。保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1。**用户已批准具体版本 `6eae1ce`，Pages、Worker 和 D1 `0003` 已按方案发布；随后另行批准的前端补丁见第 10 节。新用户注册继续关闭，开放注册尚未授权。**
 
 ## 1. 发布结果与回滚基线
