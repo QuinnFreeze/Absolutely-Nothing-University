@@ -162,14 +162,13 @@
             <button type="button" class="mobile-quick-btn" id="mobile-theme-btn" aria-label="Toggle Theme">🌙</button>
           </div>
         </div>
-
-        <div class="bulletin-bar" role="region" aria-label="Academic Bulletin">
-          <div class="bulletin-content">
-            <span class="bulletin-badge" data-i18n="bulletin_badge">DEAN'S DECREE · 教务急电</span>
-            <span id="bulletin-text" aria-live="polite"></span>
-          </div>
-          <button type="button" class="bulletin-next-btn" id="next-bulletin-btn" data-i18n="bulletin_next">下一条通知</button>
+      </div>
+      <div class="bulletin-bar" role="region" aria-label="Academic Bulletin">
+        <div class="bulletin-content">
+          <span class="bulletin-badge" data-i18n="bulletin_badge">DEAN'S DECREE · 教务急电</span>
+          <span id="bulletin-text" aria-live="polite"></span>
         </div>
+        <button type="button" class="bulletin-next-btn" id="next-bulletin-btn" data-i18n="bulletin_next">下一条通知</button>
       </div>
 
       <main class="page-views-Host" id="top" tabindex="-1">
@@ -684,7 +683,7 @@
                 <h3 class="form-panel-title" data-i18n="email_prof_title">给不坐班教授发送学术咨询邮件</h3>
                 <p style="font-size: 0.88rem; color: var(--ink-muted); margin-bottom: 1rem;" data-i18n="email_prof_desc"></p>
                 <div class="submit-paper-row">
-                  <select id="email-prof-select" class="form-control" style="max-width: 280px;" aria-label="Select Professor"></select>
+                  <select id="email-prof-select" class="form-control" aria-label="Select Professor"></select>
                   <input type="text" id="email-question-input" class="form-control" maxlength="100" aria-label="Email Inquiry" />
                   <button type="button" class="btn-primary" id="send-prof-email-btn" data-i18n="email_prof_btn">
                     发送邮件

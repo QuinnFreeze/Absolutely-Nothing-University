@@ -1,5 +1,9 @@
 # ANU 网站安全审计与验收记录
 
+2026-10-24 后续手机布局修复已完成本地验收，**尚未生产发布**：顶栏完整换行，公告与固定导航分离，窄屏学籍字段重排，原生下拉框过长选项在下方完整显示，模拟监控卡片高度随文字增长。Turnstile 仅增加官方 `compact` 显示参数（150×140），不改挑战 action、回调、token 清理或服务端验证；注册继续关闭。全站八页、320/360/390/430/768/980/1024/1440 px 双语共 128 个几何场景未检出越界或 hidden 裁切；56 个模拟学生长内容状态未检出正文裁切、控件越界或缺少完整说明的长选项；新增窄屏元素边界断言的既有浏览器回归、四份实际 PNG 和 94 项搜索/导航检查通过。全套本地测试、145 项 workerd、30 组认证模拟、TypeScript 与语法检查通过。上述使用隔离 Chrome 和外部服务 fixtures，字体为系统回退；Safari UA 仍为 Chromium，不代表物理 Safari、真实安全挑战或 OAuth 通过。无 Worker、D1、认证权限、DNS 或 Access/MFA 配置变更，真实生产 health 复核注册仍 false。
+
+本轮前端发布影响限于 `index.html`、`styles.css`、`app.js` 和 `js/student-auth.js` 的显示层。待具体提交获批后仅发布 Pages；回滚以新提交将这四份文件恢复至 `245bf5f375ea734ac89d6dff1d69188b3e293c88`，保留 observer 反馈修复和现有 Worker/数据/安全配置，不需要数据库回退。仓库外保留前后几何结果、合成状态、截图与测试日志，不提交真实账户或机器私有路径。
+
 2026-10-24 已按单独批准将 observer-first 弹窗关闭竞态补丁 `7bbfd4f` 经 PR #5 合并为 `a06a32c` 并发布 Pages。新 SDK 身份先确认、popup 随后报告关闭时，不再留下矛盾的取消错误；所有 intent/session/退出保护保留，云端 503 不隐藏，近期认证仍由后端判断。30 组认证模拟、全套测试、145 项本地 workerd 和 TypeScript 此前通过；发布后 11 份 HTTPS 资产与批准源匹配，仅 `js/student-auth.js` 改变。**追加真实 Google 尝试仍返回取消，没有确认身份恢复，真实 OAuth 仍未通过；注册关闭。** 测试窗口已清理并确认游客与搜索可用；Worker 未变，本轮没有 D1 操作或认证配置变更。范围、证据与回滚见 [GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md](GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md)。
 
 2026-10-23 已按单独批准将验证器修复 `68c6e82` 经 PR #4 合并，并在新私有备份后发布 Worker `293c660d-f8f6-488c-81b5-d0ec3690a4be`、100% 流量。共享请求改用 manual 并明确拒绝全部 3xx，保留超时、限额及完整验签要求。145 项真实 workerd 本地回归、全套、TypeScript 与构建通过；生产 9/9 只读检查中假签名已从 503 恢复为 401，六类业务计数与迁移保留，11 份前端文件摘要不变。**真人 Google 两次尝试仍为取消/回跳超时，完整登录未通过；注册保持关闭。** 测试弹窗已关闭，刷新后游客状态和公开搜索核验通过，没有新增或删除学生记录。详见 [WORKER_AUTH_VERIFIER_ROLLOUT.md](WORKER_AUTH_VERIFIER_ROLLOUT.md)。

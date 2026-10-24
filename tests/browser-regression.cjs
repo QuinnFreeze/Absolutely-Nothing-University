@@ -297,16 +297,25 @@ async function main() {
     summary.checks.push("Three real PNG types and a long-content parchment diploma decode with light background/blue pixels, complete fields and measured frame bounds; PNG failure feedback/re-enabled control");
 
     await page.locator("#my-tab-transcripts").click();
-    for (const width of [390, 768, 1440]) {
+    for (const width of [320, 360, 390, 430, 768, 1440]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+      // Chromium can expose the new innerWidth before applying resize styles.
+      // Wait for the shell breakpoint, then inspect actual content boundaries.
+      await page.waitForFunction(() => {
+        const mobile = matchMedia("(max-width: 980px)").matches;
+        const headerVisible = getComputedStyle(document.querySelector(".mobile-topbar")).display !== "none";
+        const margin = parseFloat(getComputedStyle(document.querySelector(".main-stage")).marginLeft);
+        return mobile === headerVisible && (mobile ? margin === 0 : margin > 0);
+      });
       for (const lang of ["zh", "en"]) {
         if ((await page.locator("html").getAttribute("lang")).startsWith("zh") !== (lang === "zh")) await page.locator(width < 960 ? "#mobile-lang-btn" : "#lang-switch-btn").click();
         for (const theme of ["light", "dark"]) {
           if (await page.locator("html").getAttribute("data-theme") !== theme) await page.locator(width < 960 ? "#mobile-theme-btn" : "#theme-switch-btn").click();
           assert.equal(await page.locator("html").getAttribute("data-theme"), theme);
-          assert.equal(await page.evaluate(() => localStorage.getItem("anu_theme_preference")), theme === "light" && width === 390 && lang === "zh" ? null : theme);
+          assert.equal(await page.evaluate(() => localStorage.getItem("anu_theme_preference")), theme === "light" && width === 320 && lang === "zh" ? null : theme);
           const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, bad: Array.from(document.querySelectorAll("#page-my-anu *")).filter((el) => { const r = el.getBoundingClientRect(); const style = getComputedStyle(el); return r.width && style.display !== "none" && (r.right > innerWidth + 1 || r.left < -1); }).slice(0, 8).map((el) => ({ tag: el.tagName, id: el.id, class: el.className, left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right })) }));
           assert.ok(overflow.scroll <= width + 1, `No horizontal document overflow at ${width}/${lang}/${theme}: ${JSON.stringify(overflow)}`);
+          assert.deepEqual(overflow.bad, [], `No clipped off-screen content at ${width}/${lang}/${theme}`);
           await page.evaluate(() => scrollTo(0, 0));
           summary.screenshots.push(await snapshot(page, `my-anu-${width}-${lang}-${theme}`));
           if (width === 390) {
@@ -316,7 +325,7 @@ async function main() {
         }
       }
     }
-    summary.checks.push("390/768/1440 px x Chinese/English x manual light/dark: no horizontal overflow and screenshot evidence");
+    summary.checks.push("320/360/390/430/768/1440 px x Chinese/English x manual light/dark: no document or element overflow and screenshot evidence");
 
     // Restore desktop Chinese for unambiguous deletion UI assertions.
     await page.setViewportSize({ width: 1440, height: 1000 });

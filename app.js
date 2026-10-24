@@ -6,6 +6,48 @@
   const SEARCH = window.ANU_SEARCH;
   if (!DATA) return;
 
+  // Native selects stay single-line on iOS. Show the complete selected label
+  // below a narrow control when it cannot fit; keep native keyboard/AT behavior.
+  const selectNotes = [];
+  let selectNoteFrame = 0;
+  const selectTextMeasure = document.createElement("canvas").getContext("2d");
+
+  function scheduleSelectNotes() {
+    if (selectNoteFrame || !selectNotes.length) return;
+    selectNoteFrame = requestAnimationFrame(() => {
+      selectNoteFrame = 0;
+      const mobile = window.matchMedia("(max-width: 980px)").matches;
+      selectNotes.forEach(({ select, note }) => {
+        const label = select.selectedOptions[0]?.textContent.trim() || "";
+        const style = getComputedStyle(select);
+        const available = select.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 28;
+        if (selectTextMeasure) selectTextMeasure.font = style.font;
+        const textWidth = selectTextMeasure ? selectTextMeasure.measureText(label).width : Infinity;
+        note.hidden = !mobile || !label || available <= 0 || textWidth <= available;
+        if (note.textContent !== label) note.textContent = label;
+      });
+    });
+  }
+
+  function initSelectNotes() {
+    const changes = new MutationObserver(scheduleSelectNotes);
+    const sizes = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleSelectNotes) : null;
+    document.querySelectorAll("select.form-control").forEach((select) => {
+      const note = document.createElement("p");
+      note.className = "select-value-note";
+      note.hidden = true;
+      note.setAttribute("aria-hidden", "true");
+      select.insertAdjacentElement("afterend", note);
+      selectNotes.push({ select, note });
+      changes.observe(select, { childList: true, characterData: true, subtree: true });
+      if (sizes) sizes.observe(select);
+      select.addEventListener("change", scheduleSelectNotes);
+    });
+    window.addEventListener("resize", scheduleSelectNotes);
+    if (document.fonts) document.fonts.ready.then(scheduleSelectNotes);
+    scheduleSelectNotes();
+  }
+
   const {
     i18nDict,
     excusesByLang,
@@ -362,6 +404,7 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
     closeMobileSidebar();
     updateCloudSecurityCheck();
+    scheduleSelectNotes();
   }
 
   navButtons.forEach((btn) => {
@@ -906,6 +949,7 @@
     if (certSigRight) certSigRight.textContent = info.sigRight;
     if (certSerial) certSerial.textContent = info.serialLine;
     if (certDate) certDate.textContent = info.dateLine;
+    scheduleSelectNotes();
   }
 
   // Courses, Syllabus & In-Browser Mock Exam
@@ -2464,6 +2508,7 @@
         myHonorsList.appendChild(createEmptyNoticeElement(dict.my_empty_honors));
       }
     }
+    scheduleSelectNotes();
   }
 
   if (archiveSourceSelect) archiveSourceSelect.addEventListener("change", () => {
@@ -2484,6 +2529,7 @@
       pane.classList.toggle("active", selected);
       pane.hidden = !selected;
     });
+    scheduleSelectNotes();
   }
   myTabButtons.forEach((btn) => {
     const name = btn.getAttribute("data-my-tab");
@@ -2924,6 +2970,7 @@
   }
 
   // Initial Boot
+  initSelectNotes();
   applyTheme(currentTheme, false);
   applyLanguage(currentLang, true);
   fetchAnnouncementsData();
