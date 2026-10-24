@@ -1,8 +1,10 @@
 # ANU 网站安全审计与验收记录
 
-2026-10-24 后续手机布局修复已完成本地验收，**尚未生产发布**：顶栏完整换行，公告与固定导航分离，窄屏学籍字段重排，原生下拉框过长选项在下方完整显示，模拟监控卡片高度随文字增长。Turnstile 仅增加官方 `compact` 显示参数（150×140），不改挑战 action、回调、token 清理或服务端验证；注册继续关闭。全站八页、320/360/390/430/768/980/1024/1440 px 双语共 128 个几何场景未检出越界或 hidden 裁切；56 个模拟学生长内容状态未检出正文裁切、控件越界或缺少完整说明的长选项；新增窄屏元素边界断言的既有浏览器回归、四份实际 PNG 和 94 项搜索/导航检查通过。全套本地测试、145 项 workerd、30 组认证模拟、TypeScript 与语法检查通过。上述使用隔离 Chrome 和外部服务 fixtures，字体为系统回退；Safari UA 仍为 Chromium，不代表物理 Safari、真实安全挑战或 OAuth 通过。无 Worker、D1、认证权限、DNS 或 Access/MFA 配置变更，真实生产 health 复核注册仍 false。
+2026-10-24 手机布局修复 `0e06a41eb2ccf20710c69c17b14db67ce37e173d` 已按单独批准，经 [PR #6](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/6) 合并为 `7ad5c86cc7c63e46e0230e7821d31083271fe436` 并发布 Pages，构建于 2026-10-24 01:45:17 UTC（北京时间 09:45:17）成功：顶栏完整换行，公告与固定导航分离，窄屏学籍字段重排，原生下拉框过长选项在下方完整显示，模拟监控卡片高度随文字增长。Turnstile 仅增加官方 `compact` 显示参数（150×140），不改挑战 action、回调、token 清理或服务端验证；注册继续关闭。全站八页、320/360/390/430/768/980/1024/1440 px 双语共 128 个几何场景未检出越界或 hidden 裁切；56 个模拟学生长内容状态未检出正文裁切、控件越界或缺少完整说明的长选项；新增窄屏元素边界断言的既有浏览器回归、四份实际 PNG 和 94 项搜索/导航检查通过。全套本地测试、145 项 workerd、30 组认证模拟、TypeScript 与语法检查通过。上述使用隔离 Chrome 和外部服务 fixtures，字体为系统回退；Safari UA 仍为 Chromium，不代表物理 Safari、真实安全挑战或 OAuth 通过。无 Worker、D1、认证权限、DNS 或 Access/MFA 配置变更，真实生产 health 复核注册仍 false。
 
-本轮前端发布影响限于 `index.html`、`styles.css`、`app.js` 和 `js/student-auth.js` 的显示层。待具体提交获批后仅发布 Pages；回滚以新提交将这四份文件恢复至 `245bf5f375ea734ac89d6dff1d69188b3e293c88`，保留 observer 反馈修复和现有 Worker/数据/安全配置，不需要数据库回退。仓库外保留前后几何结果、合成状态、截图与测试日志，不提交真实账户或机器私有路径。
+本轮前端发布影响限于 `index.html`、`styles.css`、`app.js` 和 `js/student-auth.js` 的显示层。已按完整 head 匹配后合并，仅发布 Pages。11 份正式 HTTPS 资产 SHA-256 与批准源一致，其中四份变化、七份与原基线一致。只读部署元数据确认 Worker 仍为 `293c660d-f8f6-488c-81b5-d0ec3690a4be`、100% 流量，真实 health 的注册为 false。本轮未执行数据库命令、迁移或业务写入；回滚以新提交将这四份文件恢复至 `245bf5f375ea734ac89d6dff1d69188b3e293c88`，保留 observer 反馈修复和现有 Worker/数据/安全配置，不需要数据库回退。仓库外保留前后几何结果、合成状态、截图与测试日志，不提交真实账户或机器私有路径。
+
+本次发布后另行执行正式 HTTPS、真实 Firebase SDK 与 Web 字体、无网络 mock 的游客验收：320×740、360×800、390×844、430×900、844×390 横屏和 1440×1000 桌面共六个隔离 Chrome 会话，八页×中英文×浅深色及两项隐私页几何检查共 **194/194** 通过；原生长选项、随机资料/语言同步、公开搜索定位、侧栏同页导航、公告滚走及矮屏导航共 **22/22** 通过。页面运行错误、失败请求、学生 API 操作均为 0；补充手机/桌面初始化、双语、主题与搜索的控制台检查无 warning/error。五张正式站截图已目视复核，全部隔离会话已关闭，没有登录、导入或写入学生档案。这是 Chrome 手机视口验收，不能计为物理 Safari、真实 Turnstile 或 OAuth 通过；新注册继续关闭。后续纯文档构建不改变获批前端源 `0e06a41`。
 
 2026-10-24 已按单独批准将 observer-first 弹窗关闭竞态补丁 `7bbfd4f` 经 PR #5 合并为 `a06a32c` 并发布 Pages。新 SDK 身份先确认、popup 随后报告关闭时，不再留下矛盾的取消错误；所有 intent/session/退出保护保留，云端 503 不隐藏，近期认证仍由后端判断。30 组认证模拟、全套测试、145 项本地 workerd 和 TypeScript 此前通过；发布后 11 份 HTTPS 资产与批准源匹配，仅 `js/student-auth.js` 改变。**追加真实 Google 尝试仍返回取消，没有确认身份恢复，真实 OAuth 仍未通过；注册关闭。** 测试窗口已清理并确认游客与搜索可用；Worker 未变，本轮没有 D1 操作或认证配置变更。范围、证据与回滚见 [GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md](GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md)。
 
@@ -12,15 +14,15 @@
 
 2026-10-22 登录界面版本 `739aaa2` 已经单独批准并通过 PR #2 发布；Google 品牌资料、单条 DNS TXT、Search Console Domain 所有权验证及品牌验证/发布也已按明确批准完成。Google 控制台确认品牌已经验证并向用户显示，真实 Google 账号选择页已核实新名称。身份会话恢复已观察到，Worker 认证验证仍暂不可用，完整 OAuth 与已认证业务未通过。影响、执行结果和回滚见 [LOGIN_BRANDING_ROLLOUT.md](LOGIN_BRANDING_ROLLOUT.md)。本项未增加登录 scopes，未修改认证回调、Firebase `authDomain` 或注册开关。
 
-检查日期：2026-10-19；2026-10-20 更新首次发布，2026-10-21 更新登录恢复补丁，2026-10-22 更新登录界面、品牌验证和生产复核，2026-10-23 更新 Worker 验证器发布与账号验收，2026-10-24 更新 observer 弹窗关闭竞态补丁发布及真实回跳复核（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。
+检查日期：2026-10-19；2026-10-20 更新首次发布，2026-10-21 更新登录恢复补丁，2026-10-22 更新登录界面、品牌验证和生产复核，2026-10-23 更新 Worker 验证器发布与账号验收，2026-10-24 更新 observer 弹窗关闭竞态补丁、手机布局发布及生产复核（Asia/Shanghai）。前端：[freeze.edu.kg](https://freeze.edu.kg)；API：[api.freeze.edu.kg](https://api.freeze.edu.kg/api/v1/health)。架构保持 GitHub Pages + Firebase Authentication + Cloudflare Workers + D1 + Turnstile，保留牛津蓝白主题、校园内容和游客功能。
 
-**初次加固已按用户批准的 `6eae1ce` 发布前端和 Worker，在私有备份后完成生产 `0003` 增量迁移；2026-10-21 又按单独批准发布前端登录恢复补丁 `67347cb`；随后获批的登录界面版本 `739aaa2` 已通过 PR #2 发布，侧栏与公开搜索版本 `efcb4b5` 也已按单独批准通过 PR #3 发布；2026-10-23 又按单独批准发布 Worker 验证器修复 `68c6e82`，未迁移 D1；2026-10-24 按单独批准发布客户端反馈竞态补丁 `7bbfd4f`。新用户注册仍关闭；真实账户与物理设备验收尚未完成，不得开放注册。** 发布影响、操作顺序与回滚见 [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md) 及各后续前端发布记录。
+**初次加固已按用户批准的 `6eae1ce` 发布前端和 Worker，在私有备份后完成生产 `0003` 增量迁移；2026-10-21 又按单独批准发布前端登录恢复补丁 `67347cb`；随后获批的登录界面版本 `739aaa2` 已通过 PR #2 发布，侧栏与公开搜索版本 `efcb4b5` 也已按单独批准通过 PR #3 发布；2026-10-23 又按单独批准发布 Worker 验证器修复 `68c6e82`，未迁移 D1；2026-10-24 按单独批准发布客户端反馈竞态补丁 `7bbfd4f` 和手机布局 `0e06a41`。新用户注册仍关闭；真实账户与物理设备验收尚未完成，不得开放注册。** 发布影响、操作顺序与回滚见 [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md) 及各后续前端发布记录。
 
 ## 1. 真实生产状态
 
 | 对象 | 已核实事实（日期逐项注明） | 边界或剩余工作 |
 | --- | --- | --- |
-| GitHub Pages | 历次获批前端均保留。最新反馈补丁 `7bbfd4f6b4b5efc72383520955ca7ee8b82e758f` 经 PR #5 合并为 `a06a32cd2fed662d44147c267d9b9cdf7c2102a1`，Pages 于 2026-10-23 16:57:34 UTC 构建成功；11 份普通 HTTPS 资产 SHA-256 与批准源一致，仅 `js/student-auth.js` 较基线改变。`main` 根目录、CNAME 及 HTTPS 保留 | 后续纯文档提交可能推进 `main`，前端业务源为 `7bbfd4f`；真人 OAuth 未通过 |
+| GitHub Pages | 历次获批前端均保留。最新手机布局 `0e06a41eb2ccf20710c69c17b14db67ce37e173d` 经 PR #6 合并为 `7ad5c86cc7c63e46e0230e7821d31083271fe436`，Pages 于 2026-10-24 01:45:17 UTC 构建成功；11 份普通 HTTPS 资产 SHA-256 与批准源一致，四份较基线改变。`main` 根目录、CNAME 及 HTTPS 保留 | 后续纯文档提交可能推进 `main`，前端业务源为 `0e06a41`；真人 OAuth 未通过 |
 | Firebase | 沿用已有项目及公开 Web App 配置；2026-10-18 已确认 Google 提供方启用；2026-10-19 再通过公开项目配置确认正式域在授权域列表中；生产游客 Chrome 真实 SDK 初始化无认证错误 | SDK 初始化不等于真人 Google OAuth 联调 |
 | Google 品牌与网域 | 2026-10-22 按明确批准保存名称 `Absolutely Nothing University (ANU)`、首页、隐私政策及开发者联系信息；保留原 Firebase 品牌网域并新增 `freeze.edu.kg`。仅新增一条 Google TXT，原 16 条 DNS 全保留；独立 DoH 核对 TXT 和原 SPF。Search Console Domain 所有权验证成功，Google 控制台明确确认品牌已经验证并向用户显示 | 真实 Google 账号选择页已核实新名称；身份会话恢复不代表新的 OAuth 回跳、Worker 验证或学生写入成功；私人邮箱、TXT 挑战值及私有证据不进入 Git |
 | Worker | 2026-10-23 按获批提交 `68c6e82` 发布 `293c660d-f8f6-488c-81b5-d0ec3690a4be`，读回 100% 流量；全部 bindings/vars 与运行时设置和原 `c22b3178` 一致。9/9 真实只读 API 检查通过，当前公开 kid＋假签名两次均为 `401 AUTH_BAD_SIGNATURE` | 本次回滚版本为 `c22b3178-7872-4d77-a06a-ea2d7f9408ae`，会恢复其已知验证器 503；真人有效身份与完整业务仍未通过 |
@@ -28,7 +30,7 @@
 | 注册开关 | 发布后真实 health：`ok:true`、注册 `false`，论文、证书和公开目录均为 `true`；D1 读回 `registration_enabled=0` | 注册须保持关闭，直至安全验收和另行开放批准 |
 | 备份 | 2026-10-23 本次 Worker 发布前重新私有导出，12,530 bytes、0600、SHA-256 `02447e288cb42ac51b93fbc9fffe688d13790704d12fa18a475cf780b4a4af68` 匹配，部署通过一小时内备份门禁；历史备份保留 | SQL、私有路径和凭据不进入 Git；后续生产变更重新检查时效 |
 | 管理保护 | ANU Admin API Access 应用保护 `/api/v1/admin` 及其子路径，限定单个管理员邮箱、每次登录独立 MFA、1h 会话；新 Worker 已配置真实 issuer/AUD。另经授权启用仅该邮箱、OTP、30 分钟的 App Launcher 注册门户。2026-10-20 Biometrics 绑定、强制挑战及本人验证后抵达旧 Worker 的边缘 MFA 验收通过 | CLI token 读取 Access 策略曾为 403，控制台保存并刷新核验；门户不改变 API 权限。未提交管理员 secret，旧 Worker 返回 `ADMIN_FORBIDDEN`；新 Worker 的独立 Access JWT 验签和带 secret 操作仍待真实生产验收 |
-| 真实游客 UI | 初次正式站点回归 21 项通过，26 张截图、5 张 2400 px 宽 PNG；96 组校园布局和 12 组 My ANU 布局无溢出。`739aaa2` 的真实游客检查 9/9 通过，含实际 PNG；最新 `efcb4b5` 的真实 SDK/字体、无网络 mock 游客与文件联合检查 50/50 通过，18 张截图，含 390/1440 px 双语蓝白/深色刷新、登录入口、侧栏、搜索课程定位与隐私页；页面运行错误、失败请求与学生 API 操作均为 0 | 不执行 Google OAuth 或生产学生写入，不能代替真实账户或物理 iPhone Safari |
+| 真实游客 UI | 历史游客、PNG 和搜索验收保留。最新 `0e06a41` 在真实 HTTPS/SDK/字体、无 mock 的六个 Chrome 视口下，194/194 布局与 22/22 交互通过；覆盖 320/360/390/430 px、844×390 横屏、1440 px 桌面、双语浅深色、原生长选项同步、菜单、搜索定位、公告滚动和隐私页。页面错误、失败请求、学生 API 操作及补充控制台 warning/error 均为 0，保存五张生产截图并目视检查 | 全部使用隔离游客会话；未做 Google OAuth、真实挑战或学生写入，不能代替真实账户或物理 iPhone Safari |
 | 真实账户流程 | 2026-10-23 两次同一授权账号尝试分别显示取消/窗口超时；2026-10-24 补丁发布后追加一次，回跳页 DOM 读取超时，主站最终显示取消，仍没有确认身份恢复。测试窗口已清理，刷新后游客状态及公开搜索正常；没有学生档案操作 | 完整 OAuth、真实退出、真实 Turnstile/管理授权链、生产学生写入、两账号隔离及物理 iPhone Safari 仍不计为通过 |
 
 公开 Firebase Web `apiKey`、项目标识和 Turnstile site key 用于客户端配置，不是管理员凭据。服务端 secret、Cloudflare API token、私钥、原始用户令牌和备份 SQL 不应进入 Git、公开文档或浏览器日志。[Firebase API key 指南](https://firebase.google.com/docs/projects/api-keys)。

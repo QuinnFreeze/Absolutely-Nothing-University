@@ -14,7 +14,7 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 
 ## 当前状态（2026-10-24）
 
-手机布局后续优化已完成本地验收，尚未上线：完整顶栏、窄屏字段与按钮重排、长选项说明及自适应监控卡片，保留蓝白、深色和中英文。128 个全站双语几何场景、56 个模拟学生长内容状态、94 项搜索/导航检查及既有浏览器与 PNG 回归通过；全套和 TypeScript 通过。均为隔离 Chrome，不能替代真实 OAuth 或物理 Safari 验收；注册与生产权限不变。
+手机布局 `0e06a41` 已按批准经 [PR #6](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/6) 合并为 `7ad5c86` 并发布 Pages（2026-10-24 01:45:17 UTC 构建成功）：完整顶栏、窄屏字段与按钮重排、长选项说明及自适应监控卡片，保留蓝白、深色和中英文。128 个全站双语几何场景、56 个模拟学生长内容状态、94 项搜索/导航检查及既有浏览器与 PNG 回归通过；全套和 TypeScript 通过。上述本地结果使用隔离 Chrome 与服务 fixtures。发布后 11 份普通 HTTPS 文件匹配批准源，真实 SDK/字体、无 mock 的六个 Chrome 视口下，194/194 布局和 22/22 游客交互通过，页面错误、失败请求与学生 API 操作均为 0，补充控制台检查无警告/错误；五张生产截图已目视检查，隔离会话已关闭。不能替代真实 OAuth、挑战或物理 Safari 验收；Worker 和生产权限不变，注册继续关闭。
 
 已按明确批准，将前端补丁 `7bbfd4f` 经 [PR #5](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/5) 合并为 `a06a32c` 并发布 Pages，修复 SDK 已确认新身份后 popup 关闭误报取消的竞态。30 组认证模拟、全套测试、145 项本地 workerd 与 TypeScript 此前通过；发布后 11 份正式 HTTPS 文件与批准源匹配，仅 `js/student-auth.js` 改变，游客与公开搜索复核正常。**追加真实 Google 尝试仍返回取消，未确认身份恢复，完整登录仍未通过；注册保持关闭。** 测试窗口已清理并确认游客态；Worker 保持原版本，本轮没有数据库操作或认证配置变更。详见[补丁与发布记录](docs/GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md)。
 
