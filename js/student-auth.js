@@ -831,6 +831,7 @@
       turnstileContainer.textContent = "";
       turnstileWidgetId = global.turnstile.render(turnstileContainer, {
         sitekey: cfg.turnstileSiteKey,
+        size: "compact",
         theme: turnstileTheme,
         action: turnstileAction,
         callback: function (token) {
