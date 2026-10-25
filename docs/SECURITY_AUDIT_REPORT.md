@@ -1,5 +1,7 @@
 # ANU 网站安全审计与验收记录
 
+2026-10-25 追加真实 Google 登录诊断仍未确认身份，主站最终返回取消并保持游客态；新注册继续关闭。用户另行授权的单账号元数据查询在刷新后仍显示上次登录日期为 10/21，该日级记录仅作辅助证据，不能据此断言请求未到 Firebase。主站公开响应与 helper 结构未发现对应 COOP/CSP/sandbox 阻断，有限主标签追踪仍不足以覆盖整个回跳。测试窗口已关闭，游客和公开搜索复核正常；没有业务代码、认证配置、部署或 D1 变更。详见 [GOOGLE_OAUTH_DIAGNOSTICS.md](GOOGLE_OAUTH_DIAGNOSTICS.md)。
+
 2026-10-24 手机布局修复 `0e06a41eb2ccf20710c69c17b14db67ce37e173d` 已按单独批准，经 [PR #6](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/6) 合并为 `7ad5c86cc7c63e46e0230e7821d31083271fe436` 并发布 Pages，构建于 2026-10-24 01:45:17 UTC（北京时间 09:45:17）成功：顶栏完整换行，公告与固定导航分离，窄屏学籍字段重排，原生下拉框过长选项在下方完整显示，模拟监控卡片高度随文字增长。Turnstile 仅增加官方 `compact` 显示参数（150×140），不改挑战 action、回调、token 清理或服务端验证；注册继续关闭。全站八页、320/360/390/430/768/980/1024/1440 px 双语共 128 个几何场景未检出越界或 hidden 裁切；56 个模拟学生长内容状态未检出正文裁切、控件越界或缺少完整说明的长选项；新增窄屏元素边界断言的既有浏览器回归、四份实际 PNG 和 94 项搜索/导航检查通过。全套本地测试、145 项 workerd、30 组认证模拟、TypeScript 与语法检查通过。上述使用隔离 Chrome 和外部服务 fixtures，字体为系统回退；Safari UA 仍为 Chromium，不代表物理 Safari、真实安全挑战或 OAuth 通过。无 Worker、D1、认证权限、DNS 或 Access/MFA 配置变更，真实生产 health 复核注册仍 false。
 
 本轮前端发布影响限于 `index.html`、`styles.css`、`app.js` 和 `js/student-auth.js` 的显示层。已按完整 head 匹配后合并，仅发布 Pages。11 份正式 HTTPS 资产 SHA-256 与批准源一致，其中四份变化、七份与原基线一致。只读部署元数据确认 Worker 仍为 `293c660d-f8f6-488c-81b5-d0ec3690a4be`、100% 流量，真实 health 的注册为 false。本轮未执行数据库命令、迁移或业务写入；回滚以新提交将这四份文件恢复至 `245bf5f375ea734ac89d6dff1d69188b3e293c88`，保留 observer 反馈修复和现有 Worker/数据/安全配置，不需要数据库回退。仓库外保留前后几何结果、合成状态、截图与测试日志，不提交真实账户或机器私有路径。
