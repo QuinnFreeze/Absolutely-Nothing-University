@@ -420,6 +420,11 @@
       if (!validPages.includes(target)) return;
       event.preventDefault();
       switchToPage(target, true);
+      const sectionId = link.getAttribute("data-scroll-section");
+      if (sectionId) requestAnimationFrame(() => {
+        const section = document.getElementById(sectionId);
+        if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     });
   });
 
@@ -602,7 +607,7 @@
     });
   }
 
-  ["site-search-open", "mobile-search-open"].forEach((id) => {
+  ["site-search-open", "mobile-search-open", "drawer-search-open"].forEach((id) => {
     const button = document.getElementById(id);
     if (button) button.addEventListener("click", () => openSiteSearch(button));
   });
@@ -1490,7 +1495,7 @@
       }
     });
 
-    ["placeholder", "aria-label"].forEach((attribute) => {
+    ["placeholder", "aria-label", "alt"].forEach((attribute) => {
       document.querySelectorAll(`[data-i18n-${attribute}]`).forEach((el) => {
         const key = el.getAttribute(`data-i18n-${attribute}`);
         if (key && dict[key] !== undefined) el.setAttribute(attribute, dict[key]);

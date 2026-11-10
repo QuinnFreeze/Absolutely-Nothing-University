@@ -4,6 +4,7 @@
  * The iPhone Safari scenario changes UA/viewport only; it still uses Chromium.
  * Run: node tests/browser-regression.cjs (Chrome + Playwright must be installed).
  * Optional: PLAYWRIGHT_MODULE=/absolute/module ANU_CHROME_CHANNEL=chrome
+ * ANU_CHROME_EXECUTABLE=/absolute/browser overrides the channel when supplied.
  */
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -207,7 +208,12 @@ async function main() {
   let browser;
   const summary = { result: "FAIL", mode: "Local actual Chrome rendering; Firebase/API/Turnstile mocked; system fonts; Safari UA is Chromium, not physical Safari", base: BASE, browserPlugin: "Browser plugin skill unavailable; requested independent Chrome/Playwright", checks: [], screenshots: [], png: [] };
   try {
-    browser = await playwright.chromium.launch({ channel: process.env.ANU_CHROME_CHANNEL || "chrome", headless: true });
+    browser = await playwright.chromium.launch({
+      ...(process.env.ANU_CHROME_EXECUTABLE
+        ? { executablePath: process.env.ANU_CHROME_EXECUTABLE }
+        : { channel: process.env.ANU_CHROME_CHANNEL || "chrome" }),
+      headless: true
+    });
     const { page, context, fixture } = await setupContext(browser);
     assert.equal(await page.locator("#archive-source-select").inputValue(), "cloud");
     assert.equal(await page.locator("#my-anu-registration-panel").isVisible(), false);
@@ -304,13 +310,14 @@ async function main() {
       await page.waitForFunction(() => {
         const mobile = matchMedia("(max-width: 980px)").matches;
         const headerVisible = getComputedStyle(document.querySelector(".mobile-topbar")).display !== "none";
+        const desktopHeaderVisible = getComputedStyle(document.querySelector(".university-header")).display !== "none";
         const margin = parseFloat(getComputedStyle(document.querySelector(".main-stage")).marginLeft);
-        return mobile === headerVisible && (mobile ? margin === 0 : margin > 0);
+        return mobile === headerVisible && mobile !== desktopHeaderVisible && margin === 0;
       });
       for (const lang of ["zh", "en"]) {
-        if ((await page.locator("html").getAttribute("lang")).startsWith("zh") !== (lang === "zh")) await page.locator(width < 960 ? "#mobile-lang-btn" : "#lang-switch-btn").click();
+        if ((await page.locator("html").getAttribute("lang")).startsWith("zh") !== (lang === "zh")) await page.locator(width <= 980 ? "#mobile-lang-btn" : "#lang-switch-btn").click();
         for (const theme of ["light", "dark"]) {
-          if (await page.locator("html").getAttribute("data-theme") !== theme) await page.locator(width < 960 ? "#mobile-theme-btn" : "#theme-switch-btn").click();
+          if (await page.locator("html").getAttribute("data-theme") !== theme) await page.locator(width <= 980 ? "#mobile-theme-btn" : "#theme-switch-btn").click();
           assert.equal(await page.locator("html").getAttribute("data-theme"), theme);
           assert.equal(await page.evaluate(() => localStorage.getItem("anu_theme_preference")), theme === "light" && width === 320 && lang === "zh" ? null : theme);
           const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, bad: Array.from(document.querySelectorAll("#page-my-anu *")).filter((el) => { const r = el.getBoundingClientRect(); const style = getComputedStyle(el); return r.width && style.display !== "none" && (r.right > innerWidth + 1 || r.left < -1); }).slice(0, 8).map((el) => ({ tag: el.tagName, id: el.id, class: el.className, left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right })) }));

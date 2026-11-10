@@ -63,7 +63,12 @@ async function run() {
   let browser,server;
   try {
     server = await serve();
-    browser = await playwright.chromium.launch({channel:process.env.ANU_CHROME_CHANNEL || "chrome",headless:true});
+    browser = await playwright.chromium.launch({
+      ...(process.env.ANU_CHROME_EXECUTABLE
+        ? { executablePath: process.env.ANU_CHROME_EXECUTABLE }
+        : { channel: process.env.ANU_CHROME_CHANNEL || "chrome" }),
+      headless:true
+    });
     for (const lang of ["zh","en"]) for (const width of [390,1440]) {
       const context = await browser.newContext({viewport:{width,height:1000},colorScheme:"dark",acceptDownloads:true,reducedMotion:"reduce"});
       await context.addInitScript(lang=>localStorage.setItem("anu_lang",lang),lang);

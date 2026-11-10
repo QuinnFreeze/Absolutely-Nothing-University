@@ -8,7 +8,8 @@
  * No existing Chrome profile, browser tab, production write, or OAuth is used.
  *
  * Run: node tests/site-search-browser.cjs
- * Optional: PLAYWRIGHT_MODULE, ANU_CHROME_CHANNEL, ANU_SITE_SEARCH_EVIDENCE_DIR.
+ * Optional: PLAYWRIGHT_MODULE, ANU_CHROME_CHANNEL, ANU_CHROME_EXECUTABLE,
+ * ANU_SITE_SEARCH_EVIDENCE_DIR. An executable overrides the Chrome channel.
  * Evidence defaults outside this repository; no new dependencies are installed.
  */
 const assert = require("node:assert/strict");
@@ -168,21 +169,29 @@ async function noOverflow(env, selectors = ["#my-anu-auth-banner", ".my-anu-auth
 
 async function navigation(env) {
   const { page } = env;
-  await verify(env, "All four grouped sections toggle, navigate, and reopen for their active route", async () => {
-    assert.equal(await page.locator(".sidebar-nav-group").count(), 4);
-    for (const [group, target] of [["resources", "my-anu"], ["academics", "academics"], ["admissions", "admissions"], ["campus", "campus"]]) {
-      const details = page.locator(`[data-nav-group="${group}"]`);
-      if (await details.evaluate(el => el.open)) await details.locator("summary").click();
-      assert.equal(await details.evaluate(el => el.open), false);
-      await details.locator("summary").click();
-      assert.equal(await details.evaluate(el => el.open), true);
-      await details.locator(`[data-page-target="${target}"]`).click();
-      await go(page, target);
-      assert.equal(await details.locator(`[data-page-target="${target}"]`).getAttribute("aria-current"), "page");
-      await details.locator("summary").click();
-      await go(page, target === "overview" ? "admissions" : "overview");
-      await go(page, target);
-      assert.equal(await details.evaluate(el => el.open), true, `Active ${group} group must reopen`);
+  await verify(env, "Desktop primary navigation renders and marks each active academic or campus route", async () => {
+    assert.equal(await page.locator("#uni-sidebar").isVisible(), false);
+    assert.equal(await page.locator(".uni-primary-nav").isVisible(), true);
+    assert.equal(await page.locator(".uni-primary-nav [data-page-target]").count(), 4);
+    for (const target of ["overview", "academics", "research", "campus"]) {
+      const control = page.locator(`.uni-primary-nav [data-page-target="${target}"]`);
+      await control.click();
+      await page.waitForFunction(key => location.hash === "#" + key && document.querySelector(`#page-${key}`).classList.contains("active"), target);
+      assert.equal(await control.getAttribute("aria-current"), "page");
+      assert.equal(await page.locator('.uni-primary-nav [aria-current="page"]').count(), 1);
+      assert.equal(await page.locator(".page-view.active").count(), 1);
+    }
+  });
+  await verify(env, "Desktop application, account, and footer links reach the remaining university pages", async () => {
+    for (const [selector, target] of [
+      [".uni-masthead .uni-apply", "admissions"],
+      ['.uni-utility-actions [data-page-link="my-anu"]', "my-anu"],
+      ['.uni-footer-links [data-page-link="faculty"]', "faculty"],
+      ['.uni-footer-links [data-page-link="webcams"]', "webcams"]
+    ]) {
+      await page.locator(selector).click();
+      await page.waitForFunction(key => location.hash === "#" + key && document.querySelector(`#page-${key}`).classList.contains("active"), target);
+      assert.equal(await page.locator(".page-view.active").count(), 1);
     }
   });
 }
@@ -378,8 +387,30 @@ async function mobileNavigation(env) {
   await verify(env, "Closed mobile sidebar is hidden/inert and cannot receive focus", async () => {
     assert.equal(await page.locator("#uni-sidebar").evaluate(el => el.inert), true);
     assert.equal(await page.locator("#uni-sidebar").getAttribute("aria-hidden"), "true");
-    await page.locator("#site-search-open").evaluate(el => el.focus());
-    assert.equal(await page.locator("#site-search-open").evaluate(el => el === document.activeElement), false);
+    await page.locator("#drawer-search-open").evaluate(el => el.focus());
+    assert.equal(await page.locator("#drawer-search-open").evaluate(el => el === document.activeElement), false);
+  });
+  await verify(env, "All four mobile groups toggle, navigate, and reopen for their active route", async () => {
+    assert.equal(await page.locator(".sidebar-nav-group").count(), 4);
+    for (const [group, target] of [["resources", "my-anu"], ["academics", "academics"], ["admissions", "admissions"], ["campus", "campus"]]) {
+      await page.locator("#mobile-menu-toggle").click();
+      const details = page.locator(`[data-nav-group="${group}"]`);
+      if (await details.evaluate(el => el.open)) await details.locator("summary").click();
+      assert.equal(await details.evaluate(el => el.open), false);
+      await details.locator("summary").click();
+      assert.equal(await details.evaluate(el => el.open), true);
+      await details.locator(`[data-page-target="${target}"]`).click();
+      await page.waitForFunction(key => location.hash === "#" + key && document.querySelector(`#page-${key}`).classList.contains("active"), target);
+      assert.equal(await details.locator(`[data-page-target="${target}"]`).getAttribute("aria-current"), "page");
+      assert.equal(await page.locator("#uni-sidebar").evaluate(el => el.classList.contains("open")), false);
+      await page.locator("#mobile-menu-toggle").click();
+      await details.locator("summary").click();
+      assert.equal(await details.evaluate(el => el.open), false);
+      await page.locator("#sidebar-close").click();
+      await go(page, target === "overview" ? "admissions" : "overview");
+      await go(page, target);
+      assert.equal(await details.evaluate(el => el.open), true, `Active ${group} group must reopen`);
+    }
   });
   await verify(env, "Mobile navigation opens with close focus, traps Tab, and Escape restores menu focus", async () => {
     await page.locator("#mobile-menu-toggle").click();
@@ -413,7 +444,7 @@ async function mobileNavigation(env) {
   });
   await verify(env, "Sidebar search closes navigation; closing its dialog restores the menu trigger", async () => {
     await page.locator("#mobile-menu-toggle").click();
-    await openSearch(env, "#site-search-open");
+    await openSearch(env, "#drawer-search-open");
     assert.equal(await page.locator("#uni-sidebar").evaluate(el => el.inert), true);
     assert.equal(await page.locator(".main-stage").evaluate(el => el.inert), false);
     await closeSearch(env);
@@ -424,6 +455,8 @@ async function mobileNavigation(env) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.waitForFunction(() => !document.querySelector(".main-stage").inert && !document.querySelector("#uni-sidebar").inert);
     assert.equal(await page.locator("#uni-sidebar").evaluate(el => el.classList.contains("open")), false);
+    assert.equal(await page.locator(".uni-primary-nav").isVisible(), true);
+    assert.equal(await page.locator("#uni-sidebar").isVisible(), false);
     await page.setViewportSize({ width: env.width, height: env.height });
     await page.waitForFunction(() => document.querySelector("#uni-sidebar").inert);
     assert.equal(await page.locator(".main-stage").evaluate(el => el.inert), false);
@@ -507,7 +540,12 @@ async function main() {
   const base = summary.base = "http://127.0.0.1:" + server.address().port;
   let browser;
   try {
-    browser = await playwright.chromium.launch({ channel: process.env.ANU_CHROME_CHANNEL || "chrome", headless: true });
+    browser = await playwright.chromium.launch({
+      ...(process.env.ANU_CHROME_EXECUTABLE
+        ? { executablePath: process.env.ANU_CHROME_EXECUTABLE }
+        : { channel: process.env.ANU_CHROME_CHANNEL || "chrome" }),
+      headless: true
+    });
     summary.browserVersion = browser.version();
     for (const lang of ["zh", "en"]) for (const width of [390, 768, 1440]) for (const theme of ["light", "dark"]) {
       await runScenario(browser, base, { lang, width, height: width === 390 ? 900 : 1000, theme }, async env => {

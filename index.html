@@ -6,22 +6,25 @@
   <title>Absolutely Nothing University (ANU) | 绝对虚无大学官方网站</title>
   <meta name="description" content="Official satirical website of Absolutely Nothing University (ANU · 绝对虚无大学). Founded in ∞ B.C., ranked NaN worldwide. Instant honorary Ph.D. generator, truancy syllabus, and zero-word journal." />
   <meta name="keywords" content="Absolutely Nothing University, ANU, 绝对虚无大学, 摸鱼大学, 虚构大学, Satirical University, Parody Diploma, Nature Nothing" />
-  <meta name="theme-color" content="#0B2E59" />
+  <meta name="theme-color" content="#0A2041" />
   <link rel="canonical" href="https://freeze.edu.kg/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Absolutely Nothing University (ANU)" />
   <meta property="og:title" content="Absolutely Nothing University (ANU) | 绝对虚无大学官方网站" />
   <meta property="og:description" content="Nihil Agere, Omnia Esse — 什么都不做，即是一切。Founded in ∞ B.C., proudly ranked NaN across all global rankings." />
   <meta property="og:url" content="https://freeze.edu.kg/" />
-  <meta property="og:image" content="https://freeze.edu.kg/favicon.svg" />
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:image" content="https://freeze.edu.kg/assets/campus.webp" />
+  <meta property="og:image:alt" content="Fictional ANU campus concept: a lakeside university and clocktower" />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Absolutely Nothing University (ANU) | 绝对虚无大学" />
   <meta name="twitter:description" content="Founded in ∞ B.C., ranked NaN worldwide. Claim your honorary Ph.D. in Pure Nothingness in 3 seconds." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&family=Noto+Serif+SC:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Noto+Serif+SC:wght@500;700&family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="university.css" />
+  <link rel="preload" as="image" href="assets/campus.webp" fetchpriority="high" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -50,7 +53,7 @@
         </div>
       </a>
 
-      <button type="button" class="sidebar-search-trigger" id="site-search-open" aria-haspopup="dialog" aria-controls="site-search-dialog">
+      <button type="button" class="sidebar-search-trigger" id="drawer-search-open" aria-haspopup="dialog" aria-controls="site-search-dialog">
         <span data-i18n="search_open">搜索全站</span><kbd aria-hidden="true">⌘ K</kbd><span class="sidebar-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 5 5"/></svg></span>
       </button>
       <div class="sidebar-quick-links" aria-label="Quick links">
@@ -135,21 +138,36 @@
         <span data-i18n="sidebar_term_status">教学状态：全校无限期放假中</span>
       </div>
         <div class="sidebar-ctrl-row">
-          <button type="button" class="sidebar-btn" id="lang-switch-btn" aria-label="Switch Language">English</button>
-          <button type="button" class="sidebar-btn" id="theme-switch-btn" aria-label="Toggle Dark Mode">🌙 学院夜读</button>
+
+
         </div>
-        <div class="sidebar-ctrl-row">
-          <button type="button" class="sidebar-btn" id="tuition-btn">学费：¥0.00</button>
-          <button type="button" class="sidebar-btn" id="excuse-gen-btn" data-i18n="sidebar_btn_excuse">生成今日请假理由</button>
-        </div>
-        <div class="sidebar-excuse-box" id="sidebar-excuse-text" aria-live="polite" data-i18n="sidebar_excuse_default">
-          今日官方请假条：由于被窝产生局部强引力场，特批全天免起床。
-        </div>
+
       </div>
     </aside>
 
     <!-- Main Right Stage -->
     <div class="main-stage">
+
+      <header class="university-header">
+        <div class="uni-utility"><div class="uni-header-inner">
+          <span class="uni-motto" data-i18n="uni_motto">无为而学，躺平致远。</span>
+          <div class="uni-utility-actions">          <button type="button" class="sidebar-btn" id="lang-switch-btn" aria-label="Switch Language">English</button>          <button type="button" class="sidebar-btn" id="theme-switch-btn" aria-label="Toggle Dark Mode">🌙 学院夜读</button><a href="#my-anu" data-page-link="my-anu">My ANU</a></div>
+        </div></div>
+        <div class="uni-masthead uni-header-inner">
+          <a class="uni-brand" href="#overview" data-page-link="overview" aria-label="ANU — Absolutely Nothing University"><span class="uni-wordmark">ANU</span><span class="uni-brand-name">Absolutely Nothing<br />University</span></a>
+          <nav class="uni-primary-nav" aria-label="University navigation">
+            <button type="button" data-page-target="overview" data-i18n="uni_nav_home">首页</button>
+            <button type="button" data-page-target="academics" data-i18n="uni_nav_academics">学术与院系</button>
+            <button type="button" data-page-target="research" data-i18n="uni_nav_research">研究与期刊</button>
+            <button type="button" data-page-target="campus" data-i18n="uni_nav_campus">校园生活</button>
+            <a class="uni-chancellor-link" href="#overview" data-page-link="overview" data-scroll-section="chancellor-office-section" data-i18n="uni_nav_chancellor">校长办公室</a>
+          </nav>
+          <button type="button" class="uni-apply" data-goto-page="admissions" data-i18n="uni_apply">申请荣誉学位</button>
+                <button type="button" class="uni-search" id="site-search-open" aria-haspopup="dialog" aria-controls="site-search-dialog">
+        <span class="visually-hidden" data-i18n="search_open">搜索全站</span><span class="sidebar-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 5 5"/></svg></span>
+      </button>
+        </div>
+      </header>
       <div class="top-bar-wrapper">
         <div class="mobile-topbar">
           <button type="button" class="mobile-menu-btn" id="mobile-menu-toggle" aria-expanded="false" aria-controls="uni-sidebar" data-i18n="mobile_menu_btn">
@@ -163,6 +181,38 @@
           </div>
         </div>
       </div>
+
+
+      <main class="page-views-Host" id="top" tabindex="-1">
+        <!-- PAGE 1: OVERVIEW, PROVOST LEDGER & CHANCELLOR'S OFFICE -->
+        <section class="page-view active" id="page-overview" data-page="overview">
+          <div class="uni-hero">
+            <img class="uni-hero-image" src="assets/campus.webp" width="2172" height="724" alt="虚构的 ANU 校园概念图：湖畔红砖钟楼与远山" data-i18n-alt="uni_campus_alt" fetchpriority="high" />
+            <div class="container uni-hero-content">
+              <h1 data-i18n-html="uni_hero_title">在知识的边界之外，<br />我们选择原地躺平。</h1>
+              <p data-i18n="uni_hero_desc">什么都不做，即是一切。</p>
+            </div>
+          </div>
+          <div class="container">
+            <nav class="uni-programs" aria-label="Explore ANU">
+              <a href="#academics" data-page-link="academics"><span><strong data-i18n="uni_portal_academics"></strong><span data-i18n="hero_cta_secondary"></span></span><svg class="uni-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></a>
+              <a href="#admissions" data-page-link="admissions"><span><strong data-i18n="uni_portal_admissions"></strong><span data-i18n="hero_cta_primary"></span></span><svg class="uni-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></a>
+              <a href="#campus" data-page-link="campus"><span><strong data-i18n="uni_portal_campus"></strong><span data-i18n="nav_campus"></span></span><svg class="uni-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></a>
+            </nav>
+          </div>
+          <section class="uni-discover container" aria-labelledby="uni-discover-title">
+            <h2 id="uni-discover-title" data-i18n="uni_discover">发现你的无限可能</h2>
+            <div class="uni-features">
+              <article class="uni-feature">
+                <a class="uni-feature-photo" href="#academics" data-page-link="academics"><img src="assets/library.webp" width="1774" height="887" alt="" data-i18n-alt="uni_library_alt" loading="lazy" /><h3 data-i18n="uni_feature_study"></h3></a>
+                <p data-i18n="uni_feature_study_desc"></p><a class="uni-text-link" href="#academics" data-page-link="academics"><span data-i18n="uni_explore_study"></span><svg class="uni-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></a>
+              </article>
+              <article class="uni-feature">
+                <a class="uni-feature-photo" href="#campus" data-page-link="campus"><img src="assets/lawn.webp" width="1774" height="887" alt="" data-i18n-alt="uni_lawn_alt" loading="lazy" /><h3 data-i18n="uni_feature_life"></h3></a>
+                <p data-i18n="uni_feature_life_desc"></p><a class="uni-text-link" href="#campus" data-page-link="campus"><span data-i18n="uni_explore_life"></span><svg class="uni-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></a>
+              </article>
+            </div>
+          </section>
       <div class="bulletin-bar" role="region" aria-label="Academic Bulletin">
         <div class="bulletin-content">
           <span class="bulletin-badge" data-i18n="bulletin_badge">DEAN'S DECREE · 教务急电</span>
@@ -170,86 +220,12 @@
         </div>
         <button type="button" class="bulletin-next-btn" id="next-bulletin-btn" data-i18n="bulletin_next">下一条通知</button>
       </div>
-
-      <main class="page-views-Host" id="top" tabindex="-1">
-        <!-- PAGE 1: OVERVIEW, PROVOST LEDGER & CHANCELLOR'S OFFICE -->
-        <section class="page-view active" id="page-overview" data-page="overview">
-          <div class="hero-section">
-            <div class="container hero-grid">
-              <div class="hero-copy">
-                <div class="hero-motto-banner">
-                  <span data-i18n="hero_motto">校训：Nihil Agere, Omnia Esse（什么都不做，即是一切）</span>
-                </div>
-                <h1 class="hero-headline" data-i18n-html="hero_headline">
-                  在人类知识的边界之外，<br />我们选择原地躺平。
-                </h1>
-                <p class="hero-subtitle" data-i18n-html="hero_subtitle"></p>
-                <div class="hero-cta-group">
-                  <button type="button" class="btn-primary" data-goto-page="admissions" data-i18n="hero_cta_primary">
-                    3秒颁发荣誉博士学位
-                  </button>
-                  <button type="button" class="btn-secondary" data-goto-page="academics" data-i18n="hero_cta_secondary">
-                    查阅本学期退堂鼓课表
-                  </button>
-                </div>
-                <blockquote class="chancellor-quote">
-                  <span data-i18n="hero_quote_text"></span>
-                  <cite data-i18n="hero_quote_cite"></cite>
-                </blockquote>
-              </div>
-
-              <!-- Provost Live Ledger -->
-              <aside class="provost-ledger" aria-label="Provost Live Inactivity Telemetry">
-                <div class="ledger-header">
-                  <div>
-                    <h2 class="ledger-title" data-i18n="ledger_title">教务处实时虚无账本</h2>
-                    <p class="ledger-subtitle" data-i18n="ledger_subtitle">Office of the Provost · Live Inactivity Telemetry</p>
-                  </div>
-                  <span class="live-indicator">
-                    <span class="live-dot"></span>
-                    LIVE
-                  </span>
-                </div>
-
-                <div class="ledger-rows">
-                  <div class="ledger-row">
-                    <span class="ledger-label" data-i18n="ledger_lbl_rank">全球 QS / U.S. News 综合排名</span>
-                    <span class="ledger-value gold">NaN / Undefined</span>
-                  </div>
-                  <div class="ledger-row">
-                    <span class="ledger-label" data-i18n="ledger_lbl_grants">正在进行中的科研课题总数</span>
-                    <span class="ledger-value" data-i18n="ledger_val_grants">0.0000 项</span>
-                  </div>
-                  <div class="ledger-row">
-                    <span class="ledger-label" data-i18n="ledger_lbl_idle">本学期全校师生累计发呆时长</span>
-                    <span class="ledger-value gold" id="idle-seconds-counter">9,482,104 秒</span>
-                  </div>
-                  <div class="ledger-row">
-                    <span class="ledger-label" data-i18n="ledger_lbl_awake">图书馆今日清醒人数</span>
-                    <span class="ledger-value" id="awake-count" data-i18n="ledger_val_awake">0 人（含1只橘猫）</span>
-                  </div>
-                  <div class="ledger-row">
-                    <span class="ledger-label" data-i18n="ledger_lbl_saved">今日因懒得开会节省的经费</span>
-                    <span class="ledger-value" id="saved-budget">$4,290,810</span>
-                  </div>
-                </div>
-
-                <div class="ledger-actions">
-                  <button type="button" class="btn-contribute-nothing" id="contribute-idle-btn" data-i18n="ledger_btn">
-                    点此为母校贡献 +10 秒纯粹发呆
-                  </button>
-                  <p class="contribute-feedback" id="contribute-feedback" aria-live="polite" data-i18n="ledger_feedback_init"></p>
-                </div>
-              </aside>
-            </div>
-          </div>
-
           <!-- NEW SECTION: CHANCELLOR'S OFFICE & OFFICIAL ANNOUNCEMENTS SYSTEM -->
           <div class="academic-section" id="chancellor-office-section">
             <div class="container">
               <div class="section-header">
                 <p class="section-latin" data-i18n="chancellor_eyebrow">Aula Cancellarii · 校长办公室与校务公告系统</p>
-                <h2 class="section-title" data-i18n="chancellor_sec_title">第 404 任校长公署与荒诞法令公报</h2>
+                <h2 class="section-title" data-i18n="uni_news_title">第 404 任校长公署与荒诞法令公报</h2>
                 <p class="section-desc" data-i18n="chancellor_sec_desc"></p>
               </div>
 
@@ -298,12 +274,58 @@
             </div>
           </div>
 
+          <section class="uni-statistics" aria-labelledby="uni-stats-title"><div class="container">
+            <h2 id="uni-stats-title" data-i18n="uni_stats_title">以虚无，见卓越。</h2>
+              <aside class="provost-ledger" aria-label="Provost Live Inactivity Telemetry">
+                <div class="ledger-header">
+                  <div>
+                    <h2 class="ledger-title" data-i18n="ledger_title">教务处实时虚无账本</h2>
+                    <p class="ledger-subtitle" data-i18n="ledger_subtitle">Office of the Provost · Live Inactivity Telemetry</p>
+                  </div>
+                  <span class="live-indicator">
+                    <span class="live-dot"></span>
+                    LIVE
+                  </span>
+                </div>
+
+                <div class="ledger-rows">
+                  <div class="ledger-row">
+                    <span class="ledger-label" data-i18n="ledger_lbl_rank">全球 QS / U.S. News 综合排名</span>
+                    <span class="ledger-value gold">NaN / Undefined</span>
+                  </div>
+                  <div class="ledger-row">
+                    <span class="ledger-label" data-i18n="ledger_lbl_grants">正在进行中的科研课题总数</span>
+                    <span class="ledger-value" data-i18n="ledger_val_grants">0.0000 项</span>
+                  </div>
+                  <div class="ledger-row">
+                    <span class="ledger-label" data-i18n="ledger_lbl_idle">本学期全校师生累计发呆时长</span>
+                    <span class="ledger-value gold" id="idle-seconds-counter">9,482,104 秒</span>
+                  </div>
+                  <div class="ledger-row">
+                    <span class="ledger-label" data-i18n="ledger_lbl_awake">图书馆今日清醒人数</span>
+                    <span class="ledger-value" id="awake-count" data-i18n="ledger_val_awake">0 人（含1只橘猫）</span>
+                  </div>
+                  <div class="ledger-row">
+                    <span class="ledger-label" data-i18n="ledger_lbl_saved">今日因懒得开会节省的经费</span>
+                    <span class="ledger-value" id="saved-budget">$4,290,810</span>
+                  </div>
+                </div>
+
+                <div class="ledger-actions">
+                  <button type="button" class="btn-contribute-nothing" id="contribute-idle-btn" data-i18n="ledger_btn">
+                    点此为母校贡献 +10 秒纯粹发呆
+                  </button>
+                  <p class="contribute-feedback" id="contribute-feedback" aria-live="polite" data-i18n="ledger_feedback_init"></p>
+                </div>
+              </aside>
+          </div></section>
+
           <!-- Quick Campus Portals Directory -->
           <div class="academic-section">
             <div class="container">
               <div class="section-header">
                 <p class="section-latin" data-i18n="home_dir_eyebrow">Porta Academica · 校内各大职能部门直达</p>
-                <h2 class="section-title" data-i18n="home_dir_title">探索绝对虚无大学的六大核心殿堂</h2>
+                <h2 class="section-title" data-i18n="uni_services_title">探索绝对虚无大学的六大核心殿堂</h2>
                 <p class="section-desc" data-i18n="home_dir_desc"></p>
               </div>
 
@@ -1171,7 +1193,15 @@
 
       <!-- University Footer -->
       <footer class="site-footer">
+        <div class="container uni-footer-top"><a class="uni-brand" href="#overview" data-page-link="overview"><span class="uni-wordmark">ANU</span><span class="uni-brand-name">Absolutely Nothing<br />University</span></a><span data-i18n="uni_motto">无为而学，躺平致远。</span><div class="uni-footer-links"><a href="#faculty" data-page-link="faculty" data-i18n="nav_faculty"></a><a href="#webcams" data-page-link="webcams" data-i18n="nav_webcams"></a><a href="#my-anu" data-page-link="my-anu">My ANU</a></div></div>
         <div class="container">
+          <div class="uni-campus-extras">        <div class="sidebar-ctrl-row">
+          <button type="button" class="sidebar-btn" id="tuition-btn">学费：¥0.00</button>
+          <button type="button" class="sidebar-btn" id="excuse-gen-btn" data-i18n="sidebar_btn_excuse">生成今日请假理由</button>
+        </div>
+        <div class="sidebar-excuse-box" id="sidebar-excuse-text" aria-live="polite" data-i18n="sidebar_excuse_default">
+          今日官方请假条：由于被窝产生局部强引力场，特批全天免起床。
+        </div></div>
           <div class="footer-bottom">
             <span>© ∞ B.C. – 2026 Absolutely Nothing University (freeze.edu.kg). All Rights Reserved.</span>
             <span data-i18n="footer_motto">校训：Nihil Agere, Omnia Esse · 什么都不做，即是一切</span>
