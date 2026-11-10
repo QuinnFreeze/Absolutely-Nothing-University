@@ -1,6 +1,6 @@
 # Liberty-inspired ANU visual redesign
 
-Status: proposed frontend revision; not a production release.
+Status: release candidate approved by the user on 2026-11-10, pending final checks and GitHub Pages publication.
 
 The university homepage now uses a navy horizontal masthead, white serif ANU wordmark, full-width fictional campus photography, three academic/degree/campus entry links, two editorial features, existing campus announcements, a horizontal inactivity ledger and a navy footer. The visual reference is https://www.liberty.edu/ (inspected 2026-11-10). Navy `#0A2041`, blue `#2773CB`, white, PT Serif and Roboto follow the observed reference; Noto Serif SC supplies Chinese headings. The campus, library and lawn images are generated fictional ANU artwork, stored locally as WebP, approximately 1.2MB combined.
 
@@ -18,6 +18,12 @@ No changes to Worker, database, Firebase/OAuth, Turnstile, production flags, pub
 - Browser tests use isolated Chromium/Playwright with local auth/API fixtures. Browser extension control tools were unavailable. Screenshot comparison covers the 1487×1058 concept size, mobile and dark mode.
 
 Browser tests accept an optional `ANU_CHROME_EXECUTABLE=/absolute/browser` override. Existing Chrome-channel defaults are retained. Desktop navigation assertions now test the masthead; grouped navigation assertions continue to test the mobile drawer. Translated image alt attributes are included in static dictionary binding validation.
+
+## Final pre-release fixes (2026-11-10)
+
+The user's instruction authorizes publication after bug and mobile verification. Review found that the new gutters overrode existing safe-area insets; the final CSS restores `max(design gutter, env(safe-area-inset-*)))` on content, footer, masthead, mobile controls and the bulletin. A second issue caused English header overflow near 1281px; the secondary chancellor link now stays hidden through 1320px, with the section still available on the homepage. The existing five-click crest Easter egg is also bound to the new desktop/footer ANU wordmarks.
+
+Additional testing covers 320/390/430/768/844/896/980/981/1281/1300px, both languages/themes and all eight pages, including touch/mobile contexts and landscape CSS safe-area environment-value simulation. This is not a physical iPhone Safari test. Twenty real-webfont checks around 1200–1440px confirm no narrow-desktop header overflow. The existing full suites are rerun against the final repaired source before publication.
 
 ## Publication and rollback
 

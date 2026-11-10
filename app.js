@@ -1927,7 +1927,7 @@
   const easterToast = document.getElementById("easter-egg-toast");
   const easterTitle = document.getElementById("easter-egg-title");
   const easterBody = document.getElementById("easter-egg-body");
-  const crestTrigger = document.getElementById("sidebar-crest-trigger");
+  const crestTriggers = document.querySelectorAll("#sidebar-crest-trigger, .uni-brand");
   let crestClickCount = 0;
   let easterTimer = null;
 
@@ -1967,7 +1967,7 @@
     }, 5500);
   }
 
-  if (crestTrigger) {
+  crestTriggers.forEach((crestTrigger) => {
     crestTrigger.addEventListener("click", (e) => {
       e.preventDefault();
       switchToPage("overview", true);
@@ -1977,7 +1977,7 @@
         triggerEasterEgg("crest");
       }
     });
-  }
+  });
 
   const konamiSeq = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
   let konamiPos = 0;
