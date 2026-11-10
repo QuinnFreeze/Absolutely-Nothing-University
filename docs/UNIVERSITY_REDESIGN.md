@@ -1,6 +1,6 @@
 # Liberty-inspired ANU visual redesign
 
-Status: release candidate approved by the user on 2026-11-10, pending final checks and GitHub Pages publication.
+Status: published to https://freeze.edu.kg/ on 2026-11-10 after the user's authorization and successful final checks.
 
 The university homepage now uses a navy horizontal masthead, white serif ANU wordmark, full-width fictional campus photography, three academic/degree/campus entry links, two editorial features, existing campus announcements, a horizontal inactivity ledger and a navy footer. The visual reference is https://www.liberty.edu/ (inspected 2026-11-10). Navy `#0A2041`, blue `#2773CB`, white, PT Serif and Roboto follow the observed reference; Noto Serif SC supplies Chinese headings. The campus, library and lawn images are generated fictional ANU artwork, stored locally as WebP, approximately 1.2MB combined.
 
@@ -21,9 +21,19 @@ Browser tests accept an optional `ANU_CHROME_EXECUTABLE=/absolute/browser` overr
 
 ## Final pre-release fixes (2026-11-10)
 
-The user's instruction authorizes publication after bug and mobile verification. Review found that the new gutters overrode existing safe-area insets; the final CSS restores `max(design gutter, env(safe-area-inset-*)))` on content, footer, masthead, mobile controls and the bulletin. A second issue caused English header overflow near 1281px; the secondary chancellor link now stays hidden through 1320px, with the section still available on the homepage. The existing five-click crest Easter egg is also bound to the new desktop/footer ANU wordmarks.
+The user's instruction authorizes publication after bug and mobile verification. Review found that the new gutters overrode existing safe-area insets; the final CSS restores `max(design gutter, env(safe-area-inset-*))` on content, footer, masthead, mobile controls and the bulletin. A second issue caused English header overflow near 1281px; the secondary chancellor link now stays hidden through 1320px, with the section still available on the homepage. The existing five-click crest Easter egg is also bound to the new desktop/footer ANU wordmarks.
 
-Additional testing covers 320/390/430/768/844/896/980/981/1281/1300px, both languages/themes and all eight pages, including touch/mobile contexts and landscape CSS safe-area environment-value simulation. This is not a physical iPhone Safari test. Twenty real-webfont checks around 1200–1440px confirm no narrow-desktop header overflow. The existing full suites are rerun against the final repaired source before publication.
+Additional testing passes 320 combinations covering 320/390/430/768/844/896/980/981/1281/1300px, both languages/themes and all eight pages, including touch/mobile contexts and landscape CSS safe-area environment-value simulation. This is not a physical iPhone Safari test. Twenty real-webfont checks around 1200–1440px confirm no narrow-desktop header overflow. All existing suites were rerun successfully against the final repaired source before publication; desktop and mobile five-click crest checks also passed.
+
+## Production verification (2026-11-10)
+
+- Approved frontend source `ccba24ed34f95d5c459e1c5e0f189c52eeb4d5af` merged through [PR #7](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/7) as `a6642900b78b65d97ff50a329b7a3ecf5d2e7651`.
+- [GitHub Pages run 42836331168](https://github.com/QuinnFreeze/Absolutely-Nothing-University/actions/runs/42836331168) completed successfully at 14:41:35 UTC. Pages remains `main` root, `freeze.edu.kg`, HTTPS enforced.
+- All 15 ordinary HTTPS frontend files match the final source byte for byte: HTML, both stylesheets, app.js, five JS modules, privacy page, favicon, announcements and three campus images.
+- Fresh isolated Chromium against the formal HTTPS domain uses the real Firebase SDK and webfonts with no network mocks. All 192 geometry combinations pass across 360/390/430/768/844/1440px, both languages/themes and eight pages. The 844×390 case checks landscape; phone and desktop screenshots were visually inspected.
+- Eight additional live interaction checks pass at 390/1440px: menu to journal, public search to a course, language/theme persistence after reload, and actual guest diploma PNG downloads (both 2400×1720).
+- Page errors, console warnings/errors, failed requests, HTTP errors and student API operations are all zero. Public health is `ok:true`; registration remains disabled and the other existing feature flags remain enabled.
+- No Worker deployment, D1 operations, Google/Firebase configuration changes, login attempts, Turnstile submissions or production account writes were performed. Physical iPhone Safari and full real OAuth retain their previous verification boundary.
 
 ## Publication and rollback
 

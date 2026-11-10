@@ -12,7 +12,11 @@ ANU 是一所虚构的讽刺大学网站，提供校园互动、摸鱼统考、�
 - [Worker 认证验证器修复与发布评审](docs/WORKER_AUTH_VERIFIER_ROLLOUT.md)
 - [Google observer 与弹窗关闭竞态补丁](docs/GOOGLE_OBSERVER_CANCELLATION_ROLLOUT.md)
 
-## 当前状态（2026-10-24）
+## 当前状态（2026-11-10）
+
+Liberty 风格的大学官网改版已按用户“检查通过后发布”的明确授权，通过 [PR #7](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/7) 合并为 `a664290` 并发布；GitHub Pages 于 2026-11-10 14:41:35 UTC 完成。新增海军蓝横向导航、虚构校园大图、三栏入口与图文首页，并修复刘海屏安全区、临界宽度英文导航溢出和桌面校徽彩蛋。全套回归、320 项补充布局与 20 项真实字体临界宽度检查通过；发布后 15 份普通 HTTPS 文件与最终源完全一致，真实 SDK/字体且无网络 mock 的 192 项布局及 8 项游客交互通过，实际下载两份 2400×1720 PNG，页面/控制台/网络错误与学生 API 操作均为 0。正式截图已目视检查。Worker、D1 与认证配置不变，health 正常、注册继续关闭；物理 Safari 和完整真人 OAuth 未由这些检查替代。详见[改版与正式验收记录](docs/UNIVERSITY_REDESIGN.md)。
+
+### 此前发布记录（2026-10-24 及以前）
 
 手机布局 `0e06a41` 已按批准经 [PR #6](https://github.com/QuinnFreeze/Absolutely-Nothing-University/pull/6) 合并为 `7ad5c86` 并发布 Pages（2026-10-24 01:45:17 UTC 构建成功）：完整顶栏、窄屏字段与按钮重排、长选项说明及自适应监控卡片，保留蓝白、深色和中英文。128 个全站双语几何场景、56 个模拟学生长内容状态、94 项搜索/导航检查及既有浏览器与 PNG 回归通过；全套和 TypeScript 通过。上述本地结果使用隔离 Chrome 与服务 fixtures。发布后 11 份普通 HTTPS 文件匹配批准源，真实 SDK/字体、无 mock 的六个 Chrome 视口下，194/194 布局和 22/22 游客交互通过，页面错误、失败请求与学生 API 操作均为 0，补充控制台检查无警告/错误；五张生产截图已目视检查，隔离会话已关闭。不能替代真实 OAuth、挑战或物理 Safari 验收；Worker 和生产权限不变，注册继续关闭。
 
